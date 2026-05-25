@@ -1,0 +1,84 @@
+<div class="student-create">
+  <div class="page-card header-card">
+    <h1>Add new student</h1>
+    <a class="back-btn" routerLink="/students">Back</a>
+  </div>
+
+  <div class="page-card form-card">
+    <div class="photo-section">
+      <div class="photo-preview" [class.filled]="photoPreview">
+        <img *ngIf="photoPreview" [src]="photoPreview" alt="Student photo preview" />
+        <span *ngIf="!photoPreview">Student photo</span>
+      </div>
+      <label class="upload-btn">
+        Upload photo
+        <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+      </label>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        Full name
+        <input type="text" [(ngModel)]="fullName" />
+      </label>
+      <label>
+        Gender
+        <select [(ngModel)]="gender">
+          <option value="" disabled>Select gender</option>
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+        </select>
+      </label>
+      <label>
+        Date of birth
+        <input type="date" [(ngModel)]="dob" />
+      </label>
+      <label>
+        Grade
+        <select [(ngModel)]="grade">
+          <option value="" disabled>Select grade</option>
+          <option>Nursery</option>
+          <option>Kindergarten</option>
+          <option>Grade 1</option>
+          <option>Grade 2</option>
+          <option>Grade 3</option>
+          <option>Grade 4</option>
+          <option>Grade 5</option>
+          <option>Grade 6</option>
+        </select>
+      </label>
+      <label>
+        Parent ID
+        <input type="number" [(ngModel)]="parentId" />
+      </label>
+      <label>
+        Assigned bus
+        <select [(ngModel)]="selectedBusId">
+          <option value="">Select bus</option>
+          <option *ngFor="let bus of buses" [value]="bus.id">{{ bus.plateNumber }}</option>
+        </select>
+      </label>
+      <label>
+        Route
+        <select [(ngModel)]="selectedRouteId" (change)="onRouteChange()">
+          <option value="">Select route</option>
+          <option *ngFor="let route of routes" [value]="route.id">{{ route.name }}</option>
+        </select>
+      </label>
+      <label>
+        Bus stop
+        <select [(ngModel)]="selectedBusStopId" [disabled]="!selectedRouteId">
+          <option value="">Select bus stop</option>
+          <option *ngFor="let stop of busStops" [value]="stop.id">{{ stop.name }}</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-ghost" type="button" [disabled]="isSaving">Cancel</button>
+      <button class="btn-primary" type="button" [disabled]="isSaving" (click)="createStudent()">
+        {{ isSaving ? 'Creating...' : 'Create student' }}
+      </button>
+    </div>
+  </div>
+</div>

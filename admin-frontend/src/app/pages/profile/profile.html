@@ -1,0 +1,49 @@
+<div class="profile-page">
+  <div class="page-card header-card">
+    <h1>Profile management</h1>
+    <a class="back-btn" routerLink="/dashboard">Back</a>
+  </div>
+
+  <div class="page-card form-card">
+    <div class="photo-section">
+      <div class="photo-preview" [class.filled]="photoPreview">
+        <img *ngIf="photoPreview" [src]="photoPreview" alt="Profile photo preview" />
+        <span *ngIf="!photoPreview">Profile photo</span>
+      </div>
+      <label class="upload-btn">
+        Change photo
+        <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+      </label>
+    </div>
+
+    <div class="alerts">
+      <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+      <div class="success-message" *ngIf="successMessage">{{ successMessage }}</div>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        First name
+        <input type="text" [(ngModel)]="firstName" />
+      </label>
+      <label>
+        Last name
+        <input type="text" [(ngModel)]="lastName" />
+      </label>
+      <label>
+        Email
+        <input type="email" [(ngModel)]="email" disabled />
+      </label>
+      <label>
+        Phone number
+        <input type="text" [(ngModel)]="phoneNumber" />
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" type="button" [disabled]="isSaving" (click)="saveProfile()">
+        {{ isSaving ? 'Saving...' : 'Save changes' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,238 @@
+<div class="dashboard">
+  <h1 class="page-title">Dashboard</h1>
+
+  <!-- Stats Cards -->
+  <div class="stats-row">
+    <div class="stat-card" *ngFor="let stat of stats">
+      <div class="stat-label">{{ stat.label }}</div>
+      <div class="stat-value">
+        <span class="value">{{ stat.value }}</span>
+        <span class="sublabel">{{ stat.sublabel }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's Overview -->
+  <div class="trips-overview">
+    <div class="overview-card scheduled">
+      <div class="overview-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="overview-content">
+        <span class="overview-value">{{ todayTrips.scheduled }}</span>
+        <span class="overview-label">Scheduled</span>
+      </div>
+      <div class="overview-indicator"></div>
+    </div>
+
+    <div class="overview-card in-progress">
+      <div class="overview-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <div class="overview-content">
+        <span class="overview-value">{{ todayTrips.inProgress }}</span>
+        <span class="overview-label">In Progress</span>
+      </div>
+      <div class="overview-indicator pulse"></div>
+    </div>
+
+    <div class="overview-card completed">
+      <div class="overview-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <div class="overview-content">
+        <span class="overview-value">{{ todayTrips.completed }}</span>
+        <span class="overview-label">Completed</span>
+      </div>
+      <div class="overview-indicator"></div>
+    </div>
+
+    <div class="overview-card students">
+      <div class="overview-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="overview-content">
+        <span class="overview-value">{{ todayTrips.studentsTransported }}</span>
+        <span class="overview-label">Students Today</span>
+      </div>
+      <div class="overview-indicator"></div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="dashboard-grid">
+    <!-- Left Column -->
+    <div class="dashboard-left">
+      <!-- Bus Attendance Table -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Bus attendance</h2>
+          <div class="header-actions">
+            <button class="btn-filter">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filter
+            </button>
+          </div>
+        </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Bus</th>
+              <th>Route</th>
+              <th>Present</th>
+              <th>Absent</th>
+              <th>Trip status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of busAttendance">
+              <td>{{ row.date }}</td>
+              <td>{{ row.bus }}</td>
+              <td>{{ row.route }}</td>
+              <td>{{ row.present != null ? (row.present + ' students') : 'N/A' }}</td>
+              <td>{{ row.absent != null ? (row.absent + ' students') : 'N/A' }}</td>
+              <td>
+                <span class="status-badge" [class.completed]="row.status === 'Completed'" [class.in-progress]="row.status === 'In Progress'">
+                  {{ row.status }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="!statsLoading && busAttendance.length === 0">
+              <td colspan="6" class="empty-cell">No attendance data available.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+    <!-- Right Column -->
+    <div class="dashboard-right">
+      <!-- School Buses -->
+      <div class="card">
+        <div class="card-header">
+          <h2>School buses</h2>
+        </div>
+        <div class="buses-list">
+          <div class="bus-item" *ngFor="let bus of schoolBuses">
+            <div class="bus-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+                <path d="M5 16v2"></path>
+                <path d="M19 16v2"></path>
+                <path d="M3 10h18"></path>
+              </svg>
+            </div>
+            <div class="bus-info">
+              <span class="bus-id">{{ bus.id }}</span>
+              <span class="bus-route">{{ bus.route }}</span>
+            </div>
+            <span class="bus-status" [class.active]="bus.status === 'active'">
+              {{ bus.status === 'active' ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <div class="empty-state" *ngIf="!statsLoading && schoolBuses.length === 0">
+            No buses found.
+          </div>
+        </div>
+        <a class="view-all-link" routerLink="/school-buses">View all buses</a>
+      </div>
+
+      <!-- Notifications & Alerts -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Notifications & Alerts</h2>
+        </div>
+        <div class="notifications-list">
+          <div class="notification-item" *ngFor="let notif of notifications">
+            <div class="notif-icon incident">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div class="notif-content">
+              <span class="notif-title">{{ notif.title }}</span>
+              <p class="notif-message">{{ notif.message }}</p>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="view-all-link" (click)="openEmergencyPanel()">View more</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="side-overlay" *ngIf="showEmergencyPanel">
+  <div class="overlay-backdrop" (click)="closeEmergencyPanel()"></div>
+  <aside class="emergency-panel">
+    <div class="emergency-header">
+      <div class="alert-icon">!</div>
+      <h3>Bus Accident</h3>
+    </div>
+
+    <div class="emergency-image">
+      <div class="image-placeholder">Accident photo</div>
+    </div>
+
+    <div class="emergency-section">
+      <h4>Bus</h4>
+      <div class="emergency-card">
+        <div class="bus-thumb"></div>
+        <div>
+          <div class="label">Bus</div>
+          <div class="value">RAE 183B</div>
+        </div>
+        <div>
+          <div class="label">Current location</div>
+          <div class="value">KN 654 ST</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="emergency-section">
+      <div class="emergency-card conductor">
+        <div class="avatar">MA</div>
+        <div>
+          <div class="label">Bus conductor</div>
+          <div class="value">Mugenzi Albert</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="emergency-section">
+      <h4>Message</h4>
+      <div class="message-box">
+        Wouorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur consectetur aliquam pulvinar. Sed hendrerit
+        pretium ultrices ipsum dolor sit amet, consectetur adipiscing elit.
+      </div>
+      <div class="audio-bar">
+        <span class="audio-icon"></span>
+        <div class="audio-wave"></div>
+      </div>
+    </div>
+
+    <button class="close-btn" type="button" (click)="closeEmergencyPanel()">Close</button>
+  </aside>
+</div>

@@ -1,0 +1,143 @@
+<div class="routes-stops">
+  <div class="page-card header-card">
+    <h1>Routes and bus stops</h1>
+    <button class="btn-primary" type="button" (click)="openRouteModal()">Add new route</button>
+  </div>
+
+  <!-- Notifications -->
+  <div class="notification success" *ngIf="successMessage">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    {{ successMessage }}
+  </div>
+  <div class="notification error" *ngIf="errorMessage">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="15" y1="9" x2="9" y2="15"></line>
+      <line x1="9" y1="9" x2="15" y2="15"></line>
+    </svg>
+    {{ errorMessage }}
+  </div>
+
+  <div class="content-grid">
+    <div class="card routes-card">
+      <div class="card-header">
+        <h2>Routes</h2>
+        <div class="search-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Search a route" [(ngModel)]="searchTerm" />
+        </div>
+      </div>
+
+      <div class="route-list">
+        <div class="loading-state" *ngIf="isLoading">Loading routes...</div>
+        <div class="route-item" *ngFor="let route of filteredRoutes" [class.selected]="selectedRoute?.id === route.id" (click)="selectRoute(route)">
+          <div class="route-info">
+            <div class="route-name">{{ route.name }}</div>
+            <div class="route-endpoints" *ngIf="route.startLocation || route.endLocation">
+              <span class="start">{{ route.startLocation || 'N/A' }}</span>
+              <span class="arrow">→</span>
+              <span class="end">{{ route.endLocation || 'N/A' }}</span>
+            </div>
+          </div>
+          <div class="route-actions">
+            <button class="icon-btn" type="button" title="Edit" (click)="openEditModal(route, $event)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+              </svg>
+            </button>
+            <button class="icon-btn danger" type="button" title="Delete" (click)="deleteRoute(route, $event)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!isLoading && filteredRoutes.length === 0">No routes found.</div>
+      </div>
+    </div>
+
+    <div class="card stops-card">
+      <div class="card-header">
+        <h2>Bus Stops{{ selectedRoute ? ' - ' + selectedRoute.name : '' }}</h2>
+      </div>
+
+      <div class="stops-table" *ngIf="selectedRoute">
+        <div class="loading-state" *ngIf="isLoadingStops">Loading bus stops...</div>
+        <table *ngIf="!isLoadingStops">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Stop Name</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let stop of stops; let i = index">
+              <td>{{ stop.order || (i + 1) }}</td>
+              <td>{{ stop.name }}</td>
+              <td>{{ stop.location }}</td>
+            </tr>
+            <tr *ngIf="stops.length === 0">
+              <td colspan="3" class="empty-cell">No bus stops assigned to this route yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" *ngIf="!selectedRoute">
+        Select a route to view its bus stops.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showRouteModal">
+  <div class="modal-backdrop" (click)="closeRouteModal()"></div>
+
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="icon route-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <h3>{{ modalTitle }}</h3>
+      </div>
+      <button class="icon-close" type="button" (click)="closeRouteModal()">×</button>
+    </div>
+
+    <label class="field">
+      Route name *
+      <input type="text" placeholder="Enter route name" [(ngModel)]="routeName" />
+    </label>
+
+    <label class="field">
+      Description
+      <input type="text" placeholder="Enter route description (optional)" [(ngModel)]="routeDescription" />
+    </label>
+
+    <label class="field">
+      Start location
+      <input type="text" placeholder="Enter start location" [(ngModel)]="routeStart" />
+    </label>
+
+    <label class="field">
+      End location
+      <input type="text" placeholder="Enter end location" [(ngModel)]="routeEnd" />
+    </label>
+
+    <button class="primary-btn" type="button" (click)="saveRoute()" [disabled]="isSaving || !routeName.trim()">
+      {{ submitButtonText }}
+    </button>
+  </div>
+</div>

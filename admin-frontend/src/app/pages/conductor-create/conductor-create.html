@@ -1,0 +1,98 @@
+<div class="conductor-create">
+  <div class="page-card header-card">
+    <h1>Add new driver</h1>
+    <a class="back-btn" routerLink="/drivers">Back</a>
+  </div>
+
+  <div class="page-card form-card">
+    <div class="photo-section">
+      <div class="photo-preview" [class.filled]="photoPreview">
+        <img *ngIf="photoPreview" [src]="photoPreview" alt="Driver photo preview" />
+        <span *ngIf="!photoPreview">Driver photo</span>
+      </div>
+      <label class="upload-btn">
+        Upload photo
+        <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+      </label>
+    </div>
+
+    <p class="section-hint">Account credentials — used to log into the mobile app.</p>
+    <div class="form-grid">
+      <label>
+        First name
+        <input type="text" [(ngModel)]="firstName" />
+      </label>
+      <label>
+        Last name
+        <input type="text" [(ngModel)]="lastName" />
+      </label>
+      <label>
+        Email <span class="required">*</span>
+        <input type="email" [(ngModel)]="email" />
+      </label>
+      <label>
+        Password <span class="required">*</span>
+        <input type="password" [(ngModel)]="password" autocomplete="new-password" />
+      </label>
+    </div>
+
+    <p class="section-hint">Profile information.</p>
+    <div class="form-grid">
+      <label>
+        Full name <span class="required">*</span>
+        <input type="text" [(ngModel)]="fullName" />
+      </label>
+      <label>
+        Gender
+        <select [(ngModel)]="gender">
+          <option value="">Select gender</option>
+          <option *ngFor="let option of genderOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </label>
+      <label>
+        Phone <span class="required">*</span>
+        <input type="text" [(ngModel)]="phone" />
+      </label>
+      <label>
+        Age
+        <input type="number" [(ngModel)]="age" />
+      </label>
+      <label>
+        Status
+        <select [(ngModel)]="status">
+          <option value="">Select status</option>
+          <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </label>
+      <label>
+        Driver ID
+        <input type="text" [(ngModel)]="driverId" />
+      </label>
+      <label>
+        Licence number
+        <input type="text" [(ngModel)]="licenceNumber" />
+      </label>
+      <label>
+        Licence type
+        <input type="text" [(ngModel)]="licenceType" />
+      </label>
+      <label>
+        Licence expiry
+        <input type="date" [(ngModel)]="licenceExpiry" />
+      </label>
+      <label>
+        Years of experience
+        <input type="text" [(ngModel)]="experience" />
+      </label>
+    </div>
+
+    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+
+    <div class="form-actions">
+      <a class="btn-ghost" routerLink="/drivers">Cancel</a>
+      <button class="btn-primary" type="button" (click)="createConductor()" [disabled]="isSaving">
+        {{ isSaving ? 'Creating...' : 'Create driver' }}
+      </button>
+    </div>
+  </div>
+</div>

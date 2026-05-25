@@ -1,0 +1,79 @@
+<div class="request-details">
+  <div class="page-card header-card">
+    <div class="breadcrumb">
+      <span class="muted">User requests</span>
+      <span class="divider">/</span>
+      <span class="active">Request details</span>
+    </div>
+    <a class="back-btn" routerLink="/requests">Back</a>
+  </div>
+
+  <div class="page-card" *ngIf="isLoading">Loading request...</div>
+  <div class="page-card error-card" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</div>
+
+  <div class="details-grid" *ngIf="!isLoading && !errorMessage">
+    <div class="card location-card">
+      <h3>User location</h3>
+      <div class="map-preview">
+        <div class="map-canvas" #mapContainer [class.map-hidden]="!hasLocation || !!mapError"></div>
+        <iframe
+          class="map-fallback"
+          *ngIf="hasLocation && mapError"
+          [src]="mapFallbackUrl"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="User location map">
+        </iframe>
+        <div class="map-empty" *ngIf="!hasLocation">Location not available</div>
+      </div>
+      <div class="contact-row">
+        <span>Latitude</span>
+        <strong>{{ request?.latitude ?? 'N/A' }}</strong>
+      </div>
+      <div class="contact-row">
+        <span>Longitude</span>
+        <strong>{{ request?.longitude ?? 'N/A' }}</strong>
+      </div>
+      <button class="btn-primary" type="button">Save bus stop</button>
+    </div>
+
+    <div class="card message-card">
+      <h3>Request details</h3>
+      <div class="message-box">{{ requestDescription }}</div>
+
+      <div class="contact-row">
+        <span>Child</span>
+        <strong>{{ childName }}</strong>
+      </div>
+      <div class="contact-row">
+        <span>Status</span>
+        <strong>{{ requestStatus }}</strong>
+      </div>
+      <div class="contact-row">
+        <span>Address</span>
+        <strong>{{ requestAddress }}</strong>
+      </div>
+
+      <h3>User's contacts</h3>
+      <div class="contact-row">
+        <span>Phone</span>
+        <strong>{{ parentPhone }}</strong>
+      </div>
+      <div class="contact-row">
+        <span>Email</span>
+        <strong>{{ parentEmail }}</strong>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-primary" type="button" [disabled]="isConfirmDisabled" (click)="onConfirmRequest()">
+          {{ confirmButtonText }}
+        </button>
+        <button class="btn-outline" type="button" [disabled]="isDeclineDisabled" (click)="onDeclineRequest()">
+          {{ declineButtonText }}
+        </button>
+        <div class="action-feedback success" *ngIf="statusActionSuccess">{{ statusActionSuccess }}</div>
+        <div class="action-feedback error" *ngIf="statusActionError">{{ statusActionError }}</div>
+      </div>
+    </div>
+  </div>
+</div>

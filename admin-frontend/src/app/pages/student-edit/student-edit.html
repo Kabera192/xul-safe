@@ -1,0 +1,74 @@
+<div class="student-edit">
+  <div class="page-card header-card">
+    <h1>Edit student</h1>
+    <a class="back-btn" routerLink="/students">Back</a>
+  </div>
+
+  <div class="page-card form-card">
+    <div *ngIf="isLoading" class="loading-message">Loading student data...</div>
+
+    <ng-container *ngIf="!isLoading">
+      <div class="photo-section">
+        <div class="photo-preview" [class.filled]="photoPreview">
+          <img *ngIf="photoPreview" [src]="photoPreview" alt="Student photo preview" />
+          <span *ngIf="!photoPreview">Student photo</span>
+        </div>
+        <label class="upload-btn">
+          Change photo
+          <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+        </label>
+      </div>
+      <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+    <div class="form-grid">
+      <label>
+        Full name
+        <input type="text" [(ngModel)]="fullName" />
+      </label>
+      <label>
+        Gender
+        <input type="text" [(ngModel)]="gender" />
+      </label>
+      <label>
+        Date of birth
+        <input type="date" [(ngModel)]="dob" />
+      </label>
+      <label>
+        Grade
+        <input type="text" [(ngModel)]="grade" />
+      </label>
+      <label>
+        Parent ID
+        <input type="number" [(ngModel)]="parentId" />
+      </label>
+      <label>
+        Assigned bus
+        <select [(ngModel)]="selectedBusId">
+          <option [ngValue]="null">-- Select Bus --</option>
+          <option *ngFor="let bus of buses" [ngValue]="bus.id">{{ bus.plateNumber }}</option>
+        </select>
+      </label>
+      <label>
+        Route
+        <select [(ngModel)]="selectedRouteId">
+          <option [ngValue]="null">-- Select Route --</option>
+          <option *ngFor="let r of routes" [ngValue]="r.id">{{ r.name }}</option>
+        </select>
+      </label>
+      <label>
+        Bus stop
+        <select [(ngModel)]="selectedBusStopId">
+          <option [ngValue]="null">-- Select Bus Stop --</option>
+          <option *ngFor="let stop of busStops" [ngValue]="stop.id">{{ stop.name }}</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-ghost" type="button" [disabled]="isSaving" routerLink="/students">Cancel</button>
+      <button class="btn-primary" type="button" [disabled]="isSaving" (click)="saveChanges()">
+        {{ isSaving ? 'Saving...' : 'Save changes' }}
+      </button>
+    </div>
+    </ng-container>
+  </div>
+</div>

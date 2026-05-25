@@ -1,0 +1,73 @@
+<div class="bus-create">
+  <div class="page-card header-card">
+    <h1>Add new bus</h1>
+    <a class="back-btn" routerLink="/school-buses">Back</a>
+  </div>
+
+  <div class="page-card form-card">
+    <div class="photo-section">
+      <div class="photo-preview" [class.filled]="photoPreview">
+        <img *ngIf="photoPreview" [src]="photoPreview" alt="Bus photo preview" />
+        <span *ngIf="!photoPreview">Bus photo</span>
+      </div>
+      <label class="upload-btn">
+        Upload photo
+        <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+      </label>
+    </div>
+
+    <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+    <div class="form-grid">
+      <label>
+        Plate number
+        <input type="text" [(ngModel)]="plateNumber" />
+      </label>
+      <label>
+        Model
+        <input type="text" [(ngModel)]="model" />
+      </label>
+      <label>
+        Capacity
+        <input type="text" [(ngModel)]="capacity" />
+      </label>
+      <label>
+        Status
+        <select [(ngModel)]="status">
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+          <option value="MAINTENANCE">Maintenance</option>
+        </select>
+      </label>
+      <label>
+        Conductor
+        <select [(ngModel)]="selectedConductorId">
+          <option value="">Unassigned</option>
+          <option *ngFor="let conductor of conductors" [value]="conductor.id">
+            {{ conductor.fullName }}
+          </option>
+        </select>
+      </label>
+      <label>
+        Bus device ID
+        <input type="text" [(ngModel)]="deviceId" />
+      </label>
+      <label>
+        Route
+        <select [(ngModel)]="selectedRouteId">
+          <option value="">Unassigned</option>
+          <option *ngFor="let route of routes" [value]="route.id">
+            {{ route.name }}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-ghost" type="button" [disabled]="isSaving">Cancel</button>
+      <button class="btn-primary" type="button" [disabled]="isSaving" (click)="createBus()">
+        {{ isSaving ? 'Creating...' : 'Create bus' }}
+      </button>
+    </div>
+  </div>
+</div>

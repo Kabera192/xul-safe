@@ -1,0 +1,136 @@
+<div class="conductor-details">
+  <div class="page-card header-card">
+    <div class="breadcrumb">
+      <span class="muted">Drivers</span>
+      <span class="divider">/</span>
+      <span class="active">{{ conductor.name }}</span>
+    </div>
+    <a class="back-btn" routerLink="/drivers">Back</a>
+  </div>
+
+  <div class="page-card" *ngIf="isLoading">Loading conductor...</div>
+  <div class="page-card error-card" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</div>
+
+  <div class="details-grid" *ngIf="!isLoading && !errorMessage">
+    <div class="card profile-card">
+      <div class="photo">
+        <img *ngIf="conductor.photoUrl" [src]="conductor.photoUrl" alt="Conductor photo" />
+        <div class="photo-placeholder" *ngIf="!conductor.photoUrl">Conductor photo</div>
+      </div>
+      <div class="info-row">
+        <span>Full Names</span>
+        <strong>{{ conductor.name }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Gender</span>
+        <strong>{{ conductor.gender }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Driver ID</span>
+        <strong>{{ conductor.driverId }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Age</span>
+        <strong>{{ conductor.age }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Phone</span>
+        <strong>{{ conductor.phone }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Email</span>
+        <strong>{{ conductor.email }}</strong>
+      </div>
+      <a class="primary-btn" [routerLink]="['/conductors', conductor.id, 'edit']">Update profile</a>
+      <button class="ghost-btn" type="button">Delete conductor</button>
+    </div>
+
+    <div class="card assignment-card">
+      <div class="section">
+        <div class="card-title">Licence &amp; Certification</div>
+        <div class="info-row">
+          <span>Licence Number</span>
+          <strong>{{ conductor.licenceNumber }}</strong>
+        </div>
+        <div class="info-row">
+          <span>Licence type</span>
+          <strong>{{ conductor.licenceType }}</strong>
+        </div>
+        <div class="info-row">
+          <span>Licence Expiry date</span>
+          <strong>{{ conductor.licenceExpiry }}</strong>
+        </div>
+        <div class="info-row">
+          <span>Years of Experience</span>
+          <strong>{{ conductor.experience }}</strong>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card-title">Bus assignment</div>
+        <div class="assign-card">
+          <div class="bus-thumb"></div>
+          <div>
+            <div class="label">Assigned Bus</div>
+            <div class="value">{{ conductor.assignedBus }}</div>
+          </div>
+        </div>
+        <div class="assign-card">
+          <div class="route-icon"></div>
+          <div>
+            <div class="label">Assigned route</div>
+            <div class="value">{{ conductor.assignedRoute }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card-title">Trip History</div>
+        <div class="history-card">
+          <span class="history-icon"></span>
+          <div>
+            <div class="value">View all driver journeys</div>
+            <div class="label">45 journeys this month</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card performance-card">
+      <div class="section">
+        <div class="card-title">Performance</div>
+        <div class="metric" *ngFor="let item of performance" [class.danger]="item.danger">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      </div>
+
+      <div class="section attendance-card">
+        <div class="attendance-header">
+          <div class="card-title">Attendance</div>
+          <button class="month-pill" type="button">July 2025</button>
+        </div>
+        <div class="calendar">
+          <div class="calendar-row header">
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+            <span>Sun</span>
+          </div>
+          <div class="calendar-row" *ngFor="let row of [0,1,2,3]">
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day muted"></span>
+            <span class="day muted"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

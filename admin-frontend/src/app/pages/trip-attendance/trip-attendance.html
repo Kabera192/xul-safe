@@ -1,0 +1,209 @@
+<div class="trip-attendance">
+  <div class="page-card">
+    <div class="page-header">
+      <h1>Trip attendance</h1>
+      <div class="week-nav">
+        <button class="nav-btn" type="button" (click)="previousWeek()" aria-label="Previous week">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button class="date-pill" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          {{ periodLabel }}
+        </button>
+        <button class="nav-btn" type="button" (click)="nextWeek()" aria-label="Next week">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-card">
+    <div class="table-top">
+      <span class="period">{{ periodLabel }}</span>
+      <div class="table-actions">
+        <div class="search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Search" [(ngModel)]="searchTerm" />
+        </div>
+        <button class="filter-btn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          Filter
+        </button>
+        <button class="icon-btn" type="button" aria-label="Download" (click)="downloadReport()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="loading-state">
+      Loading attendance data...
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="errorMessage && !isLoading" class="error-state">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoading && !errorMessage && filteredRows.length === 0" class="empty-state">
+      No attendance records found for this week.
+    </div>
+
+    <!-- Table content -->
+    <ng-container *ngIf="!isLoading && !errorMessage && filteredRows.length > 0">
+      <div class="table-head">
+        <div>No</div>
+        <div>Student name</div>
+        <div>Bus</div>
+        <div>Monday</div>
+        <div>Tuesday</div>
+        <div>Wednesday</div>
+        <div>Thursday</div>
+        <div>Friday</div>
+        <div class="action-col">Action</div>
+      </div>
+
+      <div class="table-row" *ngFor="let row of filteredRows">
+        <div class="muted">{{ row.no }}</div>
+        <div>{{ row.name }}</div>
+        <div>{{ row.bus }}</div>
+        <div class="marks">
+          <span class="mark" *ngFor="let mark of row.mon" [class.present]="isPresent(mark)" [class.absent]="!isPresent(mark)"></span>
+          <span *ngIf="row.mon.length === 0" class="no-data">-</span>
+        </div>
+        <div class="marks">
+          <span class="mark" *ngFor="let mark of row.tue" [class.present]="isPresent(mark)" [class.absent]="!isPresent(mark)"></span>
+          <span *ngIf="row.tue.length === 0" class="no-data">-</span>
+        </div>
+        <div class="marks">
+          <span class="mark" *ngFor="let mark of row.wed" [class.present]="isPresent(mark)" [class.absent]="!isPresent(mark)"></span>
+          <span *ngIf="row.wed.length === 0" class="no-data">-</span>
+        </div>
+        <div class="marks">
+          <span class="mark" *ngFor="let mark of row.thu" [class.present]="isPresent(mark)" [class.absent]="!isPresent(mark)"></span>
+          <span *ngIf="row.thu.length === 0" class="no-data">-</span>
+        </div>
+        <div class="marks">
+          <span class="mark" *ngFor="let mark of row.fri" [class.present]="isPresent(mark)" [class.absent]="!isPresent(mark)"></span>
+          <span *ngIf="row.fri.length === 0" class="no-data">-</span>
+        </div>
+        <div class="actions">
+          <button class="icon-btn view" type="button" aria-label="View" (click)="openDetail(row)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"></path>
+            </svg>
+          </button>
+          <button class="icon-btn success" type="button" aria-label="Download report" (click)="downloadRowReport(row)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-footer">
+        <span>Showing {{ filteredRows.length }} of {{ rows.length }} students</span>
+      </div>
+    </ng-container>
+  </div>
+</div>
+
+<!-- Attendance Detail Panel -->
+<div class="side-overlay" *ngIf="showDetailPanel">
+  <div class="overlay-backdrop" (click)="closeDetail()"></div>
+  <aside class="detail-panel">
+    <div class="panel-header">
+      <div class="panel-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+      </div>
+      <div>
+        <h3>{{ selectedRow?.name }}</h3>
+        <span class="panel-sub">{{ selectedRow?.bus }}</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h4>Weekly attendance — {{ periodLabel }}</h4>
+      <div class="attendance-grid">
+        <div class="day-row" *ngFor="let day of [
+          { label: 'Monday', key: 'mon' },
+          { label: 'Tuesday', key: 'tue' },
+          { label: 'Wednesday', key: 'wed' },
+          { label: 'Thursday', key: 'thu' },
+          { label: 'Friday', key: 'fri' }
+        ]">
+          <span class="day-label">{{ day.label }}</span>
+          <div class="day-marks">
+            <ng-container [ngSwitch]="day.key">
+              <ng-container *ngSwitchCase="'mon'">
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.mon[0])" [class.absent]="!isPresent(selectedRow!.mon[0])" title="Morning"></span>
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.mon[1])" [class.absent]="!isPresent(selectedRow!.mon[1])" title="Afternoon"></span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'tue'">
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.tue[0])" [class.absent]="!isPresent(selectedRow!.tue[0])" title="Morning"></span>
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.tue[1])" [class.absent]="!isPresent(selectedRow!.tue[1])" title="Afternoon"></span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'wed'">
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.wed[0])" [class.absent]="!isPresent(selectedRow!.wed[0])" title="Morning"></span>
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.wed[1])" [class.absent]="!isPresent(selectedRow!.wed[1])" title="Afternoon"></span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'thu'">
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.thu[0])" [class.absent]="!isPresent(selectedRow!.thu[0])" title="Morning"></span>
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.thu[1])" [class.absent]="!isPresent(selectedRow!.thu[1])" title="Afternoon"></span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'fri'">
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.fri[0])" [class.absent]="!isPresent(selectedRow!.fri[0])" title="Morning"></span>
+                <span class="mark-dot" [class.present]="isPresent(selectedRow!.fri[1])" [class.absent]="!isPresent(selectedRow!.fri[1])" title="Afternoon"></span>
+              </ng-container>
+            </ng-container>
+          </div>
+          <div class="session-labels">
+            <span>AM</span>
+            <span>PM</span>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="legend-dot present"></span> Present
+        <span class="legend-dot absent" style="margin-left: 1rem"></span> Absent / No record
+      </div>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn-download" type="button" (click)="downloadRowReport(selectedRow!); closeDetail()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download PDF
+      </button>
+      <button class="close-btn" type="button" (click)="closeDetail()">Close</button>
+    </div>
+  </aside>
+</div>

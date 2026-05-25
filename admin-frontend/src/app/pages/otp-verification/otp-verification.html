@@ -1,0 +1,35 @@
+<div class="otp-container">
+  <!-- Left Panel - Logo Section -->
+  <div class="otp-left">
+    <img src="logo.png" alt="XulSafe Logo" class="logo" />
+  </div>
+
+  <!-- Right Panel - Form Section -->
+  <div class="otp-right">
+    <div class="otp-form-container">
+      <h1>Forgot password</h1>
+      <p class="subtitle">Enter the verification code you have received</p>
+
+      <div class="otp-inputs">
+        <input
+          *ngFor="let val of otpValues; let i = index"
+          #otpInput
+          type="text"
+          maxlength="1"
+          [(ngModel)]="otpValues[i]"
+          (input)="onOtpInput($event, i)"
+          (keydown)="onKeyDown($event, i)"
+          class="otp-box"
+        />
+      </div>
+
+      <button type="button" class="btn-verify" (click)="onVerify()">
+        Verify code
+      </button>
+
+      <div class="resend-code">
+        Not received? <a (click)="resendCode()">Resend code</a>
+      </div>
+    </div>
+  </div>
+</div>

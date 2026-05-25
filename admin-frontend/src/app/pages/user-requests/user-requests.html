@@ -1,0 +1,50 @@
+<div class="user-requests">
+  <div class="page-card header-card">
+    <h1>User Requests</h1>
+    <span class="badge">{{ filteredBusStopRequests.length }} new requests</span>
+  </div>
+
+  <div class="page-card">
+    <div class="tabs">
+      <div class="tab active" aria-current="page">
+        Bus stop requests
+      </div>
+      <div class="tab-actions">
+        <div class="search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Search" [(ngModel)]="searchTerm" />
+        </div>
+      </div>
+    </div>
+
+    <div class="table-state" *ngIf="isLoading">Loading requests...</div>
+    <div class="table-state error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</div>
+
+    <div class="table-head">
+      <div>No</div>
+      <div>Parent ID</div>
+      <div>Child name</div>
+      <div>Date</div>
+      <div>Address</div>
+      <div>Description</div>
+      <div>Status</div>
+      <div class="action-col">Action</div>
+    </div>
+
+    <div class="table-row" *ngFor="let request of filteredBusStopRequests">
+      <div class="muted">{{ request.no }}</div>
+      <div>{{ request.parentId }}</div>
+      <div class="truncate" [title]="request.childName">{{ request.childName }}</div>
+      <div>{{ request.date }}</div>
+      <div>{{ request.address }}</div>
+      <div>{{ request.description }}</div>
+      <div>{{ request.status }}</div>
+      <div class="actions">
+        <a class="view-btn" [routerLink]="['/requests', request.id]">View details</a>
+      </div>
+    </div>
+  </div>
+</div>

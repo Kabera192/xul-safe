@@ -1,0 +1,137 @@
+<div class="student-details">
+  <div class="page-card header-card">
+    <div class="breadcrumb">
+      <span class="muted">Students</span>
+      <span class="divider">/</span>
+      <span class="active">{{ displayName }}</span>
+    </div>
+    <a class="back-btn" routerLink="/students">Back</a>
+  </div>
+
+  <div class="details-grid">
+    <div class="card profile-card">
+      <div class="photo">
+        <img *ngIf="student?.photoUrl" [src]="student?.photoUrl" alt="Student photo" />
+        <div class="photo-placeholder" *ngIf="!student?.photoUrl">Student photo</div>
+      </div>
+      <div class="error-banner" *ngIf="errorMessage">{{ errorMessage }}</div>
+      <div class="info-row">
+        <span>Full Names</span>
+        <strong>{{ displayName }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Gender</span>
+        <strong>{{ displayGender }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Date of birth</span>
+        <strong>{{ displayDob }}</strong>
+      </div>
+      <div class="info-row">
+        <span>Grade</span>
+        <strong>{{ displayGrade }}</strong>
+      </div>
+      <a class="primary-btn" [routerLink]="['/students', student?.id, 'edit']">Update profile</a>
+      <button class="ghost-btn" type="button">Delete student</button>
+    </div>
+
+    <div class="card assigned-bus">
+      <div class="card-title">Assigned Bus</div>
+      <div class="bus-card">
+        <div class="bus-id">{{ student?.busPlateNumber || 'N/A' }}</div>
+        <div class="conductor-card">
+          <div class="avatar">{{ conductorInitials }}</div>
+          <div>
+            <div class="label">Bus conductor</div>
+            <div class="value">{{ student?.conductorName || 'N/A' }}</div>
+          </div>
+        </div>
+        <div class="bus-image"></div>
+      </div>
+      <div class="route-card">
+        <span class="label">Route</span>
+        <span class="value">{{ student?.routeName || 'N/A' }}</span>
+      </div>
+      <div class="route-card">
+        <span class="label">Bus stop</span>
+        <span class="value">{{ student?.busStopName || 'N/A' }}</span>
+      </div>
+    </div>
+
+    <div class="card guardians-card">
+      <div class="card-title-row">
+        <span class="card-title">Emergency Contacts</span>
+        <button class="add-contact-btn" type="button" (click)="addNewContact()" title="Add contact">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="contacts-list">
+        <div class="contact-row" *ngFor="let contact of emergencyContacts; let i = index">
+          <div class="contact-fields" *ngIf="!contact.isEditing">
+            <span class="contact-phone">{{ contact.phoneNumber }}</span>
+            <span class="contact-label">{{ contact.label }}</span>
+          </div>
+          <div class="contact-fields editing" *ngIf="contact.isEditing">
+            <input type="text" [(ngModel)]="contact.phoneNumber" placeholder="Phone number" class="contact-input" />
+            <input type="text" [(ngModel)]="contact.label" placeholder="Label (e.g., Mother)" class="contact-input" />
+          </div>
+          <div class="contact-actions">
+            <button *ngIf="!contact.isEditing" class="action-btn edit" type="button" (click)="editContact(i)" title="Edit">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M10.5 1.5l2 2-8 8H2.5v-2l8-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button *ngIf="contact.isEditing" class="action-btn save" type="button" (click)="saveContact(i)" title="Save">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 7l3.5 3.5L12 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button *ngIf="contact.isEditing" class="action-btn cancel" type="button" (click)="cancelEdit(i)" title="Cancel">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="action-btn delete" type="button" (click)="deleteContact(i)" title="Delete">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 4h10M5 4V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V4M11 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="no-contacts" *ngIf="emergencyContacts.length === 0">
+          No emergency contacts added yet.
+        </div>
+      </div>
+
+      <div class="attendance-card">
+        <div class="attendance-header">
+          <h4>Attendance</h4>
+          <button class="month-pill" type="button">July 2025</button>
+        </div>
+        <div class="calendar">
+          <div class="calendar-row header">
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+            <span>Sun</span>
+          </div>
+          <div class="calendar-row" *ngFor="let row of [0,1,2,3]">
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day present"></span>
+            <span class="day absent"></span>
+            <span class="day muted"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
