@@ -1,4 +1,4 @@
-# XUL Safe - School Bus Management System
+# XUL-Safe - School Bus Management System
 
 ## Repository Structure
 
