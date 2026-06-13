@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../core/session/session_storage.dart';
+
 import '../parent/pages/parent_home_page.dart';
 import '../parent/pages/parent_profile_page.dart';
 import '../parent/pages/parent_notifications_page.dart';
@@ -16,6 +18,24 @@ class ParentNav extends StatefulWidget {
 
 class _ParentNavState extends State<ParentNav> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastTabIndex();
+  }
+
+  Future<void> _loadLastTabIndex() async {
+    final savedIndex = await SessionStorage.getParentLastTabIndex();
+
+    if (!mounted) return;
+
+    if (savedIndex >= 0 && savedIndex <= 4) {
+      setState(() {
+        _index = savedIndex;
+      });
+    }
+  }
 
   final List<BottomNavigationBarItem> _items = const [
     BottomNavigationBarItem(
@@ -86,7 +106,10 @@ class _ParentNavState extends State<ParentNav> {
                   child: BottomNavigationBar(
                     currentIndex: _index,
                     items: _items,
-                    onTap: (i) => setState(() => _index = i),
+                    onTap: (i) async {
+                      setState(() => _index = i);
+                      await SessionStorage.saveParentLastTabIndex(i);
+                    },
                     backgroundColor: Theme.of(context).colorScheme.surface,
                     elevation: 0,
                     type: BottomNavigationBarType.fixed,
