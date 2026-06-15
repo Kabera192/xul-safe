@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../core/session/session_storage.dart';
+
 import '../../../services/notification_service.dart';
 
 import '../driver/pages/driver_home_page.dart';
@@ -25,7 +27,20 @@ class _DriverNavState extends State<DriverNav> {
   @override
   void initState() {
     super.initState();
+    _loadLastTabIndex();
     _loadUnreadNotificationCount();
+  }
+
+  Future<void> _loadLastTabIndex() async {
+    final savedIndex = await SessionStorage.getDriverLastTabIndex();
+
+    if (!mounted) return;
+
+    if (savedIndex >= 0 && savedIndex <= 4) {
+      setState(() {
+        _index = savedIndex;
+      });
+    }
   }
 
   Future<void> _loadUnreadNotificationCount() async {
@@ -48,10 +63,12 @@ class _DriverNavState extends State<DriverNav> {
     }
   }
 
-  void _onNavTap(int i) {
+  Future<void> _onNavTap(int i) async {
     setState(() {
       _index = i;
     });
+
+    await SessionStorage.saveDriverLastTabIndex(i);
 
     if (i == 3) {
       _loadUnreadNotificationCount();

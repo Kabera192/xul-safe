@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'core/config/theme_service.dart';
-import 'mobile_authentication.dart';
 import 'widgets/mobile_network_gate.dart';
 import 'widgets/mobile_location_gate.dart';
+import 'widgets/mobile_auth_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +55,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Color(0xFF0F1923),
             ),
           ),
-          home: const LoginPage(),
+          home: const MobileAuthGate(),
           builder: (context, child) {
             if (child == null) return const SizedBox.shrink();
 
