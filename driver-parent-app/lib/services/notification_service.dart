@@ -10,7 +10,7 @@ class NotificationService {
   static Future<List<Map<String, dynamic>>> getMyNotifications() async {
     final token = await _requireToken();
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/notifications');
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/notifications/me');
 
     final res = await http.get(
       uri,
@@ -39,7 +39,7 @@ class NotificationService {
   static Future<List<Map<String, dynamic>>> getUnreadNotifications() async {
     final token = await _requireToken();
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/notifications/unread');
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/notifications/me/unread');
 
     final res = await http.get(
       uri,
