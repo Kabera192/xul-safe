@@ -5,6 +5,8 @@ import com.login.LoginBus.accounts.infra.ConductorRepository;
 import com.login.LoginBus.accounts.infra.ParentJpaEntity;
 import com.login.LoginBus.accounts.infra.ParentRepository;
 import com.login.LoginBus.notifications.app.NotificationsPublicService;
+import com.login.LoginBus.notifications.domain.NotificationType;
+import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.students.api.AttendanceWithChildDto;
 import com.login.LoginBus.students.api.MarkAttendanceRequest;
 import com.login.LoginBus.students.domain.AttendanceSession;
@@ -118,7 +120,7 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
 
         // Send notification to parent when confirming (not when unchecking)
         if (newValue) {
-            sendAttendanceNotification(child, sess, action);
+            sendAttendanceNotification(child, conductor, sess, action);
         }
 
         return toDto(child, sess, saved);
@@ -126,7 +128,7 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
 
     // ── Notification helper ────────────────────────────────────────────────────
 
-    private void sendAttendanceNotification(ChildJpaEntity child, AttendanceSession sess, String action) {
+    private void sendAttendanceNotification(ChildJpaEntity child, ConductorJpaEntity conductor, AttendanceSession sess, String action) {
         if (child.getParentId() == null) return;
 
         Optional<ParentJpaEntity> parentOpt = parentRepository.findById(child.getParentId());
@@ -158,7 +160,18 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
         }
 
         try {
-            notificationsPublicService.sendNotification(parentUserId, title, message);
+            NotificationCategory category = "BOARDED".equals(action)
+                    ? NotificationCategory.STUDENT_BOARDED_BUS
+                    : NotificationCategory.STUDENT_EXITED_BUS;
+
+            notificationsPublicService.sendNotification(
+                    parentUserId,
+                    conductor.getUserId(),
+                    NotificationType.INFO,
+                    category,
+                    title,
+                    message
+            );
         } catch (Exception e) {
             // Log but don't fail the attendance marking if notification delivery fails
         }

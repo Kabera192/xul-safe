@@ -1,5 +1,8 @@
 package com.login.LoginBus.notifications.app;
 
+import com.login.LoginBus.notifications.domain.NotificationCategory;
+import com.login.LoginBus.notifications.domain.NotificationType;
+
 import java.util.List;
 
 /**
@@ -10,32 +13,23 @@ import java.util.List;
  */
 public interface NotificationsPublicService {
 
-    /**
-     * Send a notification to a single user.
-     *
-     * @param userId The user ID
-     * @param title The notification title
-     * @param message The notification message
-     */
-    void sendNotification(Long userId, String title, String message);
+    void sendNotification(
+            Long recipientUserId,
+            Long createdBy,
+            NotificationType type,
+            NotificationCategory category,
+            String title,
+            String message
+    );
 
-    /**
-     * Send notifications to multiple parents.
-     *
-     * @param parentIds List of parent IDs
-     * @param title The notification title
-     * @param message The notification message
-     */
-    void sendNotificationToParents(List<Long> parentIds, String title, String message);
-
-    /**
-     * Send a notification to all parents of children on a specific route.
-     *
-     * @param routeId The route ID
-     * @param title The notification title
-     * @param message The notification message
-     */
-    void sendNotificationToRoute(Long routeId, String title, String message);
+    void sendNotificationToUsers(
+            List<Long> recipientUserIds,
+            Long createdBy,
+            NotificationType type,
+            NotificationCategory category,
+            String title,
+            String message
+    );
 
     /**
      * Mark a notification as read.

@@ -10,25 +10,31 @@ public class Notification {
     private String title;
     private String message;
     private NotificationType type;
+    private NotificationCategory category;
     private Long createdBy;
     private Long createdAt;
 
-    // No-arg constructor
     public Notification() {
     }
 
-    // Full constructor
-    public Notification(Long id, String title, String message, NotificationType type,
-                       Long createdBy, Long createdAt) {
+    public Notification(
+            Long id,
+            String title,
+            String message,
+            NotificationType type,
+            NotificationCategory category,
+            Long createdBy,
+            Long createdAt
+    ) {
         this.id = id;
         this.title = title;
         this.message = message;
         this.type = type;
+        this.category = category;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
     }
 
-    // Business logic methods
     public boolean isUrgent() {
         return type == NotificationType.URGENT || type == NotificationType.EMERGENCY;
     }
@@ -40,7 +46,6 @@ public class Notification {
         return message.length() > 50 ? message.substring(0, 50) + "..." : message;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -71,6 +76,14 @@ public class Notification {
 
     public void setType(NotificationType type) {
         this.type = type;
+    }
+
+    public NotificationCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(NotificationCategory category) {
+        this.category = category;
     }
 
     public Long getCreatedBy() {
