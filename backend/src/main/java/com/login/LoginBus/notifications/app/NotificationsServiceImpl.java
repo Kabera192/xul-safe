@@ -8,6 +8,8 @@ import com.login.LoginBus.notifications.infra.NotificationJpaEntity;
 import com.login.LoginBus.notifications.infra.NotificationRecipientJpaEntity;
 import com.login.LoginBus.notifications.infra.NotificationRecipientRepository;
 import com.login.LoginBus.notifications.infra.NotificationRepository;
+import com.login.LoginBus.notifications.domain.NotificationCategory;
+import com.login.LoginBus.notifications.domain.NotificationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,6 +94,9 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
                             not.getTitle(),
                             not.getMessage(),
                             not.getType() != null ? not.getType().name() : "INFO",
+                            not.getCategory() != null ? not.getCategory().name() : "GENERAL",
+                            not.getCreatedBy(),
+                            recipient.getUserId(),
                             recipient.getStatus() != null ? recipient.getStatus().name() : "SENT",
                             recipient.getSentAt(),
                             recipient.getReadAt()
@@ -134,6 +139,9 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
                             not.getTitle(),
                             not.getMessage(),
                             not.getType() != null ? not.getType().name() : "INFO",
+                            not.getCategory() != null ? not.getCategory().name() : "GENERAL",
+                            not.getCreatedBy(),
+                            recipient.getUserId(),
                             recipient.getStatus() != null ? recipient.getStatus().name() : "SENT",
                             recipient.getSentAt(),
                             recipient.getReadAt()
@@ -188,43 +196,59 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
 
     // Public service methods (for cross-module communication)
 
+    // Public service methods (for cross-module communication)
+
     @Override
     @Transactional
-    public void sendNotification(Long userId, String title, String message) {
-        Notification notification = new Notification();
-        notification.setTitle(title);
-        notification.setMessage(message);
-        notification.setType(com.login.LoginBus.notifications.domain.NotificationType.INFO);
+    public void sendNotification(
+            Long recipientUserId,
+            Long createdBy,
+            NotificationType type,
+            NotificationCategory category,
+            String title,
+            String message
+    ) {
+        if (recipientUserId == null) {
+            return;
+        }
 
-        Notification created = createNotification(notification);
+        List<Long> recipientUserIds = new ArrayList<>();
+        recipientUserIds.add(recipientUserId);
 
-        List<Long> userIds = new ArrayList<>();
-        userIds.add(userId);
-        sendNotificationToUsers(created.getId(), userIds);
+        sendNotificationToUsers(
+                recipientUserIds,
+                createdBy,
+                type,
+                category,
+                title,
+                message
+        );
     }
 
     @Override
     @Transactional
-    public void sendNotificationToParents(List<Long> parentIds, String title, String message) {
-        if (parentIds == null || parentIds.isEmpty()) {
+    public void sendNotificationToUsers(
+            List<Long> recipientUserIds,
+            Long createdBy,
+            NotificationType type,
+            NotificationCategory category,
+            String title,
+            String message
+    ) {
+        if (recipientUserIds == null || recipientUserIds.isEmpty()) {
             return;
         }
 
         Notification notification = new Notification();
         notification.setTitle(title);
         notification.setMessage(message);
-        notification.setType(com.login.LoginBus.notifications.domain.NotificationType.INFO);
+        notification.setType(type != null ? type : NotificationType.INFO);
+        notification.setCategory(category != null ? category : NotificationCategory.GENERAL);
+        notification.setCreatedBy(createdBy);
 
         Notification created = createNotification(notification);
-        sendNotificationToUsers(created.getId(), parentIds);
+        sendNotificationToUsers(created.getId(), recipientUserIds);
     }
-
-    @Override
-    @Transactional
-    public void sendNotificationToRoute(Long routeId, String title, String message) {
-        // TODO: Implement when route-parent mapping is available
-    }
-
     @Override
     @Transactional
     public void markAsRead(Long userId, Long notificationId) {

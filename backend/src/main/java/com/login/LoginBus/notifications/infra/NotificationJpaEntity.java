@@ -1,6 +1,7 @@
 package com.login.LoginBus.notifications.infra;
 
 import com.login.LoginBus.notifications.domain.Notification;
+import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import jakarta.persistence.*;
 
@@ -26,31 +27,41 @@ public class NotificationJpaEntity {
     @Column(nullable = false, length = 50)
     private NotificationType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 80)
+    private NotificationCategory category;
+
     @Column(name = "created_by")
     private Long createdBy;
 
     @Column(name = "created_at")
     private Long createdAt;
 
-    // Constructors
     public NotificationJpaEntity() {
     }
 
-    public NotificationJpaEntity(String title, String message, NotificationType type, Long createdBy) {
+    public NotificationJpaEntity(
+            String title,
+            String message,
+            NotificationType type,
+            NotificationCategory category,
+            Long createdBy
+    ) {
         this.title = title;
         this.message = message;
         this.type = type;
+        this.category = category;
         this.createdBy = createdBy;
         this.createdAt = System.currentTimeMillis();
     }
 
-    // Conversion methods
     public Notification toDomain() {
         Notification notification = new Notification();
         notification.setId(this.id);
         notification.setTitle(this.title);
         notification.setMessage(this.message);
         notification.setType(this.type);
+        notification.setCategory(this.category);
         notification.setCreatedBy(this.createdBy);
         notification.setCreatedAt(this.createdAt);
         return notification;
@@ -62,6 +73,7 @@ public class NotificationJpaEntity {
         entity.setTitle(notification.getTitle());
         entity.setMessage(notification.getMessage());
         entity.setType(notification.getType());
+        entity.setCategory(notification.getCategory());
         entity.setCreatedBy(notification.getCreatedBy());
         entity.setCreatedAt(notification.getCreatedAt());
         return entity;
@@ -72,9 +84,16 @@ public class NotificationJpaEntity {
         if (createdAt == null) {
             createdAt = System.currentTimeMillis();
         }
+
+        if (type == null) {
+            type = NotificationType.INFO;
+        }
+
+        if (category == null) {
+            category = NotificationCategory.GENERAL;
+        }
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -105,6 +124,14 @@ public class NotificationJpaEntity {
 
     public void setType(NotificationType type) {
         this.type = type;
+    }
+
+    public NotificationCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(NotificationCategory category) {
+        this.category = category;
     }
 
     public Long getCreatedBy() {

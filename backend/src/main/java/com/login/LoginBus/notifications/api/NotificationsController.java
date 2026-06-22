@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import com.login.LoginBus.notifications.domain.NotificationCategory;
+import com.login.LoginBus.notifications.domain.NotificationType;
 
 import java.util.List;
 import java.util.Map;
@@ -55,8 +57,18 @@ public class NotificationsController {
 
         if (request.containsKey("type")) {
             notification.setType(
-                com.login.LoginBus.notifications.domain.NotificationType.valueOf((String) request.get("type"))
+                    NotificationType.valueOf(request.get("type").toString())
             );
+        } else {
+            notification.setType(NotificationType.INFO);
+        }
+
+        if (request.containsKey("category")) {
+            notification.setCategory(
+                    NotificationCategory.valueOf(request.get("category").toString())
+            );
+        } else {
+            notification.setCategory(NotificationCategory.GENERAL);
         }
 
         if (request.containsKey("createdBy")) {
