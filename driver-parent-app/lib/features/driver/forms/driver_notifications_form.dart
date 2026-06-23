@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../models/notification_model.dart';
+import '../../../widgets/mobile_notification_card_template.dart';
 
 class DriverNotificationsForm extends StatefulWidget {
   final List<NotificationModel> notifications;
@@ -87,11 +87,14 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
             if (newNotifications.isNotEmpty) ...[
               const _SectionTitle('NEW'),
               const SizedBox(height: 10),
-              ...newNotifications.map(
-                (n) => _NotificationCard(
-                  notification: n,
-                  isNew: true,
-                  onTap: () => widget.onNotificationTap(n),
+              ...newNotifications.asMap().entries.map(
+                (entry) => InkWell(
+                  onTap: () => widget.onNotificationTap(entry.value),
+                  borderRadius: BorderRadius.circular(10),
+                  child: MobileNotificationCardTemplate(
+                    notification: entry.value,
+                    index: entry.key,
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -99,11 +102,14 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
             if (oldNotifications.isNotEmpty) ...[
               const _SectionTitle('OLD'),
               const SizedBox(height: 10),
-              ...oldNotifications.map(
-                (n) => _NotificationCard(
-                  notification: n,
-                  isNew: false,
-                  onTap: () => widget.onNotificationTap(n),
+              ...oldNotifications.asMap().entries.map(
+                (entry) => InkWell(
+                  onTap: () => widget.onNotificationTap(entry.value),
+                  borderRadius: BorderRadius.circular(10),
+                  child: MobileNotificationCardTemplate(
+                    notification: entry.value,
+                    index: entry.key,
+                  ),
                 ),
               ),
             ],
@@ -185,151 +191,6 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 13,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.4,
-      ),
-    );
-  }
-}
-
-class _NotificationCard extends StatelessWidget {
-  final NotificationModel notification;
-  final bool isNew;
-  final VoidCallback onTap;
-
-  const _NotificationCard({
-    required this.notification,
-    required this.isNew,
-    required this.onTap,
-  });
-
-  static const newBg = Color(0xFFF1F5FA);
-  static const stroke = Color(0xFFDCE6F5);
-  // static const green = Color(0xFF21C260);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Material(
-        color: isNew ? newBg : Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 66),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: isNew
-                  ? null
-                  : Border.all(color: stroke, width: 1),
-            ),
-            child: Row(
-              children: [
-                _NotificationIcon(type: notification.type),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        notification.title.isEmpty
-                            ? 'Notification'
-                            : notification.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF001B3D),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notification.message,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                isNew ? const _UnreadDot() : const _ReadCheck(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationIcon extends StatelessWidget {
-  final String type;
-
-  const _NotificationIcon({
-    required this.type,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final normalized = type.trim().toUpperCase();
-
-    if (normalized == 'ABSENCE') {
-      return SvgPicture.asset(
-        'assests/backgrounds/mobile/abscence_icon.svg',
-        width: 30,
-        height: 30,
-      );
-    }
-
-    return const Icon(
-      IconsaxPlusLinear.notification,
-      color: Color(0xFF0D4896),
-      size: 28,
-    );
-  }
-}
-
-class _UnreadDot extends StatelessWidget {
-  const _UnreadDot();
-
-  static const green = Color(0xFF21C260);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 9,
-      height: 9,
-      decoration: const BoxDecoration(
-        color: green,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-class _ReadCheck extends StatelessWidget {
-  const _ReadCheck();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: const BoxDecoration(
-        color: Color(0xFFE9EDF2),
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(
-        Icons.check,
-        color: Colors.black38,
-        size: 13,
       ),
     );
   }

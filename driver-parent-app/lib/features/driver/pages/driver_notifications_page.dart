@@ -8,8 +8,6 @@ import '../../../widgets/mobile_form_controller.dart';
 
 import '../forms/driver_notifications_form.dart';
 import '../models/notification_model.dart';
-// ignore: depend_on_referenced_packages
-import 'package:flutter/foundation.dart' show debugPrint;
 
 class DriverNotificationsPage extends StatefulWidget {
   final bool isActive;

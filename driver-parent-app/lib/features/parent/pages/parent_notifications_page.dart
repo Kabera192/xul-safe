@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
-import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../services/notification_service.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
