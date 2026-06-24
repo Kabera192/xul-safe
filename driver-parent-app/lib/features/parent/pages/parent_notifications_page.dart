@@ -12,10 +12,12 @@ import '../forms/parent_notifications_form.dart';
 
 class ParentNotificationsPage extends StatefulWidget {
   final bool isActive;
-
+  final VoidCallback? onUnreadChanged;
+  
   const ParentNotificationsPage({
     super.key,
     required this.isActive,
+    this.onUnreadChanged,
   });
 
   @override
@@ -88,6 +90,7 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
       }).toList();
     });
     _refreshShownForm();
+    widget.onUnreadChanged?.call();
   }
 
   void _scheduleShow() {
