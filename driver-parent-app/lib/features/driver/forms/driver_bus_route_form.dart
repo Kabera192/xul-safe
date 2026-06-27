@@ -35,6 +35,11 @@ class DriverBusRouteForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = isDark ? const Color(0xFF1A2530) : detailsBg;
+    final dividerColor = isDark ? const Color(0xFF2A3A50) : stroke;
+    final closeBtnBg = isDark ? const Color(0xFF1E3050) : const Color(0xFFEBF1FE);
     final plateNumber = bus?.plateNumber;
     final routeName = route?.name;
 
@@ -51,23 +56,23 @@ class DriverBusRouteForm extends StatelessWidget {
               child: Container(
                 width: 34,
                 height: 34,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEBF1FE),
+                decoration: BoxDecoration(
+                  color: closeBtnBg,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 18,
-                  color: Colors.black87,
+                  color: onSurface,
                 ),
               ),
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Bus details',
             style: TextStyle(
-              color: Colors.black87,
+              color: onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
@@ -86,7 +91,7 @@ class DriverBusRouteForm extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
               decoration: BoxDecoration(
-                color: detailsBg,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Column(
@@ -98,14 +103,14 @@ class DriverBusRouteForm extends StatelessWidget {
                         : plateNumber,
                     style: TextStyle(
                       color: (plateNumber == null || plateNumber.isEmpty)
-                          ? Colors.black45
-                          : const Color(0xFF001B3D),
+                          ? onSurface.withValues(alpha: 0.4)
+                          : onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const Divider(height: 1, color: stroke),
+                  Divider(height: 1, color: dividerColor),
                   const SizedBox(height: 14),
                   Text(
                     (routeName == null || routeName.isEmpty)
@@ -113,8 +118,8 @@ class DriverBusRouteForm extends StatelessWidget {
                         : routeName,
                     style: TextStyle(
                       color: (routeName == null || routeName.isEmpty)
-                          ? Colors.black45
-                          : const Color(0xFF001B3D),
+                          ? onSurface.withValues(alpha: 0.4)
+                          : onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -124,10 +129,10 @@ class DriverBusRouteForm extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Bus stops',
             style: TextStyle(
-              color: Colors.black87,
+              color: onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
@@ -156,12 +161,16 @@ class _ErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: detailsBg,
+        color: isDark ? const Color(0xFF1A2530) : detailsBg,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: stroke, width: 1),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A3A50) : stroke,
+          width: 1,
+        ),
       ),
       child: Text(
         message,
@@ -266,8 +275,10 @@ class _CreateStopButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1A2530) : createBg;
     return Material(
-      color: createBg,
+      color: bg,
       borderRadius: BorderRadius.circular(5),
       child: InkWell(
         onTap: () async {
@@ -328,6 +339,10 @@ class _StopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -347,8 +362,8 @@ class _StopCard extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 80),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: stroke, width: 1),
+            color: cardBg,
+            border: Border.all(color: borderColor, width: 1),
             borderRadius: BorderRadius.circular(5),
           ),
           child: Row(
@@ -360,8 +375,8 @@ class _StopCard extends StatelessWidget {
                   children: [
                     Text(
                       'Bus stop ${index + 1}',
-                      style: const TextStyle(
-                        color: Color(0xFF001B3D),
+                      style: TextStyle(
+                        color: onSurface,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -371,21 +386,22 @@ class _StopCard extends StatelessWidget {
                       stop.locationName.isEmpty
                           ? 'Unnamed bus stop'
                           : stop.locationName,
-                      style: const TextStyle(
-                        color: Color(0xFF233A5A),
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.65),
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
                     const SizedBox(height: 5),
                     Text(
-  '$studentCount ${studentCount == 1 ? 'student' : 'students'}',
-  style: const TextStyle(
-    color: blue,
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-  ),
-),],
+                      '$studentCount ${studentCount == 1 ? 'student' : 'students'}',
+                      style: const TextStyle(
+                        color: blue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -400,7 +416,7 @@ class _StopCard extends StatelessWidget {
       ),
     );
   }
-  }
+}
 
 class _EmptyStopsCard extends StatelessWidget {
   const _EmptyStopsCard();
@@ -409,18 +425,22 @@ class _EmptyStopsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: stroke, width: 1),
+        color: cardBg,
+        border: Border.all(color: borderColor, width: 1),
         borderRadius: BorderRadius.circular(5),
       ),
-      child: const Text(
+      child: Text(
         'No bus stops created yet',
         style: TextStyle(
-          color: Colors.black54,
+          color: onSurface.withValues(alpha: 0.45),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),

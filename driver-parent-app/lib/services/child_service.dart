@@ -35,7 +35,7 @@ class ChildService {
     throw Exception(_extractErrorMessage(decoded, 'Failed to load children'));
   }
 
-  static Future<Map<String, dynamic>> getMyBusChildById(int childId) async {
+  static Future<Map<String, dynamic>> getMyBusChildById(String childId) async {
     final token = await _requireToken();
 
     final uri = Uri.parse(
@@ -101,7 +101,7 @@ class ChildService {
 
   static Future<void> assignChildrenToStop({
     required int stopId,
-    required List<int> childIds,
+    required List<String> childIds,
   }) async {
     final token = await _requireToken();
 

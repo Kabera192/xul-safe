@@ -6,7 +6,7 @@ import '../models/child_model.dart';
 class DriverAssignStudentsForm extends StatefulWidget {
   final int stopId;
   final List<ChildModel> children;
-  final Future<void> Function(List<int> childIds) onComplete;
+  final Future<void> Function(List<String> childIds) onComplete;
   final VoidCallback onCancel;
 
   const DriverAssignStudentsForm({
@@ -34,7 +34,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
   static const inputBg = Color(0xFFF5F8FB);
 
   final _searchCtrl = TextEditingController();
-  final Set<int> _selectedChildIds = {};
+  final Set<String> _selectedChildIds = {};
 
   bool _saving = false;
   String? _error;
@@ -112,9 +112,12 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
 
   @override
   Widget build(BuildContext context) {
-      
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final surface = Theme.of(context).colorScheme.surface;
+    final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
+
     final children = _filteredChildren;
-    
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -129,14 +132,14 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
               child: Container(
                 width: 34,
                 height: 34,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEBF1FE),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E3050) : const Color(0xFFEBF1FE),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new,
                   size: 16,
-                  color: Colors.black87,
+                  color: onSurface,
                 ),
               ),
             ),
@@ -144,10 +147,10 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
 
           const SizedBox(height: 10),
 
-          const Text(
+          Text(
             'Assign students',
             style: TextStyle(
-              color: Color(0xFF001B3D),
+              color: onSurface,
               fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
@@ -160,17 +163,17 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
             enabled: !_saving,
             onChanged: (_) => setState(() {}),
             textInputAction: TextInputAction.search,
-            style: const TextStyle(
-              color: Colors.black87,
+            style: TextStyle(
+              color: onSurface,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
               filled: true,
-              fillColor: inputBg,
+              fillColor: isDark ? const Color(0xFF1A2530) : inputBg,
               hintText: 'Search a name',
-              hintStyle: const TextStyle(
-                color: Colors.black45,
+              hintStyle: TextStyle(
+                color: onSurface.withValues(alpha: 0.45),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -185,7 +188,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
-                borderSide: const BorderSide(color: stroke, width: 1),
+                borderSide: BorderSide(color: borderColor, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
@@ -246,8 +249,8 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white.withOpacity(0),
-                  Colors.white,
+                  surface.withValues(alpha: 0),
+                  surface,
                 ],
               ),
             ),
@@ -265,7 +268,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
               onPressed: _saving ? null : _complete,
               style: ElevatedButton.styleFrom(
                 backgroundColor: blue,
-                disabledBackgroundColor: blue.withOpacity(0.45),
+                disabledBackgroundColor: blue.withValues(alpha: 0.45),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5),
@@ -310,6 +313,11 @@ class _StudentAssignRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final rowBg = isDark ? const Color(0xFF1A2530) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
+
     final buttonText = selected ? 'Assigning' : (reassign ? 'Re-assign' : 'Assign');
     final buttonColor = selected ? assigningGreen : (reassign ? reassignYellow : assignBlue);
     final buttonBg = selected ? assigningGreenBg : (reassign ? reassignYellowBg : assignBlueBg);
@@ -319,8 +327,8 @@ class _StudentAssignRow extends StatelessWidget {
   constraints: const BoxConstraints(minHeight: 62),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: stroke, width: 1),
+        color: rowBg,
+        border: Border.all(color: borderColor, width: 1),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Row(
@@ -332,8 +340,8 @@ class _StudentAssignRow extends StatelessWidget {
               child.fullName.isEmpty ? 'Unnamed student' : child.fullName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF001B3D),
+              style: TextStyle(
+                color: onSurface,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -417,18 +425,23 @@ class _EmptyStudentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: stroke, width: 1),
+        color: cardBg,
+        border: Border.all(color: borderColor, width: 1),
         borderRadius: BorderRadius.circular(5),
       ),
-      child: const Text(
+      child: Text(
         'No students available to assign',
         style: TextStyle(
-          color: Colors.black54,
+          color: onSurface.withValues(alpha: 0.5),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
