@@ -13,7 +13,7 @@ import '../forms/driver_child_profile_form.dart';
 import '../models/child_model.dart';
 
 class DriverChildProfilePage extends StatefulWidget {
-  final int childId;
+  final String childId;
 
   const DriverChildProfilePage({
     super.key,

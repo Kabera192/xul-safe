@@ -1,5 +1,5 @@
 class ChildModel {
-  final int id;
+  final String id;
   final String firstName;
   final String lastName;
   final String fullName;
@@ -31,7 +31,7 @@ class ChildModel {
 
   factory ChildModel.fromApiResponse(Map<String, dynamic> json) {
     return ChildModel(
-      id: _toInt(json['id']),
+      id: (json['id'] ?? '').toString(),
       firstName: (json['firstName'] ?? '').toString(),
       lastName: (json['lastName'] ?? '').toString(),
       fullName: (json['fullName'] ?? '').toString(),
@@ -44,11 +44,6 @@ class ChildModel {
       guardianPhoneNumber: json['guardianPhoneNumber']?.toString(),
       createdAt: _toNullableInt(json['createdAt']), // ✅ NEW
     );
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is int) return value;
-    return int.tryParse(value.toString()) ?? 0;
   }
 
   static int? _toNullableInt(dynamic value) {
