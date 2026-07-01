@@ -2,8 +2,6 @@ package com.login.LoginBus.students.app;
 
 import com.login.LoginBus.accounts.infra.ConductorJpaEntity;
 import com.login.LoginBus.accounts.infra.ConductorRepository;
-import com.login.LoginBus.accounts.infra.ParentJpaEntity;
-import com.login.LoginBus.accounts.infra.ParentRepository;
 import com.login.LoginBus.notifications.app.NotificationsPublicService;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.notifications.domain.NotificationCategory;
@@ -25,7 +23,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,20 +32,17 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
     private final BusRepository busRepository;
     private final ChildRepository childRepository;
     private final AttendanceRepository attendanceRepository;
-    private final ParentRepository parentRepository;
     private final NotificationsPublicService notificationsPublicService;
 
     public DriverAttendanceServiceImpl(ConductorRepository conductorRepository,
                                         BusRepository busRepository,
                                         ChildRepository childRepository,
                                         AttendanceRepository attendanceRepository,
-                                        ParentRepository parentRepository,
                                         NotificationsPublicService notificationsPublicService) {
         this.conductorRepository = conductorRepository;
         this.busRepository = busRepository;
         this.childRepository = childRepository;
         this.attendanceRepository = attendanceRepository;
-        this.parentRepository = parentRepository;
         this.notificationsPublicService = notificationsPublicService;
     }
 
@@ -129,13 +123,17 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
     // ── Notification helper ────────────────────────────────────────────────────
 
     private void sendAttendanceNotification(ChildJpaEntity child, ConductorJpaEntity conductor, AttendanceSession sess, String action) {
-        if (child.getParentId() == null) return;
+        System.out.println("[NOTIF] sendAttendanceNotification called. childId=" + child.getId()
+                + " parentId=" + child.getParentId() + " action=" + action + " session=" + sess);
 
-        Optional<ParentJpaEntity> parentOpt = parentRepository.findById(child.getParentId());
-        if (parentOpt.isEmpty()) return;
+        // child.parentId is already the parent's users.id — no parents-table lookup needed
+        Long parentUserId = child.getParentId();
+        if (parentUserId == null) {
+            System.out.println("[NOTIF] SKIP: child has no parentId");
+            return;
+        }
 
-        Long parentUserId = parentOpt.get().getUserId();
-        if (parentUserId == null) return;
+        System.out.println("[NOTIF] Sending to parentUserId=" + parentUserId);
 
         String childName = child.getFullName();
         String title;
@@ -172,8 +170,10 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
                     title,
                     message
             );
+            System.out.println("[NOTIF] SUCCESS: notification sent to userId=" + parentUserId);
         } catch (Exception e) {
-            // Log but don't fail the attendance marking if notification delivery fails
+            System.err.println("[NOTIF] FAILED: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
