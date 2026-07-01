@@ -13,16 +13,23 @@ class MobileNotificationCardTemplate extends StatelessWidget {
     required this.index,
   });
 
-  static const lightBlueBg = Color(0xFFF1F5FA);
-  static const stroke = Color(0xFFDCE6F5);
-  static const green = Color(0xFF21C260);
-  static const blueText = Color(0xFF001B3D);
+  static const _green = Color(0xFF21C260);
 
-  bool get _useLightBlueBackground => index.isEven;
+  bool get _isAltRow => index.isEven;
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = _useLightBlueBackground ? lightBlueBg : Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final surface = Theme.of(context).colorScheme.surface;
+
+    final bgColor = _isAltRow
+        ? (isDark ? const Color(0xFF1A2A3E) : const Color(0xFFF1F5FA))
+        : surface;
+    final borderColor =
+        isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
+    final iconColor =
+        isDark ? const Color(0xFF93B5E8) : const Color(0xFF0D4896);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
@@ -32,14 +39,15 @@ class MobileNotificationCardTemplate extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(10),
-          border: _useLightBlueBackground
+          border: _isAltRow
               ? null
-              : Border.all(color: stroke, width: 1),
+              : Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           children: [
             MobileNotificationVisualTemplate.iconForCategory(
               notification.category,
+              iconColor: iconColor,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -52,8 +60,8 @@ class MobileNotificationCardTemplate extends StatelessWidget {
                         : notification.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: blueText,
+                    style: TextStyle(
+                      color: onSurface,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
@@ -63,8 +71,8 @@ class MobileNotificationCardTemplate extends StatelessWidget {
                     notification.message,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.black54,
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.55),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -73,7 +81,9 @@ class MobileNotificationCardTemplate extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            notification.isUnread ? const _UnreadDot() : const _ReadCheck(),
+            notification.isUnread
+                ? const _UnreadDot()
+                : _ReadCheck(isDark: isDark),
           ],
         ),
       ),
@@ -84,15 +94,13 @@ class MobileNotificationCardTemplate extends StatelessWidget {
 class _UnreadDot extends StatelessWidget {
   const _UnreadDot();
 
-  static const green = Color(0xFF21C260);
-
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 9,
       height: 9,
       decoration: const BoxDecoration(
-        color: green,
+        color: Color(0xFF21C260),
         shape: BoxShape.circle,
       ),
     );
@@ -100,20 +108,22 @@ class _UnreadDot extends StatelessWidget {
 }
 
 class _ReadCheck extends StatelessWidget {
-  const _ReadCheck();
+  final bool isDark;
+
+  const _ReadCheck({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 18,
       height: 18,
-      decoration: const BoxDecoration(
-        color: Color(0xFFE9EDF2),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A3850) : const Color(0xFFE9EDF2),
         shape: BoxShape.circle,
       ),
-      child: const Icon(
+      child: Icon(
         Icons.check,
-        color: Colors.black38,
+        color: isDark ? Colors.white38 : Colors.black38,
         size: 13,
       ),
     );
