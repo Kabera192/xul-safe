@@ -1,1 +1,103 @@
-.idea/
+# ==========================================
+# Operating System Files
+# ==========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.trash/
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.secret
+
+# ==========================================
+# Common Packages & Dependencies
+# ==========================================
+node_modules/
+jspm_packages/
+web_modules/
+.pnp/
+.pnp.js
+
+# Python Dependencies
+venv/
+.venv/
+env/
+.env/
+backend/src/main/resources/.env
+ENV/
+bin/
+lib/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# Build Outputs & Compiled Code
+# ==========================================
+dist/
+build/
+out/
+target/
+*.exe
+*.dll
+*.so
+*.dylib
+*.class
+*.pyc
+*.pyo
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+# Visual Studio Code
+.vscode
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+
+# IntelliJ / WebStorm / PyCharm
+.idea
+*.iws
+*.iml
+*.ipr
+
+# Vim & Emacs
+.*.swp
+.*.swo
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
