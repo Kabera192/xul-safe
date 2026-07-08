@@ -42,12 +42,12 @@ class DriverCreateStopSuccessForm extends StatelessWidget {
           ),
 
           // ✅ Title (centered)
-          const Center(
+          Center(
             child: Text(
               'Bus stop Saved',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF001B3D),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -57,14 +57,14 @@ class DriverCreateStopSuccessForm extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ✅ Description (centered)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 'You have successfully added a new bus stop to the route you can see it among other bus stops and assign students to it.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.black54,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -72,7 +72,7 @@ class DriverCreateStopSuccessForm extends StatelessWidget {
             ),
           ),
 
-          const Spacer(),
+          const SizedBox(height: 32),
 
           // ✅ Button
           SizedBox(

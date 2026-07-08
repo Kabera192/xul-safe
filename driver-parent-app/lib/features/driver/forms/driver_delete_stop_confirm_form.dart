@@ -73,6 +73,11 @@ class _DriverDeleteStopConfirmFormState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -86,11 +91,11 @@ class _DriverDeleteStopConfirmFormState
               child: Container(
                 width: 34,
                 height: 34,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEBF1FE),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E3050) : const Color(0xFFEBF1FE),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_back_ios_new, size: 16),
+                child: Icon(Icons.arrow_back_ios_new, size: 16, color: onSurface),
               ),
             ),
           ),
@@ -104,21 +109,21 @@ class _DriverDeleteStopConfirmFormState
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Are you sure?',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF001B3D),
+              color: onSurface,
               fontSize: 24,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Are you sure you want to delete this bus stop? If so, can you clarify why below.',
             textAlign: TextAlign.left,
             style: TextStyle(
-              color: Colors.black54,
+              color: onSurface.withValues(alpha: 0.55),
               fontSize: 13,
               fontWeight: FontWeight.w500,
               height: 1.6,
@@ -143,17 +148,15 @@ class _DriverDeleteStopConfirmFormState
                 borderRadius: BorderRadius.circular(5),
                 child: Container(
                   constraints: BoxConstraints(
-
                     minHeight: reason == otherReason ? 102 : 48,
-
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: stroke, width: 1),
+                    color: cardBg,
+                    border: Border.all(color: borderColor, width: 1),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: reason == otherReason
@@ -167,13 +170,14 @@ class _DriverDeleteStopConfirmFormState
                               _error = null;
                             });
                           },
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Other reason',
+                            hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.4)),
                             border: InputBorder.none,
                             isCollapsed: true,
                           ),
-                          style: const TextStyle(
-                            color: Color(0xFF233A5A),
+                          style: TextStyle(
+                            color: onSurface,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -183,8 +187,8 @@ class _DriverDeleteStopConfirmFormState
                             Expanded(
                               child: Text(
                                 reason,
-                                style: const TextStyle(
-                                  color: Color(0xFF233A5A),
+                                style: TextStyle(
+                                  color: onSurface,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -229,7 +233,7 @@ class _DriverDeleteStopConfirmFormState
             const SizedBox(height: 8),
           ],
 
-          const Spacer(),
+          const SizedBox(height: 16),
 
           SizedBox(
             height: 48,
@@ -237,7 +241,7 @@ class _DriverDeleteStopConfirmFormState
               onPressed: _saving ? null : _confirm,
               style: ElevatedButton.styleFrom(
                 backgroundColor: blue,
-                disabledBackgroundColor: blue.withOpacity(0.45),
+                disabledBackgroundColor: blue.withValues(alpha: 0.45),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5),

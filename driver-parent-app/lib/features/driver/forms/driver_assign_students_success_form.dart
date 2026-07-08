@@ -40,12 +40,12 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          const Center(
+          Center(
             child: Text(
               'Students assigned',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF001B3D),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -54,14 +54,14 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 'You have successfully assigned the selected students to this bus stop.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.black54,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -69,7 +69,7 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
             ),
           ),
 
-          const Spacer(),
+          const SizedBox(height: 32),
 
           SizedBox(
             height: 48,

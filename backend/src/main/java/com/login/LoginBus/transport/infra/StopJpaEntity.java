@@ -11,7 +11,7 @@ public class StopJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "route_id", nullable = false)
+    @Column(name = "route_id")
     private Long routeId;
 
     @Column(nullable = false)
@@ -27,9 +27,13 @@ public class StopJpaEntity {
     @Column(name = "created_at")
     private Long createdAt;
 
+    @Column(nullable = false)
+    private Boolean active = true;
+
     @PrePersist
     protected void onCreate() {
         createdAt = System.currentTimeMillis();
+        if (active == null) active = true;
     }
 
     public StopJpaEntity() {}
@@ -64,4 +68,6 @@ public class StopJpaEntity {
     public void setOrderIndex(Integer orderIndex) { this.orderIndex = orderIndex; }
     public Long getCreatedAt() { return createdAt; }
     public void setCreatedAt(Long createdAt) { this.createdAt = createdAt; }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 }
