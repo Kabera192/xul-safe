@@ -14,6 +14,7 @@ import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
 import com.login.LoginBus.transport.infra.BusJpaEntity;
 import com.login.LoginBus.transport.infra.BusRepository;
+import com.login.LoginBus.transport.infra.StopRepository;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,17 +34,20 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
     private final ChildRepository childRepository;
     private final AttendanceRepository attendanceRepository;
     private final NotificationsPublicService notificationsPublicService;
+    private final StopRepository stopRepository;
 
     public DriverAttendanceServiceImpl(ConductorRepository conductorRepository,
                                         BusRepository busRepository,
                                         ChildRepository childRepository,
                                         AttendanceRepository attendanceRepository,
-                                        NotificationsPublicService notificationsPublicService) {
+                                        NotificationsPublicService notificationsPublicService,
+                                        StopRepository stopRepository) {
         this.conductorRepository = conductorRepository;
         this.busRepository = busRepository;
         this.childRepository = childRepository;
         this.attendanceRepository = attendanceRepository;
         this.notificationsPublicService = notificationsPublicService;
+        this.stopRepository = stopRepository;
     }
 
     @Override
@@ -174,6 +178,43 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
         } catch (Exception e) {
             System.err.println("[NOTIF] FAILED: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void notifyStopArrival(Jwt jwt, Long stopId, String session) {
+        ConductorJpaEntity conductor = resolveConductor(jwt);
+        BusJpaEntity bus = resolveBus(conductor);
+        AttendanceSession sess = parseSession(session);
+
+        String stopName = stopRepository.findById(stopId)
+                .map(s -> s.getName())
+                .orElse("a bus stop");
+
+        List<ChildJpaEntity> children = (sess == AttendanceSession.MORNING)
+                ? childRepository.findByBusIdAndPickupStopId(bus.getId(), stopId)
+                : childRepository.findByBusIdAndDropoffStopId(bus.getId(), stopId);
+
+        for (ChildJpaEntity child : children) {
+            Long parentUserId = child.getParentId();
+            if (parentUserId == null) continue;
+            try {
+                String title = "Bus has arrived at " + stopName;
+                String message = (sess == AttendanceSession.MORNING)
+                        ? child.getFullName() + " should board the bus at " + stopName + " shortly."
+                        : child.getFullName() + " will be dropped off at " + stopName + " shortly.";
+                notificationsPublicService.sendNotification(
+                        parentUserId,
+                        conductor.getUserId(),
+                        NotificationType.INFO,
+                        NotificationCategory.BUS_REACHED_STOP,
+                        title,
+                        message
+                );
+            } catch (Exception e) {
+                System.err.println("[NOTIF] Arrival notification failed for child " + child.getId() + ": " + e.getMessage());
+            }
         }
     }
 

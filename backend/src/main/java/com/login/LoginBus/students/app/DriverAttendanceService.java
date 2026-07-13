@@ -22,5 +22,11 @@ public interface DriverAttendanceService {
      * Returns the updated full record.
      */
     AttendanceWithChildDto markAttendance(Jwt jwt, MarkAttendanceRequest request);
+
+    /**
+     * Notifies all parents of children assigned to the given stop that the bus
+     * has arrived. Called when the driver's GPS enters the stop's proximity radius.
+     */
+    void notifyStopArrival(Jwt jwt, Long stopId, String session);
 }
 

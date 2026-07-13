@@ -4,6 +4,7 @@ class StopModel {
   final double locationLong;
   final String locationName;
   final int routeId;
+  final int orderIndex;
 
   const StopModel({
     required this.id,
@@ -11,6 +12,7 @@ class StopModel {
     required this.locationLong,
     required this.locationName,
     required this.routeId,
+    this.orderIndex = 0,
   });
 
   factory StopModel.fromApiResponse(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class StopModel {
       locationLong: _toDouble(json['locationLong']),
       locationName: (json['locationName'] ?? '').toString(),
       routeId: _toInt(json['routeId']),
+      orderIndex: _toInt(json['orderIndex'] ?? json['order_index'] ?? 0),
     );
   }
 

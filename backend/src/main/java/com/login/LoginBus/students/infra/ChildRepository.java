@@ -10,5 +10,7 @@ public interface ChildRepository extends JpaRepository<ChildJpaEntity, String> {
     List<ChildJpaEntity> findByParentId(Long parentId);
     long countByParentId(Long parentId);
     List<ChildJpaEntity> findByBusId(Long busId);
+    List<ChildJpaEntity> findByBusIdAndPickupStopId(Long busId, Long pickupStopId);
+    List<ChildJpaEntity> findByBusIdAndDropoffStopId(Long busId, Long dropoffStopId);
 }
 
