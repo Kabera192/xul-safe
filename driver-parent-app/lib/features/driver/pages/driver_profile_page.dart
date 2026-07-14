@@ -129,7 +129,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   void _openEditForm(DriverProfileEditMode mode) {
-    if (_profile == null) return;
+    if (_profile == null && mode != DriverProfileEditMode.photo) return;
 
     setState(() {
       _editMode = mode;
@@ -223,9 +223,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     _showCurrentForm();
 
     try {
-      final updatedProfileJson = await ProfileService.uploadMyPhoto(file.path);
-      final updatedProfile =
-          DriverProfileModel.fromApiResponse(updatedProfileJson);
+      await ProfileService.uploadMyPhoto(file.path);
+
+      final updatedProfileJson = await ProfileService.getMyProfile();
+      final updatedProfile = DriverProfileModel.fromApiResponse(updatedProfileJson);
 
       Uint8List? updatedPhotoBytes;
       try {
@@ -393,9 +394,8 @@ class _ProfilePictureCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasPhoto = photoBytes != null && photoBytes!.isNotEmpty;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.bottomCenter,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
           width: 140,
@@ -443,27 +443,25 @@ class _ProfilePictureCard extends StatelessWidget {
             ],
           ),
         ),
-        Positioned(
-          bottom: -22,
-          child: Material(
-            color: Colors.white,
-            elevation: 4,
+        const SizedBox(height: 10),
+        Material(
+          color: Colors.white,
+          elevation: 4,
+          borderRadius: BorderRadius.circular(30),
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(30),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 8,
-                ),
-                child: const Text(
-                  'Change photo',
-                  style: TextStyle(
-                    color: blue,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 8,
+              ),
+              child: const Text(
+                'Change photo',
+                style: TextStyle(
+                  color: blue,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

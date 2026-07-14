@@ -8,8 +8,7 @@ import '../../../services/notification_service.dart';
 import '../driver/pages/driver_home_page.dart';
 import '../driver/pages/driver_profile_page.dart';
 import '../driver/pages/driver_notifications_page.dart';
-import '../driver/pages/driver_children_page.dart';
-import '../driver/pages/driver_attendance_page.dart';
+import '../driver/pages/driver_children_attendance_page.dart';
 
 class DriverNav extends StatefulWidget {
   const DriverNav({super.key});
@@ -36,7 +35,7 @@ class _DriverNavState extends State<DriverNav> {
 
     if (!mounted) return;
 
-    if (savedIndex >= 0 && savedIndex <= 4) {
+    if (savedIndex >= 0 && savedIndex <= 3) {
       setState(() {
         _index = savedIndex;
       });
@@ -70,7 +69,7 @@ class _DriverNavState extends State<DriverNav> {
 
     await SessionStorage.saveDriverLastTabIndex(i);
 
-    if (i == 3) {
+    if (i == 2) {
       _loadUnreadNotificationCount();
     }
   }
@@ -85,10 +84,6 @@ class _DriverNavState extends State<DriverNav> {
     final items = [
       const BottomNavigationBarItem(
         icon: Icon(IconsaxPlusLinear.home_2),
-        label: '',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(IconsaxPlusLinear.document_normal),
         label: '',
       ),
       const BottomNavigationBarItem(
@@ -107,16 +102,12 @@ class _DriverNavState extends State<DriverNav> {
 
     final pages = [
       const DriverHomePage(),
-      DriverAttendancePage(isActive: _index == 1),
-      DriverChildrenPage(isActive: _index == 2),
+      DriverChildrenAttendancePage(isActive: _index == 1),
       DriverNotificationsPage(
-
-  isActive: _index == 3,
-
-  onUnreadChanged: _loadUnreadNotificationCount,
-
-),
-      DriverProfilePage(isActive: _index == 4),
+        isActive: _index == 2,
+        onUnreadChanged: _loadUnreadNotificationCount,
+      ),
+      DriverProfilePage(isActive: _index == 3),
     ];
 
     final screenWidth = MediaQuery.of(context).size.width;

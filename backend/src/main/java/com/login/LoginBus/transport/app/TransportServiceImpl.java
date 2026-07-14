@@ -2,6 +2,10 @@ package com.login.LoginBus.transport.app;
 
 import com.login.LoginBus.accounts.app.AccountsPublicService;
 import com.login.LoginBus.accounts.domain.Conductor;
+import com.login.LoginBus.accounts.infra.ConductorRepository;
+import com.login.LoginBus.notifications.app.NotificationsPublicService;
+import com.login.LoginBus.notifications.domain.NotificationCategory;
+import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.students.app.StudentsPublicService;
 import com.login.LoginBus.students.domain.Child;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
@@ -51,12 +55,18 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
     @Autowired
     private RouteRequestRepository routeRequestRepository;
 
+    @Autowired(required = false)
+    private ConductorRepository conductorRepository;
+
     // Cross-module communication via public interfaces
     @Autowired(required = false)
     private StudentsPublicService studentsService;
 
     @Autowired(required = false)
     private AccountsPublicService accountsService;
+
+    @Autowired(required = false)
+    private NotificationsPublicService notificationsPublicService;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -123,6 +133,36 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         BusTrackingJpaEntity entity = BusTrackingJpaEntity.fromDomain(tracking);
         BusTrackingJpaEntity saved = busTrackingRepository.save(entity);
 
+        // Notify all parents of children on this bus — fire-and-forget
+        if (tracking.getBusId() != null && notificationsPublicService != null) {
+            try {
+                List<Long> parentIds = childRepository.findByBusId(tracking.getBusId())
+                        .stream()
+                        .map(c -> c.getParentId())
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
+                if (!parentIds.isEmpty()) {
+                    Long conductorUserId = (tracking.getConductorId() != null && conductorRepository != null)
+                            ? conductorRepository.findById(tracking.getConductorId())
+                                    .map(c -> c.getUserId()).orElse(null)
+                            : null;
+                    String tripLabel = "MORNING_PICKUP".equals(tripTypeStr)
+                            ? "morning pickup" : "afternoon drop-off";
+                    notificationsPublicService.sendNotificationToUsers(
+                            parentIds,
+                            conductorUserId,
+                            NotificationType.INFO,
+                            NotificationCategory.JOURNEY_STARTED,
+                            "Bus journey has started",
+                            "The " + tripLabel + " journey has started. The bus is now on the road."
+                    );
+                }
+            } catch (Exception e) {
+                // Don't fail the journey start if notification delivery fails
+            }
+        }
+
         return saved.toDomain();
     }
 
@@ -169,8 +209,38 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         }
 
         BusTrackingJpaEntity entity = entityOpt.get();
+        Long busId = entity.getBusId();
+        Long conductorId = entity.getConductorId();
         entity.setStatus(BusTrackingStatus.NOT_IN_ROUTE);
         busTrackingRepository.save(entity);
+
+        // Notify all parents of children on this bus — fire-and-forget
+        if (busId != null && notificationsPublicService != null) {
+            try {
+                List<Long> parentIds = childRepository.findByBusId(busId)
+                        .stream()
+                        .map(c -> c.getParentId())
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
+                if (!parentIds.isEmpty()) {
+                    Long conductorUserId = (conductorId != null && conductorRepository != null)
+                            ? conductorRepository.findById(conductorId)
+                                    .map(c -> c.getUserId()).orElse(null)
+                            : null;
+                    notificationsPublicService.sendNotificationToUsers(
+                            parentIds,
+                            conductorUserId,
+                            NotificationType.INFO,
+                            NotificationCategory.JOURNEY_ENDED,
+                            "Bus journey has ended",
+                            "The bus journey has come to an end. Your child should be home soon."
+                    );
+                }
+            } catch (Exception e) {
+                // Don't fail the journey end if notification delivery fails
+            }
+        }
     }
 
     // ========== Route & Stop Operations ==========

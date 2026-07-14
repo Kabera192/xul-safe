@@ -109,9 +109,23 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
         if ("BOARDED".equals(action)) {
             record.setBoarded(newValue);
             record.setBoardedAt(newValue ? now : null);
-        } else {
+            // Confirming attendance cancels any prior absent mark
+            if (newValue) { record.setAbsent(false); record.setAbsentAt(null); }
+        } else if ("DROPPED_OFF".equals(action)) {
             record.setDroppedOff(newValue);
             record.setDroppedOffAt(newValue ? now : null);
+            // Confirming attendance cancels any prior absent mark
+            if (newValue) { record.setAbsent(false); record.setAbsentAt(null); }
+        } else {
+            record.setAbsent(newValue);
+            record.setAbsentAt(newValue ? now : null);
+            // Marking absent cancels any prior boarding/drop-off confirmation
+            if (newValue) {
+                record.setBoarded(false);
+                record.setBoardedAt(null);
+                record.setDroppedOff(false);
+                record.setDroppedOffAt(null);
+            }
         }
 
         AttendanceJpaEntity saved = attendanceRepository.save(record);
@@ -142,29 +156,37 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
         String childName = child.getFullName();
         String title;
         String message;
+        NotificationCategory category;
 
-        if (sess == AttendanceSession.MORNING) {
+        if ("ABSENT".equals(action)) {
+            title = "Your child has been marked absent";
+            message = sess == AttendanceSession.MORNING
+                    ? childName + " was not present for the morning bus pickup today."
+                    : childName + " was not present for the afternoon bus drop-off today.";
+            category = NotificationCategory.ABSENCE_CREATED;
+        } else if (sess == AttendanceSession.MORNING) {
             if ("BOARDED".equals(action)) {
                 title = "Your child has boarded the bus";
                 message = childName + " has boarded the school bus and is on their way to school.";
+                category = NotificationCategory.STUDENT_BOARDED_BUS;
             } else {
                 title = "Your child has arrived at school";
                 message = childName + " has been dropped off at school safely.";
+                category = NotificationCategory.STUDENT_EXITED_BUS;
             }
         } else {
             if ("BOARDED".equals(action)) {
                 title = "Your child is heading home";
                 message = childName + " has boarded the bus and is on their way home.";
+                category = NotificationCategory.STUDENT_BOARDED_BUS;
             } else {
                 title = "Your child has been dropped off";
                 message = childName + " has been dropped off at their stop safely.";
+                category = NotificationCategory.STUDENT_EXITED_BUS;
             }
         }
 
         try {
-            NotificationCategory category = "BOARDED".equals(action)
-                    ? NotificationCategory.STUDENT_BOARDED_BUS
-                    : NotificationCategory.STUDENT_EXITED_BUS;
 
             notificationsPublicService.sendNotification(
                     parentUserId,
@@ -231,7 +253,9 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
                 rec != null && rec.isBoarded(),
                 rec != null ? rec.getBoardedAt() : null,
                 rec != null && rec.isDroppedOff(),
-                rec != null ? rec.getDroppedOffAt() : null
+                rec != null ? rec.getDroppedOffAt() : null,
+                rec != null && rec.isAbsent(),
+                rec != null ? rec.getAbsentAt() : null
         );
     }
 
@@ -258,7 +282,8 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
     private String parseAction(String action) {
         if ("BOARDED".equalsIgnoreCase(action)) return "BOARDED";
         if ("DROPPED_OFF".equalsIgnoreCase(action)) return "DROPPED_OFF";
-        throw new IllegalArgumentException("action must be BOARDED or DROPPED_OFF");
+        if ("ABSENT".equalsIgnoreCase(action)) return "ABSENT";
+        throw new IllegalArgumentException("action must be BOARDED, DROPPED_OFF, or ABSENT");
     }
 }
 

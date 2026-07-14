@@ -240,7 +240,11 @@ class TransportService {
 
       if (res.statusCode == 200) {
         final decoded = _decodeBody(res.body);
-        if (decoded is Map<String, dynamic>) return decoded;
+        if (decoded is Map<String, dynamic>) {
+          // Backend wraps response in ApiResponse { message, data }
+          final inner = decoded['data'];
+          if (inner is Map<String, dynamic>) return inner;
+        }
       }
       return null;
     } catch (_) {

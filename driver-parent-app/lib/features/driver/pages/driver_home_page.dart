@@ -15,6 +15,7 @@ import '../../../services/transport_service.dart';
 import '../models/child_model.dart';
 import '../models/driver_profile_model.dart';
 import '../models/stop_model.dart';
+import '../pages/driver_bus_route_page.dart';
 import '../widgets/stop_attendance_sheet.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -80,7 +81,17 @@ class _DriverHomePageState extends State<DriverHomePage> {
   void initState() {
     super.initState();
     _startLocationStream();
+    _seedLastKnownLocation();
     _loadData();
+  }
+
+  Future<void> _seedLastKnownLocation() async {
+    try {
+      final pos = await Geolocator.getLastKnownPosition();
+      if (pos != null && mounted && _driverLatLng == null) {
+        setState(() => _driverLatLng = LatLng(pos.latitude, pos.longitude));
+      }
+    } catch (_) {}
   }
 
   void _startLocationStream() {
@@ -196,58 +207,24 @@ class _DriverHomePageState extends State<DriverHomePage> {
 
   // ── Journey control ───────────────────────────────────────────────────────────
 
-  void _showStartJourneyDialog() {
+  Future<void> _showStartJourneyDialog() async {
     if (_children.isEmpty) {
       _showSnack('No children are assigned to this bus yet.');
       return;
     }
 
-    final hour = DateTime.now().hour;
-    final suggestedType =
-        hour < 12 ? 'MORNING_PICKUP' : 'AFTERNOON_DROPOFF';
-    final suggestedLabel =
-        hour < 12 ? 'Morning Pickup' : 'Afternoon Drop-off';
-    final otherLabel =
-        hour < 12 ? 'Afternoon Drop-off' : 'Morning Pickup';
-    final otherType =
-        hour < 12 ? 'AFTERNOON_DROPOFF' : 'MORNING_PICKUP';
-
-    showDialog(
+    final tripType = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18)),
-        title: const Text('Start a new journey',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
-        content: Text(
-          'Your GPS location will be shared with parents in real time.\n\nSuggested trip: $suggestedLabel',
-          style: const TextStyle(fontSize: 14, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _beginJourneyFlow(otherType);
-            },
-            child: Text(otherLabel,
-                style: const TextStyle(fontSize: 13)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: _blue,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _beginJourneyFlow(suggestedType);
-            },
-            child: Text(suggestedLabel,
-                style: const TextStyle(fontSize: 13)),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _StartJourneySheet(
+        suggestedType: DateTime.now().hour < 12
+            ? 'MORNING_PICKUP'
+            : 'AFTERNOON_DROPOFF',
       ),
     );
+    if (tripType == null || !mounted) return;
+    _beginJourneyFlow(tripType);
   }
 
   Future<void> _beginJourneyFlow(String tripType) async {
@@ -331,38 +308,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
     }
   }
 
-  void _showEndJourneyDialog() {
-    showDialog(
+  Future<void> _showEndJourneyDialog() async {
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18)),
-        title: const Text('End Journey',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
-        content: const Text(
-          'Are you sure you want to end the current journey? GPS sharing will stop immediately.',
-          style: TextStyle(fontSize: 14, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _endJourney();
-            },
-            child: const Text('End Journey'),
-          ),
-        ],
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _EndJourneySheet(),
     );
+    if (confirmed == true && mounted) _endJourney();
   }
 
   Future<void> _endJourney() async {
@@ -402,12 +355,22 @@ class _DriverHomePageState extends State<DriverHomePage> {
     } catch (_) {}
   }
 
-  void _showAllChildrenSheet() {
+  Future<void> _showAllChildrenSheet() async {
     if (_children.isEmpty) {
       _showSnack('No children assigned to this bus yet.');
       return;
     }
-    showModalBottomSheet(
+
+    // Step 1: let the driver pick morning or afternoon
+    final session = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _SessionPickerSheet(),
+    );
+    if (session == null || !mounted) return;
+
+    // Step 2: open attendance sheet — always BOARDED regardless of session
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -415,9 +378,17 @@ class _DriverHomePageState extends State<DriverHomePage> {
         currentStop: null,
         allStops: _stops,
         allChildren: _children,
-        session: _session.isEmpty ? 'MORNING' : _session,
-        confirmLabel: 'Save Attendance',
+        session: session,
+        forceAction: 'BOARDED',
+        confirmLabel: 'Mark as Onboarded',
       ),
+    );
+  }
+
+  void _openBusRouteSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DriverBusRoutePage()),
     );
   }
 
@@ -559,6 +530,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                     onEndJourney: _showEndJourneyDialog,
                     onRefresh: _loadData,
                     onShowChildren: _showAllChildrenSheet,
+                    onRouteSettings: _openBusRouteSettings,
                   ),
                 ),
               ],
@@ -776,6 +748,7 @@ class _DriverInfoCard extends StatelessWidget {
   final VoidCallback onEndJourney;
   final VoidCallback onRefresh;
   final VoidCallback onShowChildren;
+  final VoidCallback onRouteSettings;
 
   const _DriverInfoCard({
     required this.loading,
@@ -791,6 +764,7 @@ class _DriverInfoCard extends StatelessWidget {
     required this.onEndJourney,
     required this.onRefresh,
     required this.onShowChildren,
+    required this.onRouteSettings,
   });
 
   static const _blue = Color(0xFF0D4896);
@@ -857,6 +831,7 @@ class _DriverInfoCard extends StatelessWidget {
                   onSurface: onSurface,
                   borderColor: borderColor,
                   isDark: isDark,
+                  onSettingsTap: onRouteSettings,
                 ),
                 const SizedBox(height: 10),
 
@@ -924,6 +899,7 @@ class _RouteRow extends StatelessWidget {
   final Color onSurface;
   final Color borderColor;
   final bool isDark;
+  final VoidCallback onSettingsTap;
 
   const _RouteRow({
     required this.routeName,
@@ -931,6 +907,7 @@ class _RouteRow extends StatelessWidget {
     required this.onSurface,
     required this.borderColor,
     required this.isDark,
+    required this.onSettingsTap,
   });
 
   @override
@@ -983,19 +960,22 @@ class _RouteRow extends StatelessWidget {
         ),
 
         // Settings circle
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1E2D40)
-                : const Color(0xFFF1F5FA),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            IconsaxPlusLinear.setting_2,
-            color: onSurface.withValues(alpha: 0.4),
-            size: 17,
+        GestureDetector(
+          onTap: onSettingsTap,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1E2D40)
+                  : const Color(0xFFF1F5FA),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              IconsaxPlusLinear.setting_2,
+              color: onSurface.withValues(alpha: 0.4),
+              size: 17,
+            ),
           ),
         ),
       ],
@@ -1220,6 +1200,531 @@ class _ErrorRow extends StatelessWidget {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Start journey bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StartJourneySheet extends StatelessWidget {
+  final String suggestedType;
+
+  const _StartJourneySheet({required this.suggestedType});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final borderColor =
+        isDark ? const Color(0xFF1E2D40) : const Color(0xFFE8EFF9);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: onSurface.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          Text(
+            'Start a new journey',
+            style: TextStyle(
+              color: onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your GPS location will be shared with parents in real time. Select the trip type to begin.',
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.5),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          _StartJourneyOption(
+            icon: IconsaxPlusBold.sun_1,
+            iconColor: const Color(0xFFFF9500),
+            iconBg: const Color(0xFFFFF3E0),
+            title: 'Morning Pickup',
+            subtitle: 'Pick up children and take them to school',
+            borderColor: borderColor,
+            isDark: isDark,
+            isSuggested: suggestedType == 'MORNING_PICKUP',
+            onTap: () => Navigator.of(context).pop('MORNING_PICKUP'),
+          ),
+          const SizedBox(height: 12),
+
+          _StartJourneyOption(
+            icon: IconsaxPlusBold.moon,
+            iconColor: const Color(0xFF0D4896),
+            iconBg: const Color(0xFFEEF3FD),
+            title: 'Afternoon Drop-off',
+            subtitle: 'Drop children off at their bus stops after school',
+            borderColor: borderColor,
+            isDark: isDark,
+            isSuggested: suggestedType == 'AFTERNOON_DROPOFF',
+            onTap: () => Navigator.of(context).pop('AFTERNOON_DROPOFF'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StartJourneyOption extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
+  final Color borderColor;
+  final bool isDark;
+  final bool isSuggested;
+  final VoidCallback onTap;
+
+  const _StartJourneyOption({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
+    required this.borderColor,
+    required this.isDark,
+    required this.isSuggested,
+    required this.onTap,
+  });
+
+  static const _blue = Color(0xFF0D4896);
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final tileBg = isDark ? const Color(0xFF1A2A3E) : Colors.white;
+    final activeBorder = isSuggested ? _blue : borderColor;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: tileBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: activeBorder,
+            width: isSuggested ? 2.0 : 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            color: onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isSuggested) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _blue.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Suggested',
+                            style: TextStyle(
+                              color: _blue,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              IconsaxPlusLinear.arrow_right_3,
+              color: onSurface.withValues(alpha: 0.3),
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// End journey bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _EndJourneySheet extends StatelessWidget {
+  const _EndJourneySheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: onSurface.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Warning icon
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              IconsaxPlusBold.warning_2,
+              color: Colors.red.shade600,
+              size: 26,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Text(
+            'End Journey',
+            style: TextStyle(
+              color: onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Are you sure you want to end the current journey?\nGPS sharing will stop immediately.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.55),
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: onSurface,
+                      side: BorderSide(
+                          color: onSurface.withValues(alpha: 0.18)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text(
+                      'End Journey',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Session picker sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SessionPickerSheet extends StatelessWidget {
+  const _SessionPickerSheet();
+
+  static const _blue = Color(0xFF0D4896);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final borderColor =
+        isDark ? const Color(0xFF1E2D40) : const Color(0xFFE8EFF9);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: onSurface.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          Text(
+            'Mark attendance for',
+            style: TextStyle(
+              color: onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Which session are these children boarding for?',
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.5),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Morning option
+          _SessionOption(
+            icon: IconsaxPlusBold.sun_1,
+            iconColor: const Color(0xFFFF9500),
+            iconBg: const Color(0xFFFFF3E0),
+            title: 'Morning',
+            subtitle: 'Mark children as onboarded for the morning session',
+            borderColor: borderColor,
+            isDark: isDark,
+            onTap: () => Navigator.of(context).pop('MORNING'),
+          ),
+          const SizedBox(height: 12),
+
+          // Afternoon option
+          _SessionOption(
+            icon: IconsaxPlusBold.moon,
+            iconColor: _blue,
+            iconBg: const Color(0xFFEEF3FD),
+            title: 'Afternoon',
+            subtitle: 'Mark children as onboarded for the afternoon session',
+            borderColor: borderColor,
+            isDark: isDark,
+            onTap: () => Navigator.of(context).pop('AFTERNOON'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionOption extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
+  final Color borderColor;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _SessionOption({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
+    required this.borderColor,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final tileBg = isDark ? const Color(0xFF1A2A3E) : Colors.white;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: tileBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: onSurface,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              IconsaxPlusLinear.arrow_right_3,
+              color: onSurface.withValues(alpha: 0.3),
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
