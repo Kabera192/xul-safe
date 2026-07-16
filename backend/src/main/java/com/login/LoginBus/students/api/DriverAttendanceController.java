@@ -55,4 +55,19 @@ public class DriverAttendanceController {
         return ResponseEntity.ok(
                 driverAttendanceService.markAttendance(jwt, request));
     }
+
+    /**
+     * POST /api/v1/me/bus/attendance/notify-arrival?stopId=&session=MORNING|AFTERNOON
+     * Notifies parents of children at the stop that the bus has arrived.
+     * Called by the driver app when GPS enters a stop's proximity radius.
+     */
+    @PostMapping("/notify-arrival")
+    public ResponseEntity<Void> notifyStopArrival(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam Long stopId,
+            @RequestParam String session) {
+
+        driverAttendanceService.notifyStopArrival(jwt, stopId, session);
+        return ResponseEntity.ok().build();
+    }
 }

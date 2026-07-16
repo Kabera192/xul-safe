@@ -47,12 +47,20 @@ public class AttendanceWithChildDto {
     @JsonProperty("droppedOffAt")
     private Long droppedOffAt;
 
+    /** true = child was marked absent for this session */
+    private boolean absent;
+
+    /** Epoch-millis when the absence was recorded; null if not absent */
+    @JsonProperty("absentAt")
+    private Long absentAt;
+
     public AttendanceWithChildDto() {}
 
     public AttendanceWithChildDto(String childId, String childName, String grade, String gender,
                                    String photoUrl, String session,
                                    boolean boarded, Long boardedAt,
-                                   boolean droppedOff, Long droppedOffAt) {
+                                   boolean droppedOff, Long droppedOffAt,
+                                   boolean isAbsent, Long absentAt) {
         this.childId = childId;
         this.childName = childName;
         this.grade = grade;
@@ -63,6 +71,8 @@ public class AttendanceWithChildDto {
         this.boardedAt = boardedAt;
         this.droppedOff = droppedOff;
         this.droppedOffAt = droppedOffAt;
+        this.absent = isAbsent;
+        this.absentAt = absentAt;
     }
 
     public String getChildId() { return childId; }
@@ -94,5 +104,12 @@ public class AttendanceWithChildDto {
 
     public Long getDroppedOffAt() { return droppedOffAt; }
     public void setDroppedOffAt(Long droppedOffAt) { this.droppedOffAt = droppedOffAt; }
+
+    @JsonProperty("isAbsent")
+    public boolean isAbsent() { return absent; }
+    public void setAbsent(boolean absent) { this.absent = absent; }
+
+    public Long getAbsentAt() { return absentAt; }
+    public void setAbsentAt(Long absentAt) { this.absentAt = absentAt; }
 }
 

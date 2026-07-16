@@ -58,6 +58,14 @@ public class AttendanceJpaEntity {
     @Column(name = "dropped_off_at")
     private Long droppedOffAt;
 
+    /** true = child was marked absent for this session */
+    @Column(name = "absent", nullable = false, columnDefinition = "boolean default false")
+    private boolean absent = false;
+
+    /** Epoch-millis when the driver marked the child absent */
+    @Column(name = "absent_at")
+    private Long absentAt;
+
     @Column(name = "created_at")
     private Long createdAt;
 
@@ -101,6 +109,12 @@ public class AttendanceJpaEntity {
 
     public Long getDroppedOffAt() { return droppedOffAt; }
     public void setDroppedOffAt(Long droppedOffAt) { this.droppedOffAt = droppedOffAt; }
+
+    public boolean isAbsent() { return absent; }
+    public void setAbsent(boolean absent) { this.absent = absent; }
+
+    public Long getAbsentAt() { return absentAt; }
+    public void setAbsentAt(Long absentAt) { this.absentAt = absentAt; }
 
     public Long getCreatedAt() { return createdAt; }
     public void setCreatedAt(Long createdAt) { this.createdAt = createdAt; }

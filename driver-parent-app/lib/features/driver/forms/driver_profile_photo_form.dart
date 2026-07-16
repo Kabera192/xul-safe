@@ -31,6 +31,9 @@ class DriverProfilePhotoForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = selectedImage != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cancelBgColor = isDark ? const Color(0xFF1E3050) : cancelBg;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -45,14 +48,14 @@ class DriverProfilePhotoForm extends StatelessWidget {
               child: Container(
                 width: 34,
                 height: 34,
-                decoration: const BoxDecoration(
-                  color: cancelBg,
+                decoration: BoxDecoration(
+                  color: cancelBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new,
                   size: 16,
-                  color: Colors.black87,
+                  color: onSurface,
                 ),
               ),
             ),
@@ -78,12 +81,12 @@ class DriverProfilePhotoForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Change profile picture',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w300,
-              color: Colors.black87,
+              color: onSurface,
             ),
           ),
           const SizedBox(height: 18),
@@ -189,8 +192,9 @@ class _DashedUploadBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const uploadBoxBg = DriverProfilePhotoForm.uploadBoxBg;
-    const dashColor = DriverProfilePhotoForm.dashColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final uploadBoxBg = isDark ? const Color(0xFF1A2530) : DriverProfilePhotoForm.uploadBoxBg;
+    final dashColor = isDark ? const Color(0xFF2A3A50) : DriverProfilePhotoForm.dashColor;
 
     return Container(
       width: double.infinity,

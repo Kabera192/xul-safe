@@ -89,6 +89,26 @@ class AttendanceService {
         _extractErrorMessage(decoded, 'Failed to save attendance'));
   }
 
+  /// POST /api/v1/me/bus/attendance/notify-arrival?stopId=&session=
+  /// Best-effort — never throws; called when bus enters a stop's proximity.
+  static Future<void> notifyStopArrival({
+    required int stopId,
+    required String session,
+  }) async {
+    try {
+      final token = await _requireToken();
+      await http.post(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/api/v1/me/bus/attendance/notify-arrival'
+          '?stopId=$stopId&session=$session',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      // Fire-and-forget — don't block the attendance popup on failure
+    }
+  }
+
   // ── helpers ─────────────────────────────────────────────────────────────────
 
   static String _formatDate(DateTime date) {
