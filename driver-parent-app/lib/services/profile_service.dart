@@ -5,21 +5,20 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../core/config/api_config.dart';
+import '../core/network/authenticated_http_client.dart';
 import '../core/session/session_storage.dart';
 
 class ProfileService {
   static Future<Map<String, dynamic>> getMyProfile() async {
-    final token = await _requireToken();
-
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/profile/me');
 
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -40,14 +39,23 @@ class ProfileService {
     String? email,
     String? phoneNumber,
   }) async {
-    final token = await _requireToken();
-
     final payload = <String, dynamic>{};
 
-    if (firstName != null) payload['firstName'] = firstName.trim();
-    if (lastName != null) payload['lastName'] = lastName.trim();
-    if (email != null) payload['email'] = email.trim();
-    if (phoneNumber != null) payload['phoneNumber'] = phoneNumber.trim();
+    if (firstName != null) {
+      payload['firstName'] = firstName.trim();
+    }
+
+    if (lastName != null) {
+      payload['lastName'] = lastName.trim();
+    }
+
+    if (email != null) {
+      payload['email'] = email.trim();
+    }
+
+    if (phoneNumber != null) {
+      payload['phoneNumber'] = phoneNumber.trim();
+    }
 
     if (payload.isEmpty) {
       throw Exception('No profile fields provided');
@@ -55,14 +63,14 @@ class ProfileService {
 
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/profile/me');
 
-    final res = await http.patch(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(payload),
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PATCH', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(payload);
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -78,17 +86,13 @@ class ProfileService {
   }
 
   static Future<Map<String, dynamic>> uploadMyPhoto(String filePath) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/profile/me/photo');
-
-    final request = http.MultipartRequest('PATCH', uri);
-    request.headers['Authorization'] = 'Bearer $token';
 
     // Detect MIME type from extension; fall back to image/jpeg so the
     // backend's "must start with image/" check always passes for gallery picks
     // (Android cached paths often have no extension).
     final ext = filePath.split('.').last.toLowerCase();
+
     final mimeType = switch (ext) {
       'png' => 'image/png',
       'gif' => 'image/gif',
@@ -96,16 +100,19 @@ class ProfileService {
       _ => 'image/jpeg',
     };
 
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'file',
-        filePath,
-        contentType: MediaType.parse(mimeType),
-      ),
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.MultipartRequest('PATCH', uri);
 
-    final streamed = await request.send();
-    final res = await http.Response.fromStream(streamed);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          filePath,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -121,16 +128,11 @@ class ProfileService {
   }
 
   static Future<Uint8List?> getMyPhotoBytes() async {
-    final token = await _requireToken();
-
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/profile/me/photo');
 
-    final res = await http.get(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      return http.Request('GET', uri);
+    });
 
     if (res.statusCode == 200) {
       return res.bodyBytes;
@@ -147,35 +149,33 @@ class ProfileService {
     required String currentPassword,
     required String newPassword,
   }) async {
-    final token = await _requireToken();
     final userId = await SessionStorage.getUserId();
-    if (userId == null) throw Exception('Not logged in');
 
-    final res = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/$userId/password'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'currentPassword': currentPassword,
-        'newPassword': newPassword,
-      }),
-    );
-
-    if (res.statusCode == 200) return;
-    final decoded = _decodeBody(res.body);
-    throw Exception(_extractErrorMessage(decoded, 'Failed to change password'));
-  }
-
-  static Future<String> _requireToken() async {
-    final token = await SessionStorage.getToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception('No session token found');
+    if (userId == null) {
+      throw Exception('Not logged in');
     }
 
-    return token;
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/$userId/password');
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PUT', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+
+      return request;
+    });
+
+    if (res.statusCode == 200) {
+      return;
+    }
+
+    final decoded = _decodeBody(res.body);
+
+    throw Exception(_extractErrorMessage(decoded, 'Failed to change password'));
   }
 
   static dynamic _decodeBody(String body) {

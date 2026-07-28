@@ -3,21 +3,20 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../core/config/api_config.dart';
-import '../core/session/session_storage.dart';
+import '../core/network/authenticated_http_client.dart';
 
 class TransportService {
   static Future<Map<String, dynamic>> getMyBus() async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/me/bus');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/me/bus',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -25,24 +24,29 @@ class TransportService {
       if (decoded is! Map<String, dynamic>) {
         throw Exception('Unexpected bus response');
       }
+
       return decoded;
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load bus'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load bus',
+      ),
+    );
   }
 
   static Future<Map<String, dynamic>> getMyRoute() async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/me/bus/route');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/me/bus/route',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -50,20 +54,16 @@ class TransportService {
       if (decoded is! Map<String, dynamic>) {
         throw Exception('Unexpected route response');
       }
+
       return decoded;
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load route'));
-  }
-
-  static Future<String> _requireToken() async {
-    final token = await SessionStorage.getToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception('No session token found');
-    }
-
-    return token;
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load route',
+      ),
+    );
   }
 
   static dynamic _decodeBody(String body) {
@@ -80,13 +80,21 @@ class TransportService {
     }
   }
 
-  static String _extractErrorMessage(dynamic decoded, String fallback) {
+  static String _extractErrorMessage(
+    dynamic decoded,
+    String fallback,
+  ) {
     if (decoded is Map<String, dynamic>) {
       final message = decoded['message']?.toString();
       final error = decoded['error']?.toString();
 
-      if (message != null && message.isNotEmpty) return message;
-      if (error != null && error.isNotEmpty) return error;
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+
+      if (error != null && error.isNotEmpty) {
+        return error;
+      }
     }
 
     return fallback;
@@ -97,22 +105,22 @@ class TransportService {
     required double locationLat,
     required double locationLong,
   }) async {
-    final token = await _requireToken();
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/me/bus/route/stops',
+    );
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/me/bus/route/stops');
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
 
-    final res = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
         'locationName': locationName.trim(),
         'locationLat': locationLat,
         'locationLong': locationLong,
-      }),
-    );
+      });
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -120,24 +128,29 @@ class TransportService {
       if (decoded is! Map<String, dynamic>) {
         throw Exception('Unexpected create stop response');
       }
+
       return decoded;
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to create bus stop'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to create bus stop',
+      ),
+    );
   }
 
   static Future<List<Map<String, dynamic>>> getMyStops() async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/me/bus/route/stops');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/me/bus/route/stops',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -146,12 +159,15 @@ class TransportService {
         throw Exception('Unexpected stops response');
       }
 
-      return decoded
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      return decoded.whereType<Map<String, dynamic>>().toList();
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load bus stops'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load bus stops',
+      ),
+    );
   }
 
   static Future<Map<String, dynamic>> updateMyStop({
@@ -160,24 +176,22 @@ class TransportService {
     required double locationLat,
     required double locationLong,
   }) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/me/bus/route/stops/$stopId',
     );
 
-    final res = await http.patch(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PATCH', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
         'locationName': locationName.trim(),
         'locationLat': locationLat,
         'locationLong': locationLong,
-      }),
-    );
+      });
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -190,7 +204,10 @@ class TransportService {
     }
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to update bus stop'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to update bus stop',
+      ),
     );
   }
 
@@ -198,29 +215,32 @@ class TransportService {
     required int stopId,
     required String reason,
   }) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/me/bus/route/stops/$stopId',
     );
 
-    final res = await http.delete(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'reason': reason.trim(),
-      }),
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('DELETE', uri);
 
-    if (res.statusCode == 204) return;
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'reason': reason.trim(),
+      });
+
+      return request;
+    });
+
+    if (res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to delete bus stop'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to delete bus stop',
+      ),
     );
   }
 
@@ -228,24 +248,33 @@ class TransportService {
   /// Returns { bus: {...}, conductor: { fullName, phoneNumber, photoUrl } }
   /// Returns null when no bus is assigned or on any error.
   static Future<Map<String, dynamic>?> getAssignedBusForParent(
-      int parentId) async {
+    int parentId,
+  ) async {
     try {
-      final token = await _requireToken();
-      final uri =
-          Uri.parse('${ApiConfig.baseUrl}/api/v1/buses/parent/$parentId/assigned');
-      final res = await http.get(uri, headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
+      final uri = Uri.parse(
+        '${ApiConfig.baseUrl}/api/v1/buses/parent/$parentId/assigned',
+      );
+
+      final res = await AuthenticatedHttpClient.send(() async {
+        final request = http.Request('GET', uri);
+        request.headers['Content-Type'] = 'application/json';
+
+        return request;
       }).timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final decoded = _decodeBody(res.body);
+
         if (decoded is Map<String, dynamic>) {
           // Backend wraps response in ApiResponse { message, data }
           final inner = decoded['data'];
-          if (inner is Map<String, dynamic>) return inner;
+
+          if (inner is Map<String, dynamic>) {
+            return inner;
+          }
         }
       }
+
       return null;
     } catch (_) {
       return null;
@@ -262,24 +291,25 @@ class TransportService {
     required double latitude,
     required double longitude,
   }) async {
-    final token = await _requireToken();
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/bus-tracking/start');
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/bus-tracking/start',
+    );
 
-    final res = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
         'tripType': tripType,
         'conductorId': conductorId,
         'busId': busId,
         'routeId': routeId,
         'latitude': latitude,
         'longitude': longitude,
-      }),
-    ).timeout(const Duration(seconds: 10));
+      });
+
+      return request;
+    }).timeout(const Duration(seconds: 10));
 
     final decoded = _decodeBody(res.body);
 
@@ -287,10 +317,16 @@ class TransportService {
       if (decoded is Map<String, dynamic>) {
         return decoded['data'] as Map<String, dynamic>? ?? decoded;
       }
+
       throw Exception('Unexpected start journey response');
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to start journey'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to start journey',
+      ),
+    );
   }
 
   /// PUT /api/v1/bus-tracking/{journeyId}/location
@@ -299,35 +335,47 @@ class TransportService {
     required double latitude,
     required double longitude,
   }) async {
-    final token = await _requireToken();
-    final uri =
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/bus-tracking/$journeyId/location');
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/bus-tracking/$journeyId/location',
+    );
 
-    await http.put(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'latitude': latitude, 'longitude': longitude}),
-    ).timeout(const Duration(seconds: 8));
+    await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PUT', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+
+      return request;
+    }).timeout(const Duration(seconds: 8));
   }
 
   /// POST /api/v1/bus-tracking/{journeyId}/end
   static Future<void> endBusJourney(String journeyId) async {
-    final token = await _requireToken();
-    final uri =
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/bus-tracking/$journeyId/end');
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/bus-tracking/$journeyId/end',
+    );
 
-    final res = await http.post(uri, headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
     }).timeout(const Duration(seconds: 10));
 
-    if (res.statusCode == 200 || res.statusCode == 204) return;
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
-    throw Exception(_extractErrorMessage(decoded, 'Failed to end journey'));
-  }
 
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to end journey',
+      ),
+    );
+  }
 }
