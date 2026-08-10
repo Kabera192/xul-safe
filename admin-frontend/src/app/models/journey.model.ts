@@ -1,6 +1,6 @@
 export type JourneyType = 'PICKUP' | 'DROPOFF';
 export type JourneyStatus = 'IN_PROGRESS' | 'COMPLETED';
-export type AttendanceMark = 'present' | 'absent';
+export type AttendanceMark = 'present' | 'absent' | 'pending';
 
 export interface Journey {
   id?: number;

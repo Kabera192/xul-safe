@@ -2,6 +2,7 @@ import { Component, ElementRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-otp-verification',
@@ -14,8 +15,16 @@ export class OtpVerification {
   @ViewChildren('otpInput') otpInputs!: QueryList<ElementRef>;
 
   otpValues: string[] = ['', '', '', '', '', ''];
+  loading: boolean = false;
+  resending: boolean = false;
+  error: string = '';
 
-  constructor(private router: Router) {}
+  phoneNumber: string = '';
+
+  constructor(private router: Router, private authService: AuthService) {
+    this.phoneNumber = this.router.getCurrentNavigation()?.extras.state?.['phoneNumber']
+      ?? (window.history.state?.phoneNumber ?? '');
+  }
 
   onOtpInput(event: Event, index: number): void {
     const input = event.target as HTMLInputElement;
@@ -36,12 +45,42 @@ export class OtpVerification {
 
   onVerify(): void {
     const otp = this.otpValues.join('');
-    console.log('Verify OTP:', otp);
-    this.router.navigate(['/new-password']);
+    if (otp.length < 6) {
+      this.error = 'Please enter all 6 digits.';
+      return;
+    }
+
+    this.loading = true;
+    this.error = '';
+
+    this.authService.verifyOtp(this.phoneNumber, otp).subscribe({
+      next: () => {
+        this.loading = false;
+        this.router.navigate(['/new-password'], {
+          state: { phoneNumber: this.phoneNumber, otp }
+        });
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err?.error?.message ?? 'Invalid or expired code. Please try again.';
+      }
+    });
   }
 
   resendCode(): void {
-    console.log('Resend code');
-    // TODO: Implement resend logic
+    if (this.resending) return;
+    this.resending = true;
+    this.error = '';
+    this.otpValues = ['', '', '', '', '', ''];
+
+    this.authService.sendForgotPasswordOtp(this.phoneNumber).subscribe({
+      next: () => {
+        this.resending = false;
+      },
+      error: (err) => {
+        this.resending = false;
+        this.error = err?.error?.message ?? 'Could not resend code. Please try again.';
+      }
+    });
   }
 }

@@ -78,6 +78,24 @@ export class AuthService {
     }).pipe(map(() => void 0));
   }
 
+  sendForgotPasswordOtp(phoneNumber: string): Observable<void> {
+    return this.http.post<ApiResponse<void>>(`${this.basePath}/forgot-password`, { phoneNumber }).pipe(
+      map(() => void 0)
+    );
+  }
+
+  verifyOtp(phoneNumber: string, otp: string): Observable<void> {
+    return this.http.post<ApiResponse<void>>(`${this.basePath}/verify-otp`, { phoneNumber, otp }).pipe(
+      map(() => void 0)
+    );
+  }
+
+  resetPassword(phoneNumber: string, otp: string, newPassword: string): Observable<void> {
+    return this.http.post<ApiResponse<void>>(`${this.basePath}/reset-password`, { phoneNumber, otp, newPassword }).pipe(
+      map(() => void 0)
+    );
+  }
+
   uploadProfilePhoto(userId: number, file: File): Observable<string> {
     const formData = new FormData();
     formData.append('file', file);

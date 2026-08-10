@@ -29,7 +29,6 @@ export class StudentCreatePage implements OnInit {
   dob = '';
   grade = '';
   selectedBusId = '';
-  selectedRouteId = '';
   selectedBusStopId = '';
   photoPreview = '';
   parentId = '';
@@ -42,6 +41,19 @@ export class StudentCreatePage implements OnInit {
   ngOnInit(): void {
     this.loadBuses();
     this.loadRoutes();
+  }
+
+  /**
+   * The route is never picked independently — it's always whatever route the
+   * selected bus takes, so it's shown read-only and used here to filter which
+   * bus stops are selectable, instead of being a separate dropdown the admin
+   * could set out of sync with the bus.
+   */
+  get derivedRouteName(): string {
+    const bus = this.buses.find(b => String(b.id) === this.selectedBusId);
+    if (!this.selectedBusId || !bus) return 'Select a bus first';
+    if (!bus.routeId) return 'No route assigned to this bus';
+    return this.routes.find(r => r.id === bus.routeId)?.name ?? 'Unknown route';
   }
 
   private loadBuses(): void {
@@ -68,10 +80,11 @@ export class StudentCreatePage implements OnInit {
     });
   }
 
-  onRouteChange(): void {
+  onBusChange(): void {
     this.selectedBusStopId = '';
-    const routeId = Number(this.selectedRouteId);
-    if (!this.selectedRouteId || Number.isNaN(routeId)) {
+    const bus = this.buses.find(b => String(b.id) === this.selectedBusId);
+    const routeId = bus?.routeId;
+    if (!routeId) {
       this.busStops = [];
       return;
     }
@@ -110,7 +123,8 @@ export class StudentCreatePage implements OnInit {
       parentId: this.parentId ? Number(this.parentId) : undefined,
       photoUrl: this.photoPreview || undefined,
       busId: this.selectedBusId ? Number(this.selectedBusId) : undefined,
-      routeId: this.selectedRouteId ? Number(this.selectedRouteId) : undefined,
+      // routeId is intentionally omitted — the backend always derives it from
+      // busId, so there's nothing meaningful to send here.
       busStopId: this.selectedBusStopId || undefined
     }).pipe(
       timeout(5000),

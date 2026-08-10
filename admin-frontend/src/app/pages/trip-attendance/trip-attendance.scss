@@ -46,9 +46,21 @@
     color: #1A56DB;
     border-color: #1A56DB;
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+
+    &:hover {
+      background-color: #ffffff;
+      color: #6B7280;
+      border-color: #E5E7EB;
+    }
+  }
 }
 
 .date-pill {
+  position: relative;
   border: 1px solid #E5E7EB;
   background-color: #F5F7FF;
   color: #1A56DB;
@@ -58,6 +70,21 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #1A56DB;
+  }
+}
+
+.date-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
 }
 
 .table-top {
@@ -167,6 +194,11 @@
 
 .mark.absent {
   background-color: #EF4444;
+}
+
+.mark.pending {
+  background-color: #E5E7EB;
+  border: 2px dashed #D1D5DB;
 }
 
 .mark.present::after {
@@ -386,6 +418,10 @@
 }
 
 .mark-dot.absent {
+  background-color: #EF4444;
+}
+
+.mark-dot.pending {
   background-color: #E5E7EB;
   border: 2px dashed #D1D5DB;
 }
@@ -419,6 +455,10 @@
 }
 
 .legend-dot.absent {
+  background-color: #EF4444;
+}
+
+.legend-dot.pending {
   background-color: #E5E7EB;
   border: 2px dashed #D1D5DB;
 }
