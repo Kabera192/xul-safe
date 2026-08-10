@@ -24,5 +24,11 @@ public interface AuthService {
     boolean isValidEmail(String email);
 
     boolean isStrongPassword(String password);
+
+    void sendPasswordResetOtp(String phoneNumber);
+
+    void verifyOtp(String phoneNumber, String otp);
+
+    void resetPassword(String phoneNumber, String otp, String newPassword);
 }
 

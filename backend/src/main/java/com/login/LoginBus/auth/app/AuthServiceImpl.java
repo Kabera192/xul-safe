@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.SecureRandom;
 import java.util.UUID;
 
 @Service
@@ -26,18 +27,22 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final SmsService smsService;
 
     private static final String UPLOAD_DIR = "uploads/profile-photos/";
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    private static final long OTP_VALIDITY_MS = 10 * 60 * 1000; // 10 minutes
 
     public AuthServiceImpl(AccountsPublicService accountsService,
                            UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
-                           JwtService jwtService) {
+                           JwtService jwtService,
+                           SmsService smsService) {
         this.accountsService = accountsService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.smsService = smsService;
     }
 
     @Override
@@ -159,6 +164,54 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         if (!password.matches(".*[a-z].*")) return false;
         if (!password.matches(".*[0-9].*")) return false;
         return true;
+    }
+
+    @Override
+    @Transactional
+    public void sendPasswordResetOtp(String phoneNumber) {
+        String normalized = phoneNumber == null ? "" : phoneNumber.trim();
+        UserJpaEntity user = userRepository.findByPhoneNumber(normalized)
+                .orElseThrow(() -> new IllegalArgumentException("No account found with this phone number"));
+
+        String otp = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        user.setOtpCode(otp);
+        user.setOtpExpiresAt(System.currentTimeMillis() + OTP_VALIDITY_MS);
+        userRepository.save(user);
+
+        smsService.sendOtp(normalized, otp);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void verifyOtp(String phoneNumber, String otp) {
+        String normalized = phoneNumber == null ? "" : phoneNumber.trim();
+        UserJpaEntity user = userRepository.findByPhoneNumber(normalized)
+                .orElseThrow(() -> new IllegalArgumentException("No account found with this phone number"));
+
+        if (user.getOtpCode() == null || !user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
+            throw new IllegalArgumentException("Invalid OTP code");
+        }
+        if (user.getOtpExpiresAt() == null || System.currentTimeMillis() > user.getOtpExpiresAt()) {
+            throw new IllegalArgumentException("OTP has expired. Please request a new one.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String phoneNumber, String otp, String newPassword) {
+        verifyOtp(phoneNumber, otp);
+
+        String normalized = phoneNumber.trim();
+        UserJpaEntity user = userRepository.findByPhoneNumber(normalized).orElseThrow();
+
+        if (!isStrongPassword(newPassword)) {
+            throw new IllegalArgumentException("Password must be at least 8 characters with uppercase, lowercase, and number");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setOtpCode(null);
+        user.setOtpExpiresAt(null);
+        userRepository.save(user);
     }
 
     // AuthPublicService methods

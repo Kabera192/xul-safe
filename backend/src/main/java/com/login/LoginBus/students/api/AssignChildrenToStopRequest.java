@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 /**
  * Request to assign children to a stop.
  * Accepts both camelCase (Flutter: childIds) and snake_case (child_ids).
- * stop_type is optional — defaults to PICKUP if not provided.
  * childIds can be integers or strings (Flutter sends int IDs).
  */
 public class AssignChildrenToStopRequest {
@@ -19,10 +18,6 @@ public class AssignChildrenToStopRequest {
     @JsonAlias("childIds")
     @JsonProperty("child_ids")
     private List<Object> childIdsRaw;
-
-    // Flutter does not send stop_type — defaults to PICKUP
-    @JsonProperty("stop_type")
-    private String stopType = "PICKUP";
 
     public AssignChildrenToStopRequest() {}
 
@@ -36,6 +31,4 @@ public class AssignChildrenToStopRequest {
     }
 
     public void setChildIdsRaw(List<Object> childIdsRaw) { this.childIdsRaw = childIdsRaw; }
-    public String getStopType() { return stopType; }
-    public void setStopType(String stopType) { this.stopType = stopType; }
 }

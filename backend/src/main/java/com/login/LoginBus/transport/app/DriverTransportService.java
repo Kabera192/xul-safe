@@ -10,6 +10,6 @@ public interface DriverTransportService {
     DriverRouteResponse getMyRoute(Jwt jwt);
     List<StopResponse> getMyStops(Jwt jwt);
     StopResponse addStop(Jwt jwt, CreateStopRequest request);
-    StopResponse updateStop(Jwt jwt, Long stopId, UpdateStopRequest request);
-    void deleteStop(Jwt jwt, Long stopId);
+    StopResponse updateStop(Jwt jwt, String stopId, UpdateStopRequest request);
+    void deleteStop(Jwt jwt, String stopId);
 }

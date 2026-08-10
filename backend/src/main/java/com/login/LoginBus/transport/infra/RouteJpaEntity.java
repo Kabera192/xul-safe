@@ -3,6 +3,8 @@ package com.login.LoginBus.transport.infra;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.login.LoginBus.transport.domain.Route;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA Entity for Route persistence.
@@ -32,11 +34,11 @@ public class RouteJpaEntity {
 
     @Column(name = "created_at")
     @JsonProperty("createdAt")
-    private Long createdAt;
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = System.currentTimeMillis();
+        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
     // No-arg constructor (required for JPA)
@@ -49,13 +51,16 @@ public class RouteJpaEntity {
      * @return Domain Route entity
      */
     public Route toDomain() {
+        Long createdAtMillis = (this.createdAt != null)
+                ? this.createdAt.toInstant(ZoneOffset.UTC).toEpochMilli()
+                : null;
         return new Route(
             this.id,
             this.name,
             this.description,
             this.startLocation,
             this.endLocation,
-            this.createdAt
+            createdAtMillis
         );
     }
 
@@ -72,7 +77,12 @@ public class RouteJpaEntity {
         entity.setDescription(route.getDescription());
         entity.setStartLocation(route.getStartLocation());
         entity.setEndLocation(route.getEndLocation());
-        entity.createdAt = route.getCreatedAt();
+        if (route.getCreatedAt() != null) {
+            entity.createdAt = LocalDateTime.ofEpochSecond(
+                    route.getCreatedAt() / 1000,
+                    (int) ((route.getCreatedAt() % 1000) * 1_000_000),
+                    ZoneOffset.UTC);
+        }
         return entity;
     }
 
@@ -117,7 +127,7 @@ public class RouteJpaEntity {
         this.endLocation = endLocation;
     }
 
-    public Long getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 }

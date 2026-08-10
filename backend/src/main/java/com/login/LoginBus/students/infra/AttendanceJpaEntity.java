@@ -42,6 +42,10 @@ public class AttendanceJpaEntity {
     @Column(nullable = false, length = 20)
     private AttendanceSession session;
 
+    /** Legacy column kept for DB compatibility — not used by application logic. */
+    @Column(name = "confirmed", nullable = false, columnDefinition = "boolean default false")
+    private boolean confirmed = false;
+
     /** true = child has boarded the bus for this session */
     @Column(name = "boarded", nullable = false, columnDefinition = "boolean default false")
     private boolean boarded = false;

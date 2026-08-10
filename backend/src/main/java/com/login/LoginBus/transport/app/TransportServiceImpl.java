@@ -268,6 +268,86 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
     }
 
     @Override
+    @Transactional
+    public BusStop createBusStop(BusStop busStop) {
+        if (busStop.getName() == null || busStop.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Bus stop name is required");
+        }
+        if (busStop.getRouteId() == null) {
+            throw new IllegalArgumentException("Route ID is required when creating a bus stop");
+        }
+        if (!routeRepository.existsById(busStop.getRouteId())) {
+            throw new IllegalArgumentException("Route not found with ID: " + busStop.getRouteId());
+        }
+
+        BusStopJpaEntity entity = new BusStopJpaEntity();
+        entity.setName(busStop.getName().trim());
+        entity.setRouteId(busStop.getRouteId());
+        entity.setLatitude(busStop.getLatitude());
+        entity.setLongitude(busStop.getLongitude());
+        entity.setAddress(busStop.getAddress());
+        entity.setDescription(busStop.getDescription());
+        entity.setStopOrder(busStop.getStopOrder() != null ? busStop.getStopOrder() : 0);
+
+        BusStopJpaEntity saved = busStopRepository.save(entity);
+        return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public BusStop updateBusStop(String busStopId, BusStop busStop) {
+        BusStopJpaEntity entity = busStopRepository.findById(busStopId)
+            .orElseThrow(() -> new IllegalArgumentException("Bus stop not found with ID: " + busStopId));
+
+        if (busStop.getName() != null && !busStop.getName().trim().isEmpty()) {
+            entity.setName(busStop.getName().trim());
+        }
+        if (busStop.getAddress() != null) {
+            entity.setAddress(busStop.getAddress());
+        }
+        if (busStop.getDescription() != null) {
+            entity.setDescription(busStop.getDescription());
+        }
+        if (busStop.getLatitude() != null) {
+            entity.setLatitude(busStop.getLatitude());
+        }
+        if (busStop.getLongitude() != null) {
+            entity.setLongitude(busStop.getLongitude());
+        }
+        if (busStop.getStopOrder() != null) {
+            entity.setStopOrder(busStop.getStopOrder());
+        }
+        if (busStop.getRouteId() != null) {
+            if (!routeRepository.existsById(busStop.getRouteId())) {
+                throw new IllegalArgumentException("Route not found with ID: " + busStop.getRouteId());
+            }
+            entity.setRouteId(busStop.getRouteId());
+        }
+
+        BusStopJpaEntity saved = busStopRepository.save(entity);
+        return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public void deleteBusStop(String busStopId) {
+        if (!busStopRepository.existsById(busStopId)) {
+            throw new IllegalArgumentException("Bus stop not found with ID: " + busStopId);
+        }
+        clearChildReferencesToStop(busStopId);
+        busStopRepository.deleteById(busStopId);
+    }
+
+    private void clearChildReferencesToStop(String stopId) {
+        List<com.login.LoginBus.students.infra.ChildJpaEntity> affected =
+            childRepository.findByAnyStopReference(stopId);
+        for (com.login.LoginBus.students.infra.ChildJpaEntity child : affected) {
+            if (stopId.equals(child.getBusStopId())) child.setBusStopId(null);
+        }
+        childRepository.saveAll(affected);
+    }
+
+    @Override
     public Map<String, Object> getChildRoute(String childId) {
         Map<String, Object> details = getChildRouteDetails(childId);
         if (details.get("routeId") == null) {
@@ -334,7 +414,8 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         result.put("availableBusStops", routeStops);
 
         if (child.getBusStopId() != null) {
-            busStopRepository.findById(child.getBusStopId()).ifPresent(stop -> {
+            String stopId = child.getBusStopId();
+            busStopRepository.findById(stopId).ifPresent(stop -> {
                 if (stop.getRouteId() != null && stop.getRouteId().equals(routeId)) {
                     result.put("assignedBusStopId", stop.getId());
                     result.put("assignedBusStopName", stop.getName());
@@ -441,78 +522,88 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         LocalDate startDate = LocalDate.parse(weekStartDate);
         LocalDate endDate = startDate.plusDays(4); // Friday
 
-        // Read from attendance_records (set by drivers via the Flutter app)
+        // Fetch ALL children regardless of whether they have records this week
+        List<com.login.LoginBus.students.infra.ChildJpaEntity> allChildren = childRepository.findAll();
+
+        // Fetch all attendance records for the week and group by childId
         List<AttendanceJpaEntity> records = attendanceRepository.findByDateBetween(startDate, endDate);
-
-        // Build a lookup map of all children that appear in the records
-        Set<String> childIds = records.stream()
-                .map(AttendanceJpaEntity::getChildId)
-                .collect(Collectors.toSet());
-
-        Map<String, com.login.LoginBus.students.infra.ChildJpaEntity> childMap = childRepository
-                .findAllById(childIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        com.login.LoginBus.students.infra.ChildJpaEntity::getId,
-                        c -> c));
-
-        // Group attendance records by childId → date → session
         Map<String, List<AttendanceJpaEntity>> byChild = records.stream()
                 .collect(Collectors.groupingBy(AttendanceJpaEntity::getChildId));
+
+        // Pre-load buses so we can resolve plate numbers without N+1 queries
+        Map<Long, BusJpaEntity> busCache = new HashMap<>();
+        Map<Long, RouteJpaEntity> routeCache = new HashMap<>();
 
         List<Map<String, Object>> attendanceList = new ArrayList<>();
         String[] weekDays = {"mon", "tue", "wed", "thu", "fri"};
 
-        for (Map.Entry<String, List<AttendanceJpaEntity>> entry : byChild.entrySet()) {
-            String childId = entry.getKey();
-            List<AttendanceJpaEntity> childRecords = entry.getValue();
+        for (com.login.LoginBus.students.infra.ChildJpaEntity child : allChildren) {
+            List<AttendanceJpaEntity> childRecords = byChild.getOrDefault(child.getId(), List.of());
 
             Map<String, Object> attendance = new HashMap<>();
-            attendance.put("childId", childId);
+            attendance.put("childId", child.getId());
+            attendance.put("childName", child.getFullName());
 
-            com.login.LoginBus.students.infra.ChildJpaEntity child = childMap.get(childId);
-            if (child != null) {
-                attendance.put("childName", child.getFullName());
+            // Resolve bus plate number and route name
+            Long busId = child.getBusId();
+            if (busId == null) {
+                // Fall back to bus recorded in an attendance record
+                busId = childRecords.stream()
+                        .map(AttendanceJpaEntity::getBusId)
+                        .filter(Objects::nonNull)
+                        .findFirst().orElse(null);
             }
-
-            // Resolve bus plate and route name via busId from attendance record
-            Long busId = childRecords.stream()
-                    .map(AttendanceJpaEntity::getBusId)
-                    .filter(java.util.Objects::nonNull)
-                    .findFirst().orElse(null);
             if (busId != null) {
-                busRepository.findById(busId).ifPresent(bus -> {
+                final Long fBusId = busId;
+                BusJpaEntity bus = busCache.computeIfAbsent(fBusId,
+                        id -> busRepository.findById(id).orElse(null));
+                if (bus != null) {
                     attendance.put("busPlateNumber", bus.getPlateNumber());
                     if (bus.getRouteId() != null) {
-                        routeRepository.findById(bus.getRouteId())
-                                .ifPresent(route -> attendance.put("routeName", route.getName()));
+                        final Long fRouteId = bus.getRouteId();
+                        RouteJpaEntity route = routeCache.computeIfAbsent(fRouteId,
+                                id -> routeRepository.findById(id).orElse(null));
+                        if (route != null) attendance.put("routeName", route.getName());
                     }
-                });
+                }
             }
+
+            LocalDate today = LocalDate.now();
 
             for (int i = 0; i < 5; i++) {
                 LocalDate day = startDate.plusDays(i);
 
-                // MORNING session: boarded = picked up on way to school
-                boolean morningPresent = childRecords.stream().anyMatch(r ->
-                        r.getDate().equals(day) &&
-                        r.getSession().name().equals("MORNING") &&
-                        r.isBoarded());
-
-                // AFTERNOON session: droppedOff = arrived home
-                boolean afternoonPresent = childRecords.stream().anyMatch(r ->
-                        r.getDate().equals(day) &&
-                        r.getSession().name().equals("AFTERNOON") &&
-                        r.isDroppedOff());
-
                 List<String> dayMarks = new ArrayList<>();
-                dayMarks.add(morningPresent ? "present" : "absent");
-                dayMarks.add(afternoonPresent ? "present" : "absent");
+                if (day.isAfter(today)) {
+                    // Day hasn't happened yet — there can be no attendance to
+                    // report, so don't render it as a false "absent".
+                    dayMarks.add("pending");
+                    dayMarks.add("pending");
+                } else {
+                    // Either half of a session confirms the child was on the
+                    // bus for it (boarding and drop-off are two checkpoints of
+                    // the same trip, not independent requirements).
+                    boolean morningPresent = childRecords.stream().anyMatch(r ->
+                            r.getDate().equals(day) &&
+                            r.getSession().name().equals("MORNING") &&
+                            (r.isBoarded() || r.isDroppedOff()));
+
+                    boolean afternoonPresent = childRecords.stream().anyMatch(r ->
+                            r.getDate().equals(day) &&
+                            r.getSession().name().equals("AFTERNOON") &&
+                            (r.isBoarded() || r.isDroppedOff()));
+
+                    dayMarks.add(morningPresent ? "present" : "absent");
+                    dayMarks.add(afternoonPresent ? "present" : "absent");
+                }
                 attendance.put(weekDays[i], dayMarks);
             }
 
             attendanceList.add(attendance);
         }
+
+        // Sort by child name for a consistent display order
+        attendanceList.sort(Comparator.comparing(m -> m.getOrDefault("childName", "").toString()));
 
         return attendanceList;
     }
@@ -598,7 +689,12 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             if (!routeRepository.existsById(bus.getRouteId())) {
                 throw new IllegalArgumentException("Route not found with ID: " + bus.getRouteId());
             }
-            existing.setRouteId(bus.getRouteId());
+            if (!bus.getRouteId().equals(existing.getRouteId())) {
+                existing.setRouteId(bus.getRouteId());
+                // Every child riding this bus automatically rides whatever
+                // route the bus takes — keep them in sync.
+                propagateRouteToChildrenOnBus(busId, bus.getRouteId());
+            }
         }
         if (bus.getPhotoUrl() != null) {
             existing.setPhotoUrl(bus.getPhotoUrl());
@@ -606,6 +702,16 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
         BusJpaEntity saved = busRepository.save(existing);
         return saved.toDomain();
+    }
+
+    private void propagateRouteToChildrenOnBus(Long busId, Long routeId) {
+        List<com.login.LoginBus.students.infra.ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
+        for (com.login.LoginBus.students.infra.ChildJpaEntity child : busChildren) {
+            if (!java.util.Objects.equals(child.getRouteId(), routeId)) {
+                child.setRouteId(routeId);
+                childRepository.save(child);
+            }
+        }
     }
 
     @Override

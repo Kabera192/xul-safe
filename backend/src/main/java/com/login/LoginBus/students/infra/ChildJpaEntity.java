@@ -43,12 +43,6 @@ public class ChildJpaEntity {
     @Column(name = "bus_stop_id")
     private String busStopId;
 
-    @Column(name = "pickup_stop_id")
-    private Long pickupStopId;
-
-    @Column(name = "dropoff_stop_id")
-    private Long dropoffStopId;
-
     @Column(name = "created_at")
     private Long createdAt;
 
@@ -185,22 +179,6 @@ public class ChildJpaEntity {
 
     public void setBusStopId(String busStopId) {
         this.busStopId = busStopId;
-    }
-
-    public Long getPickupStopId() {
-        return pickupStopId;
-    }
-
-    public void setPickupStopId(Long pickupStopId) {
-        this.pickupStopId = pickupStopId;
-    }
-
-    public Long getDropoffStopId() {
-        return dropoffStopId;
-    }
-
-    public void setDropoffStopId(Long dropoffStopId) {
-        this.dropoffStopId = dropoffStopId;
     }
 
     public Long getCreatedAt() {

@@ -49,6 +49,12 @@ public class UserJpaEntity {
     @JsonProperty("role")
     private UserRole role;
 
+    @Column(name = "otp_code")
+    private String otpCode;
+
+    @Column(name = "otp_expires_at")
+    private Long otpExpiresAt;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -166,5 +172,21 @@ public class UserJpaEntity {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public String getOtpCode() {
+        return otpCode;
+    }
+
+    public void setOtpCode(String otpCode) {
+        this.otpCode = otpCode;
+    }
+
+    public Long getOtpExpiresAt() {
+        return otpExpiresAt;
+    }
+
+    public void setOtpExpiresAt(Long otpExpiresAt) {
+        this.otpExpiresAt = otpExpiresAt;
     }
 }

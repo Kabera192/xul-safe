@@ -12,19 +12,18 @@ import jakarta.persistence.*;
 public class BusStopJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column
     private Double latitude;
 
-    @Column(nullable = false)
+    @Column
     private Double longitude;
 
-    @Column(nullable = false)
+    @Column
     private String address;
 
     @Column
@@ -35,6 +34,13 @@ public class BusStopJpaEntity {
 
     @Column(name = "stop_order")
     private Integer stopOrder;
+
+    @PrePersist
+    protected void onCreate() {
+        if (id == null) {
+            id = java.util.UUID.randomUUID().toString();
+        }
+    }
 
     // No-arg constructor (required for JPA)
     public BusStopJpaEntity() {
@@ -51,7 +57,7 @@ public class BusStopJpaEntity {
             this.name,
             this.latitude,
             this.longitude,
-            this.address,
+            this.address != null ? this.address : "",
             this.description,
             this.routeId,
             this.stopOrder
@@ -66,7 +72,7 @@ public class BusStopJpaEntity {
      */
     public static BusStopJpaEntity fromDomain(BusStop busStop) {
         BusStopJpaEntity entity = new BusStopJpaEntity();
-        entity.setId(busStop.getId());
+        if (busStop.getId() != null) entity.setId(busStop.getId());
         entity.setName(busStop.getName());
         entity.setLatitude(busStop.getLatitude());
         entity.setLongitude(busStop.getLongitude());

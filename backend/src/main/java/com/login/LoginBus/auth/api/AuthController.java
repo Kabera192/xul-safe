@@ -3,8 +3,11 @@ package com.login.LoginBus.auth.api;
 import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.auth.app.AuthService;
 import com.login.LoginBus.auth.domain.AuthResponse;
+import com.login.LoginBus.auth.domain.ForgotPasswordRequest;
 import com.login.LoginBus.auth.domain.LoginRequest;
 import com.login.LoginBus.auth.domain.PasswordUpdateRequest;
+import com.login.LoginBus.auth.domain.ResetPasswordRequest;
+import com.login.LoginBus.auth.domain.VerifyOtpRequest;
 import com.login.LoginBus.shared.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -116,5 +119,54 @@ public class AuthController {
         boolean exists = authService.userExists(email);
         return ResponseEntity.ok(new ApiResponse<>(
                 exists ? "Email is already registered" : "Email is available", exists));
+    }
+
+    /**
+     * Send OTP to the phone number registered for this account.
+     * POST /api/v1/auth/forgot-password
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty())
+            throw new IllegalArgumentException("Phone number is required");
+
+        authService.sendPasswordResetOtp(request.getPhoneNumber().trim());
+        return ResponseEntity.ok(new ApiResponse<>("OTP sent to your registered phone number", null));
+    }
+
+    /**
+     * Verify OTP without resetting the password.
+     * POST /api/v1/auth/verify-otp
+     */
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty())
+            throw new IllegalArgumentException("Phone number is required");
+        if (request.getOtp() == null || request.getOtp().trim().isEmpty())
+            throw new IllegalArgumentException("OTP is required");
+
+        authService.verifyOtp(request.getPhoneNumber().trim(), request.getOtp().trim());
+        return ResponseEntity.ok(new ApiResponse<>("OTP verified", null));
+    }
+
+    /**
+     * Reset password using a verified OTP.
+     * POST /api/v1/auth/reset-password
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty())
+            throw new IllegalArgumentException("Phone number is required");
+        if (request.getOtp() == null || request.getOtp().trim().isEmpty())
+            throw new IllegalArgumentException("OTP is required");
+        if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty())
+            throw new IllegalArgumentException("New password is required");
+
+        authService.resetPassword(
+                request.getPhoneNumber().trim(),
+                request.getOtp().trim(),
+                request.getNewPassword()
+        );
+        return ResponseEntity.ok(new ApiResponse<>("Password reset successfully", null));
     }
 }

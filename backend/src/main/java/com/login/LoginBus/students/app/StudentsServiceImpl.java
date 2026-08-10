@@ -78,6 +78,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         }
 
         ChildJpaEntity entity = ChildJpaEntity.fromDomain(child);
+        // A child's route is always the route of the bus they ride — not an
+        // independently chosen value.
+        entity.setRouteId(deriveRouteIdForBus(entity.getBusId()));
         ChildJpaEntity saved = childRepository.save(entity);
 
         return saved.toDomain();
@@ -113,13 +116,25 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         if (child.getParentId() != null) {
             existing.setParentId(child.getParentId());
         }
-        // Update bus, route, and bus stop assignments
+        // Update bus and bus stop assignment. These are always applied as-sent
+        // (not null-guarded like the fields above), so any caller must resend
+        // the child's current busId/busStopId if it isn't intentionally
+        // changing — otherwise it will silently clear them.
         existing.setBusId(child.getBusId());
-        existing.setRouteId(child.getRouteId());
         existing.setBusStopId(child.getBusStopId());
+        // The route is always derived from the assigned bus, not independently
+        // settable — a child rides whatever route their bus takes, and has no
+        // route at all if they have no bus.
+        existing.setRouteId(deriveRouteIdForBus(child.getBusId()));
 
         ChildJpaEntity saved = childRepository.save(existing);
         return saved.toDomain();
+    }
+
+    /** A child's route is always the bus's own route — null if the bus has none, or if there's no bus. */
+    private Long deriveRouteIdForBus(Long busId) {
+        if (busId == null) return null;
+        return busRepository.findById(busId).map(BusJpaEntity::getRouteId).orElse(null);
     }
 
     @Override
@@ -139,8 +154,10 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     // ========== Absence Operations ==========
 
     @Override
+    @Transactional
     public List<Absence> getAllAbsences() {
         return absenceRepository.findAll().stream()
+            .map(this::autoCompleteIfExpired)
             .map(entity -> {
                 Absence absence = entity.toDomain();
                 // Enrich with child name
@@ -153,19 +170,39 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     }
 
     @Override
+    @Transactional
     public List<Absence> getAbsencesForChild(String childId) {
         List<AbsenceJpaEntity> entities = absenceRepository.findByChildId(childId);
         return entities.stream()
+            .map(this::autoCompleteIfExpired)
             .map(AbsenceJpaEntity::toDomain)
             .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public List<Absence> getAbsencesForParent(Long parentId) {
         List<AbsenceJpaEntity> entities = absenceRepository.findByParentId(parentId);
         return entities.stream()
+            .map(this::autoCompleteIfExpired)
             .map(AbsenceJpaEntity::toDomain)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Nothing else ever transitions an absence from ACTIVE to COMPLETED — there's
+     * no scheduled job, so we self-heal it here on every read: if it's still
+     * marked ACTIVE but its end date has already passed, flip it to COMPLETED
+     * and persist that before returning it.
+     */
+    private AbsenceJpaEntity autoCompleteIfExpired(AbsenceJpaEntity entity) {
+        if (entity.getStatus() == com.login.LoginBus.students.domain.AbsenceStatus.ACTIVE
+                && entity.getEndDate() != null
+                && entity.getEndDate().isBefore(java.time.LocalDate.now())) {
+            entity.setStatus(com.login.LoginBus.students.domain.AbsenceStatus.COMPLETED);
+            return absenceRepository.save(entity);
+        }
+        return entity;
     }
 
     @Override
@@ -250,9 +287,12 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     }
 
     @Override
+    @Transactional
     public List<Absence> getActiveAbsencesForParent(Long parentId) {
         List<AbsenceJpaEntity> entities = absenceRepository.findByParentIdAndStatus(parentId, com.login.LoginBus.students.domain.AbsenceStatus.ACTIVE);
         return entities.stream()
+            .map(this::autoCompleteIfExpired)
+            .filter(e -> e.getStatus() == com.login.LoginBus.students.domain.AbsenceStatus.ACTIVE)
             .map(AbsenceJpaEntity::toDomain)
             .collect(Collectors.toList());
     }
