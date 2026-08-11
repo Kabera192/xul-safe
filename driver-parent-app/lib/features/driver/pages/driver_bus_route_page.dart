@@ -105,13 +105,12 @@ final children = rawChildren
       _showCurrentForm();
     });
   }
-  Map<int, int> _computeStopCounts() {
-  final Map<int, int> counts = {};
+  Map<String, int> _computeStopCounts() {
+  final Map<String, int> counts = {};
 
   for (final child in _children) {
-    if (child.pickupStopId != null) {
-      counts[child.pickupStopId!] =
-          (counts[child.pickupStopId!] ?? 0) + 1;
+    if (child.stopId != null) {
+      counts[child.stopId!] = (counts[child.stopId!] ?? 0) + 1;
     }
   }
 

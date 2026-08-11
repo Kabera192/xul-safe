@@ -14,7 +14,7 @@ class DriverBusRouteForm extends StatelessWidget {
   final bool loading;
   final String? error;
   final VoidCallback? onRefreshStops;
-  final Map<int, int> stopCounts;
+  final Map<String, int> stopCounts;
 
   const DriverBusRouteForm({
     super.key,
@@ -186,7 +186,7 @@ class _ErrorCard extends StatelessWidget {
 
 class _StopsTimeline extends StatelessWidget {
   final List<StopModel> stops;
-  final Map<int, int> stopCounts;
+  final Map<String, int> stopCounts;
   final VoidCallback? onRefreshStops;
 
   const _StopsTimeline({

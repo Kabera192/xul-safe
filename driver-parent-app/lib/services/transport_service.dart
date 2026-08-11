@@ -171,7 +171,7 @@ class TransportService {
   }
 
   static Future<Map<String, dynamic>> updateMyStop({
-    required int stopId,
+    required String stopId,
     required String locationName,
     required double locationLat,
     required double locationLong,
@@ -212,7 +212,7 @@ class TransportService {
   }
 
   static Future<void> deleteMyStop({
-    required int stopId,
+    required String stopId,
     required String reason,
   }) async {
     final uri = Uri.parse(

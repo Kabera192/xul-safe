@@ -4,7 +4,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import '../models/child_model.dart';
 
 class DriverAssignStudentsForm extends StatefulWidget {
-  final int stopId;
+  final String stopId;
   final List<ChildModel> children;
   final Future<void> Function(List<String> childIds) onComplete;
   final VoidCallback onCancel;
@@ -34,10 +34,21 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
   static const inputBg = Color(0xFFF5F8FB);
 
   final _searchCtrl = TextEditingController();
-  final Set<String> _selectedChildIds = {};
+  late final Set<String> _selectedChildIds;
 
   bool _saving = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-check whoever is already on this stop, so the list accurately
+    // reflects who's assigned instead of always starting empty.
+    _selectedChildIds = widget.children
+        .where((child) => child.stopId == widget.stopId)
+        .map((child) => child.id)
+        .toSet();
+  }
 
   @override
   void dispose() {
@@ -45,19 +56,10 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
     super.dispose();
   }
 
-  List<ChildModel> get _eligibleChildren {
-    return widget.children.where((child) {
-      final alreadyOnThisStop =
-          child.pickupStopId == widget.stopId && child.dropoffStopId == widget.stopId;
-
-      return !alreadyOnThisStop;
-    }).toList();
-  }
-
   List<ChildModel> get _filteredChildren {
     final query = _searchCtrl.text.trim().toLowerCase();
 
-    final base = _eligibleChildren;
+    final base = widget.children;
 
     if (query.isEmpty) return base;
 
@@ -69,7 +71,8 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
   }
 
   bool _isReassign(ChildModel child) {
-    return child.pickupStopId != null || child.dropoffStopId != null;
+    if (_selectedChildIds.contains(child.id)) return false;
+    return child.stopId != null && child.stopId != widget.stopId;
   }
 
   void _toggleChild(ChildModel child) {
@@ -86,13 +89,6 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
   }
 
   Future<void> _complete() async {
-    if (_selectedChildIds.isEmpty) {
-      setState(() {
-        _error = 'Please select at least one student';
-      });
-      return;
-    }
-
     setState(() {
       _saving = true;
       _error = null;

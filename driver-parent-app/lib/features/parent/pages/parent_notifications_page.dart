@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
+import '../../../core/l10n/app_localizations.dart';
 
 import '../../../services/notification_service.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
@@ -57,10 +58,12 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
       debugPrint('[ParentNotifications] raw count: ${raw.length}');
       if (raw.isNotEmpty) debugPrint('[ParentNotifications] first item keys: ${raw.first.keys.toList()}');
       if (!mounted) return;
+      final notifications =
+          raw.map((j) => NotificationModel.fromApiResponse(j)).toList();
       setState(() {
-        _notifications =
-            raw.map((j) => NotificationModel.fromApiResponse(j)).toList();
+        _notifications = notifications;
       });
+      _markAllVisibleAsRead(notifications);
     } catch (e) {
       debugPrint('[ParentNotifications] ERROR: $e');
       if (!mounted) return;
@@ -74,9 +77,43 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
     }
   }
 
+  /// Opening the notifications section is itself the "read" action — mark
+  /// every notification that was unread at load time as read, rather than
+  /// requiring the parent to tap each one individually.
+  Future<void> _markAllVisibleAsRead(List<NotificationModel> loaded) async {
+    final unread = loaded.where((n) => n.isUnread).toList();
+    if (unread.isEmpty) return;
+
+    final readIds = <int>{};
+    await Future.wait(unread.map((n) async {
+      try {
+        await NotificationService.markAsRead(n.notificationId);
+        readIds.add(n.notificationId);
+      } catch (_) {
+        // Best-effort — a failed item just stays unread until next view.
+      }
+    }));
+
+    if (!mounted || readIds.isEmpty) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    setState(() {
+      _notifications = _notifications.map((item) {
+        if (!readIds.contains(item.notificationId)) return item;
+        return item.copyWith(status: 'READ', readAt: now);
+      }).toList();
+    });
+
+    _refreshShownForm();
+  }
+
   Future<void> _markAsRead(NotificationModel notification) async {
     if (!notification.isUnread) return;
-    await NotificationService.markAsRead(notification.notificationId);
+    try {
+      await NotificationService.markAsRead(notification.notificationId);
+    } catch (_) {
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _notifications = _notifications.map((n) {
@@ -140,14 +177,14 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Notifications',
-                    style: TextStyle(
+                    AppLocalizations.of(context).notifications,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

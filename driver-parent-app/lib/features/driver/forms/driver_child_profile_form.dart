@@ -29,8 +29,8 @@ class DriverChildProfileForm extends StatelessWidget {
             ? 'Not available'
             : child!.guardianPhoneNumber!;
 
-    final stopName = child?.pickupStopName ?? 'Not assigned';
-    final stopCoordinates = child?.pickupStopId == null
+    final stopName = child?.stopName ?? 'Not assigned';
+    final stopCoordinates = child?.stopId == null
         ? 'No coordinates available'
         : 'Coordinates not available yet';
 

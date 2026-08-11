@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/attendance_service.dart';
+import '../../../services/child_service.dart';
 import '../models/attendance_record_model.dart';
 import '../models/child_model.dart';
 import '../models/stop_model.dart';
@@ -49,9 +51,10 @@ class StopAttendanceSheet extends StatefulWidget {
 
 class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   final _searchCtrl = TextEditingController();
-  late int? _selectedStopId;
+  late String? _selectedStopId;
   final Map<String, _Mark> _marks = {};
   Map<String, AttendanceRecordModel> _existingRecords = {};
+  Set<String> _declaredAbsentIds = {};
   bool _loading = false;
   bool _loadingRecords = true;
   bool _success = false;
@@ -66,15 +69,30 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
 
   Future<void> _loadExistingAttendance() async {
     try {
-      final records = await AttendanceService.getSessionAttendance(
-        date: DateTime.now(),
-        session: widget.session,
-      );
+      final results = await Future.wait<dynamic>([
+        AttendanceService.getSessionAttendance(
+          date: DateTime.now(),
+          session: widget.session,
+        ),
+        ChildService.getAbsentChildren(date: DateTime.now(), journey: widget.session)
+            .onError((_, __) => <Map<String, dynamic>>[]),
+      ]);
       if (!mounted) return;
+
+      final records = results[0] as List<AttendanceRecordModel>;
+      final declaredAbsent = results[1] as List<Map<String, dynamic>>;
+
       final map = <String, AttendanceRecordModel>{};
       for (final r in records) {
         map[r.childId] = r;
       }
+
+      final declaredAbsentIds = <String>{
+        for (final c in declaredAbsent)
+          if ((c['childId'] ?? c['id'])?.toString().trim().isNotEmpty == true)
+            (c['childId'] ?? c['id']).toString().trim(),
+      };
+
       // Pre-fill marks for children already confirmed
       final action = widget.forceAction ??
           (widget.session == 'MORNING' ? 'BOARDED' : 'DROPPED_OFF');
@@ -90,8 +108,15 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
           if (alreadyDone) _marks[child.id] = _Mark.present;
         }
       }
+      // A parent-declared absence always locks the child as absent, overriding
+      // any stale boarded/dropped-off flag from a previous confirm.
+      for (final id in declaredAbsentIds) {
+        _marks[id] = _Mark.absent;
+      }
+
       setState(() {
         _existingRecords = map;
+        _declaredAbsentIds = declaredAbsentIds;
         _loadingRecords = false;
       });
     } catch (_) {
@@ -109,11 +134,12 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
 
   bool get _isMorning => widget.session == 'MORNING';
 
-  int? _stopIdFor(ChildModel c) =>
-      _isMorning ? c.pickupStopId : c.dropoffStopId;
+  // A child boards and alights at the same stop, so the same stopId applies
+  // to both the morning pickup and afternoon drop-off session.
+  String? _stopIdFor(ChildModel c) => c.stopId;
 
   List<StopModel> get _stopsWithChildren {
-    final ids = widget.allChildren.map(_stopIdFor).whereType<int>().toSet();
+    final ids = widget.allChildren.map(_stopIdFor).whereType<String>().toSet();
     return widget.allStops.where((s) => ids.contains(s.id)).toList();
   }
 
@@ -133,6 +159,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   void _togglePresent(String childId) {
+    if (_declaredAbsentIds.contains(childId)) return;
     setState(() {
       _marks[childId] =
           _marks[childId] == _Mark.present ? _Mark.none : _Mark.present;
@@ -140,6 +167,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   }
 
   void _toggleAbsent(String childId) {
+    if (_declaredAbsentIds.contains(childId)) return;
     setState(() {
       _marks[childId] =
           _marks[childId] == _Mark.absent ? _Mark.none : _Mark.absent;
@@ -192,13 +220,14 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
     if (!mounted) return;
 
     if (failures > 0) {
+      final l10n = AppLocalizations.of(context);
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             failures == 1
-                ? 'One mark could not be saved. Please try again.'
-                : '$failures marks could not be saved. Please try again.',
+                ? l10n.oneMarkCouldNotBeSaved
+                : l10n.nMarksCouldNotBeSaved(failures),
           ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
@@ -238,6 +267,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
               filtered: _filtered,
               marks: _marks,
               existingRecords: _existingRecords,
+              declaredAbsentIds: _declaredAbsentIds,
               loadingRecords: _loadingRecords,
               loading: _loading,
               canConfirm: _canConfirm,
@@ -308,7 +338,7 @@ class _SuccessView extends StatelessWidget {
           const SizedBox(height: 20),
 
           Text(
-            'Attendance Saved',
+            AppLocalizations.of(context).attendanceSaved,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -320,7 +350,7 @@ class _SuccessView extends StatelessWidget {
           const SizedBox(height: 10),
 
           Text(
-            'The attendance has been successfully recorded for the selected children.',
+            AppLocalizations.of(context).attendanceSavedBody,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.55),
@@ -343,10 +373,10 @@ class _SuccessView extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text(
-                'Got it',
+              child: Text(
+                AppLocalizations.of(context).gotIt,
                 style:
-                    TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -366,15 +396,16 @@ class _FormView extends StatelessWidget {
   final Color onSurface;
   final StopAttendanceSheet widget;
   final TextEditingController searchCtrl;
-  final int? selectedStopId;
+  final String? selectedStopId;
   final List<StopModel> stopsWithChildren;
   final List<ChildModel> filtered;
   final Map<String, _Mark> marks;
   final Map<String, AttendanceRecordModel> existingRecords;
+  final Set<String> declaredAbsentIds;
   final bool loadingRecords;
   final bool loading;
   final bool canConfirm;
-  final void Function(int?) onSelectStop;
+  final void Function(String?) onSelectStop;
   final void Function(String) onTogglePresent;
   final void Function(String) onToggleAbsent;
   final VoidCallback onConfirm;
@@ -390,6 +421,7 @@ class _FormView extends StatelessWidget {
     required this.filtered,
     required this.marks,
     required this.existingRecords,
+    required this.declaredAbsentIds,
     required this.loadingRecords,
     required this.loading,
     required this.canConfirm,
@@ -434,10 +466,10 @@ class _FormView extends StatelessWidget {
               Expanded(
                 child: Text(
                   widget.currentStop == null
-                      ? "Who's on the bus?"
+                      ? AppLocalizations.of(context).whoIsOnBus
                       : (widget.currentStop!.locationName.isNotEmpty
                           ? widget.currentStop!.locationName
-                          : 'Bus Stop'),
+                          : AppLocalizations.of(context).busStop),
                   style: TextStyle(
                     color: onSurface,
                     fontSize: 20,
@@ -487,7 +519,7 @@ class _FormView extends StatelessWidget {
                   child: TextField(
                     controller: searchCtrl,
                     decoration: InputDecoration(
-                      hintText: 'Search a name',
+                      hintText: AppLocalizations.of(context).searchName,
                       hintStyle: TextStyle(
                           color: onSurface.withValues(alpha: 0.4),
                           fontSize: 13),
@@ -512,7 +544,7 @@ class _FormView extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 _Tab(
-                  label: 'All',
+                  label: AppLocalizations.of(context).allStops,
                   active: selectedStopId == null,
                   onTap: () => onSelectStop(null),
                   isDark: isDark,
@@ -547,7 +579,7 @@ class _FormView extends StatelessWidget {
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Text(
-                        'No children at this stop',
+                        AppLocalizations.of(context).noChildrenAtStop,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.45),
                           fontSize: 14,
@@ -565,10 +597,12 @@ class _FormView extends StatelessWidget {
                         final child = filtered[i];
                         final mark = marks[child.id] ?? _Mark.none;
                         final existing = existingRecords[child.id];
+                        final locked = declaredAbsentIds.contains(child.id);
                         return _ChildRow(
                           child: child,
                           mark: mark,
                           existingRecord: existing,
+                          locked: locked,
                           session: widget.session,
                           forceAction: widget.forceAction,
                           onPresent: () => onTogglePresent(child.id),
@@ -673,6 +707,7 @@ class _ChildRow extends StatelessWidget {
   final ChildModel child;
   final _Mark mark;
   final AttendanceRecordModel? existingRecord;
+  final bool locked;
   final String session;
   final String? forceAction;
   final VoidCallback onPresent;
@@ -687,6 +722,7 @@ class _ChildRow extends StatelessWidget {
     required this.child,
     required this.mark,
     required this.existingRecord,
+    required this.locked,
     required this.session,
     required this.forceAction,
     required this.onPresent,
@@ -713,24 +749,32 @@ class _ChildRow extends StatelessWidget {
     // so switching from Absent → ✓ immediately clears the stale pill.
     Widget? statusBadge;
     final rec = existingRecord;
-    if (rec != null && mark == _Mark.none) {
+    if (locked) {
+      statusBadge = _StatusBadge(
+        label: AppLocalizations.of(context).absent,
+        color: _orange,
+        icon: Icons.lock_outline_rounded,
+        isDark: isDark,
+      );
+    } else if (rec != null && mark == _Mark.none) {
+      final l10n = AppLocalizations.of(context);
       if (rec.isAbsent) {
         statusBadge = _StatusBadge(
-          label: 'Absent',
+          label: l10n.absent,
           color: _orange,
           icon: Icons.event_busy_rounded,
           isDark: isDark,
         );
       } else if (_resolvedAction == 'BOARDED' && rec.boarded) {
         statusBadge = _StatusBadge(
-          label: 'Boarded',
+          label: l10n.boarded,
           color: const Color(0xFF21C260),
           icon: Icons.check_circle_outline_rounded,
           isDark: isDark,
         );
       } else if (_resolvedAction == 'DROPPED_OFF' && rec.droppedOff) {
         statusBadge = _StatusBadge(
-          label: 'Dropped off',
+          label: l10n.droppedOff,
           color: _blue,
           icon: Icons.location_on_outlined,
           isDark: isDark,
@@ -738,7 +782,9 @@ class _ChildRow extends StatelessWidget {
       }
     }
 
-    return Padding(
+    return Opacity(
+      opacity: locked ? 0.55 : 1.0,
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
@@ -790,7 +836,7 @@ class _ChildRow extends StatelessWidget {
 
           // Absent (X) button
           GestureDetector(
-            onTap: onAbsent,
+            onTap: locked ? null : onAbsent,
             child: Container(
               width: 34,
               height: 34,
@@ -810,7 +856,7 @@ class _ChildRow extends StatelessWidget {
 
           // Present (checkmark) button
           GestureDetector(
-            onTap: onPresent,
+            onTap: locked ? null : onPresent,
             child: Container(
               width: 34,
               height: 34,
@@ -828,6 +874,7 @@ class _ChildRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

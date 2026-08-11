@@ -73,6 +73,7 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
       });
 
       _refreshShownForm();
+      _markAllVisibleAsRead(notifications);
     } catch (e) {
       debugPrint('[DriverNotifications] ERROR: $e');
       if (!mounted) return;
@@ -93,10 +94,45 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
     }
   }
 
+  /// Opening the notifications section is itself the "read" action — mark
+  /// every notification that was unread at load time as read, rather than
+  /// requiring the driver to tap each one individually.
+  Future<void> _markAllVisibleAsRead(List<NotificationModel> loaded) async {
+    final unread = loaded.where((n) => n.isUnread).toList();
+    if (unread.isEmpty) return;
+
+    final readIds = <int>{};
+    await Future.wait(unread.map((n) async {
+      try {
+        await NotificationService.markAsRead(n.notificationId);
+        readIds.add(n.notificationId);
+      } catch (_) {
+        // Best-effort — a failed item just stays unread until next view.
+      }
+    }));
+
+    if (!mounted || readIds.isEmpty) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    setState(() {
+      _notifications = _notifications.map((item) {
+        if (!readIds.contains(item.notificationId)) return item;
+        return item.copyWith(status: 'READ', readAt: now);
+      }).toList();
+    });
+
+    _refreshShownForm();
+    widget.onUnreadChanged?.call();
+  }
+
   Future<void> _markAsRead(NotificationModel notification) async {
     if (!notification.isUnread) return;
 
-    await NotificationService.markAsRead(notification.notificationId);
+    try {
+      await NotificationService.markAsRead(notification.notificationId);
+    } catch (_) {
+      return;
+    }
 
     if (!mounted) return;
 

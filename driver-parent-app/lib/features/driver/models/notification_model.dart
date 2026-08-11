@@ -21,6 +21,41 @@ class NotificationModel {
 
   bool get isUnread => status.toUpperCase() == 'SENT';
 
+  /// Human-friendly send time, e.g. "5m ago", "Yesterday, 3:45 PM",
+  /// or "Jan 5, 3:45 PM" for anything older.
+  String get formattedSentAt {
+    final ts = sentAt;
+    if (ts == null) return '';
+
+    final dt = DateTime.fromMillisecondsSinceEpoch(ts);
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24 && dt.day == now.day) return '${diff.inHours}h ago';
+
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = '$hour12:$minute $period';
+
+    final yesterday = now.subtract(const Duration(days: 1));
+    final isYesterday = dt.year == yesterday.year &&
+        dt.month == yesterday.month &&
+        dt.day == yesterday.day;
+    if (isYesterday) return 'Yesterday, $timeStr';
+
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final dateStr = dt.year == now.year
+        ? '${months[dt.month - 1]} ${dt.day}'
+        : '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    return '$dateStr, $timeStr';
+  }
+
   NotificationModel copyWith({
     int? notificationId,
     String? title,

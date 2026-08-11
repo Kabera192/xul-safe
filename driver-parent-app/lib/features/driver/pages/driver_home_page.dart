@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/attendance_service.dart';
 import '../../../services/child_service.dart';
 import '../models/attendance_record_model.dart';
@@ -50,7 +51,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
   Timer? _gpsTimer;
 
   // Attendance popup state
-  final Set<int> _confirmedStopIds = {};
+  final Set<String> _confirmedStopIds = {};
   bool _popupShowing = false;
 
   bool get _journeyActive => _activeJourney != null;
@@ -209,7 +210,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
 
   Future<void> _showStartJourneyDialog() async {
     if (_children.isEmpty) {
-      _showSnack('No children are assigned to this bus yet.');
+      _showSnack(AppLocalizations.of(context).noChildrenOnBus);
       return;
     }
 
@@ -266,7 +267,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           allStops: _stops,
           allChildren: childrenForPopup,
           session: 'MORNING',
-          confirmLabel: 'Confirm & Start Journey',
+          confirmLabel: AppLocalizations.of(context).confirmAndStartJourney,
         ),
       );
       _popupShowing = false;
@@ -283,11 +284,11 @@ class _DriverHomePageState extends State<DriverHomePage> {
     final route = _route;
 
     if (driver == null) {
-      _showSnack('Waiting for GPS fix — try again in a moment.');
+      _showSnack(AppLocalizations.of(context).waitingForGps);
       return;
     }
     if (profile == null || bus == null || route == null) {
-      _showSnack('Bus data not loaded. Tap refresh and try again.');
+      _showSnack(AppLocalizations.of(context).busDataNotLoaded);
       return;
     }
 
@@ -304,7 +305,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
       setState(() => _activeJourney = result);
       _startGpsSharing();
     } catch (e) {
-      _showSnack('Could not start journey: $e');
+      if (!mounted) return;
+      _showSnack(AppLocalizations.of(context).couldNotStartJourney(e.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -330,7 +332,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
         _confirmedStopIds.clear();
       });
     } catch (e) {
-      _showSnack('Could not end journey: $e');
+      if (!mounted) return;
+      _showSnack(AppLocalizations.of(context).couldNotEndJourney(e.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -357,7 +360,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
 
   Future<void> _showAllChildrenSheet() async {
     if (_children.isEmpty) {
-      _showSnack('No children assigned to this bus yet.');
+      _showSnack(AppLocalizations.of(context).noChildrenOnBusYet);
       return;
     }
 
@@ -380,7 +383,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
         allChildren: _children,
         session: session,
         forceAction: 'BOARDED',
-        confirmLabel: 'Mark as Onboarded',
+        confirmLabel: AppLocalizations.of(context).markAsOnboarded,
       ),
     );
   }
@@ -599,7 +602,7 @@ class _StatusPill extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '$plateNumber — ${isOnline ? 'online' : 'offline'}',
+            '$plateNumber — ${isOnline ? AppLocalizations.of(context).online : AppLocalizations.of(context).offline}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 13,
@@ -777,12 +780,13 @@ class _DriverInfoCard extends StatelessWidget {
     final borderColor =
         isDark ? const Color(0xFF1E2D40) : const Color(0xFFE8EFF9);
 
+    final l10n = AppLocalizations.of(context);
     final routeName = route?['name']?.toString() ??
         route?['routeName']?.toString() ??
-        'Bus route';
+        l10n.busRoute;
     final routeId = route?['id'];
     final routeLabel =
-        routeId != null ? 'Bus route $routeId' : 'Bus route';
+        routeId != null ? '${l10n.busRoute} $routeId' : l10n.busRoute;
 
     return Container(
       decoration: BoxDecoration(
@@ -859,9 +863,9 @@ class _DriverInfoCard extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text(
-                          'End Journey',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.endJourney,
+                          style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       )
@@ -874,9 +878,9 @@ class _DriverInfoCard extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text(
-                          'Start a new journey',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.startNewJourney,
+                          style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -1021,7 +1025,7 @@ class _ChildrenRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '$childCount Total children',
+              AppLocalizations.of(context).totalChildren(childCount),
               style: TextStyle(
                 color: onSurface,
                 fontSize: 14,
@@ -1048,11 +1052,12 @@ class _JourneyActiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final label = tripType == 'MORNING_PICKUP'
-        ? 'Morning Pickup — GPS Sharing Active'
+        ? l10n.morningPickupActive
         : tripType == 'AFTERNOON_DROPOFF'
-            ? 'Afternoon Drop-off — GPS Sharing Active'
-            : 'Journey Active — GPS Sharing';
+            ? l10n.afternoonDropoffActive
+            : l10n.journeyActive;
 
     return Container(
       width: double.infinity,
@@ -1144,9 +1149,9 @@ class _CurrentStopRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Current target stop',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).currentTargetStop,
+                  style: const TextStyle(
                     color: Color(0xFFFF6B35),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -1196,8 +1201,8 @@ class _ErrorRow extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetry,
-            child: const Text('Retry',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.of(context).retry,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -1221,6 +1226,7 @@ class _StartJourneySheet extends StatelessWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final borderColor =
         isDark ? const Color(0xFF1E2D40) : const Color(0xFFE8EFF9);
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -1253,7 +1259,7 @@ class _StartJourneySheet extends StatelessWidget {
           ),
 
           Text(
-            'Start a new journey',
+            l10n.startJourneySheetTitle,
             style: TextStyle(
               color: onSurface,
               fontSize: 20,
@@ -1262,7 +1268,7 @@ class _StartJourneySheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Your GPS location will be shared with parents in real time. Select the trip type to begin.',
+            l10n.startJourneySheetSubtitle,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.5),
               fontSize: 13,
@@ -1275,8 +1281,8 @@ class _StartJourneySheet extends StatelessWidget {
             icon: IconsaxPlusBold.sun_1,
             iconColor: const Color(0xFFFF9500),
             iconBg: const Color(0xFFFFF3E0),
-            title: 'Morning Pickup',
-            subtitle: 'Pick up children and take them to school',
+            title: l10n.morningPickup,
+            subtitle: l10n.morningPickupDesc,
             borderColor: borderColor,
             isDark: isDark,
             isSuggested: suggestedType == 'MORNING_PICKUP',
@@ -1288,8 +1294,8 @@ class _StartJourneySheet extends StatelessWidget {
             icon: IconsaxPlusBold.moon,
             iconColor: const Color(0xFF0D4896),
             iconBg: const Color(0xFFEEF3FD),
-            title: 'Afternoon Drop-off',
-            subtitle: 'Drop children off at their bus stops after school',
+            title: l10n.afternoonDropoff,
+            subtitle: l10n.afternoonDropoffDesc,
             borderColor: borderColor,
             isDark: isDark,
             isSuggested: suggestedType == 'AFTERNOON_DROPOFF',
@@ -1383,9 +1389,9 @@ class _StartJourneyOption extends StatelessWidget {
                             color: _blue.withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            'Suggested',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context).suggested,
+                            style: const TextStyle(
                               color: _blue,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -1480,7 +1486,7 @@ class _EndJourneySheet extends StatelessWidget {
           const SizedBox(height: 16),
 
           Text(
-            'End Journey',
+            AppLocalizations.of(context).endJourneyConfirmTitle,
             style: TextStyle(
               color: onSurface,
               fontSize: 20,
@@ -1489,7 +1495,7 @@ class _EndJourneySheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Are you sure you want to end the current journey?\nGPS sharing will stop immediately.',
+            AppLocalizations.of(context).endJourneyConfirmBody,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.55),
@@ -1514,9 +1520,9 @@ class _EndJourneySheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).cancel,
+                      style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -1535,9 +1541,9 @@ class _EndJourneySheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text(
-                      'End Journey',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).endJourney,
+                      style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -1599,7 +1605,7 @@ class _SessionPickerSheet extends StatelessWidget {
           ),
 
           Text(
-            'Mark attendance for',
+            AppLocalizations.of(context).markAttendanceFor,
             style: TextStyle(
               color: onSurface,
               fontSize: 20,
@@ -1608,7 +1614,7 @@ class _SessionPickerSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Which session are these children boarding for?',
+            AppLocalizations.of(context).whichSession,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.5),
               fontSize: 13,
@@ -1622,8 +1628,8 @@ class _SessionPickerSheet extends StatelessWidget {
             icon: IconsaxPlusBold.sun_1,
             iconColor: const Color(0xFFFF9500),
             iconBg: const Color(0xFFFFF3E0),
-            title: 'Morning',
-            subtitle: 'Mark children as onboarded for the morning session',
+            title: AppLocalizations.of(context).morning,
+            subtitle: AppLocalizations.of(context).morningSessionDesc,
             borderColor: borderColor,
             isDark: isDark,
             onTap: () => Navigator.of(context).pop('MORNING'),
@@ -1635,8 +1641,8 @@ class _SessionPickerSheet extends StatelessWidget {
             icon: IconsaxPlusBold.moon,
             iconColor: _blue,
             iconBg: const Color(0xFFEEF3FD),
-            title: 'Afternoon',
-            subtitle: 'Mark children as onboarded for the afternoon session',
+            title: AppLocalizations.of(context).afternoon,
+            subtitle: AppLocalizations.of(context).afternoonSessionDesc,
             borderColor: borderColor,
             isDark: isDark,
             onTap: () => Navigator.of(context).pop('AFTERNOON'),

@@ -1,7 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/emergency_contact_service.dart';
+import '../../../widgets/language_picker_sheet.dart';
 
 class ParentMoreSettingsForm extends StatefulWidget {
   const ParentMoreSettingsForm({super.key});
@@ -34,6 +36,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
   }
 
   Future<void> _showAddContactDialog() async {
+    final l10n = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
     final phoneCtrl = TextEditingController();
     final labelCtrl = TextEditingController();
@@ -45,7 +48,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, set) => AlertDialog(
-          title: const Text('New Emergency Contact'),
+          title: Text(l10n.newEmergencyContact),
           content: Form(
             key: formKey,
             child: Column(
@@ -54,14 +57,14 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
                 TextFormField(
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Phone number *'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  decoration: InputDecoration(labelText: l10n.phoneNumberField),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: labelCtrl,
-                  decoration: const InputDecoration(labelText: 'Label *', hintText: 'e.g. Aunt, Uncle'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  decoration: InputDecoration(labelText: l10n.labelField, hintText: l10n.labelHint),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 if (dialogError != null) ...[
                   const SizedBox(height: 10),
@@ -73,7 +76,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           actions: [
             TextButton(
               onPressed: saving ? null : () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: saving ? null : () async {
@@ -92,7 +95,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
               },
               child: saving
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Save'),
+                  : Text(l10n.save),
             ),
           ],
         ),
@@ -104,14 +107,18 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
     final id = contact['id'];
     if (id == null) return;
 
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove contact?'),
-        content: Text('${contact['label'] ?? ''} (${contact['phoneNumber'] ?? ''}) will be removed.'),
+        title: Text(l10n.removeContactTitle),
+        content: Text(l10n.removeContactBody(
+          contact['label']?.toString() ?? '',
+          contact['phoneNumber']?.toString() ?? '',
+        )),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(l10n.remove)),
         ],
       ),
     );
@@ -132,6 +139,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -139,7 +147,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // SECTION 1 — Emergency Contacts
-          const _SectionTitle('Emergency Contacts'),
+          _SectionTitle(l10n.emergencyContacts),
           const SizedBox(height: 8),
 
           if (_loadingContacts)
@@ -147,40 +155,40 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           else if (_contactsError != null)
             SizedBox(height: 60, child: Center(child: Text(_contactsError!, style: const TextStyle(color: Colors.red, fontSize: 13))))
           else if (_contacts.isEmpty)
-            const SizedBox(height: 40, child: Center(child: Text('No emergency contact yet')))
+            SizedBox(height: 40, child: Center(child: Text(l10n.noEmergencyContact)))
           else
             ...(_contacts.map((c) => _ContactTile(contact: c, onDelete: () => _deleteContact(c)))),
 
           const SizedBox(height: 10),
-          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: 'New contact', onTap: _showAddContactDialog),
+          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: l10n.newContact, onTap: _showAddContactDialog),
 
           const SizedBox(height: 22),
 
           // SECTION 2 — My route details
-          const _SectionTitle('My route details'),
+          _SectionTitle(l10n.myRouteDetails),
           const SizedBox(height: 8),
           const SizedBox(height: 8),
-          Center(child: Text('No routes/stops', style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 14.5, fontWeight: FontWeight.w500))),
+          Center(child: Text(l10n.noRoutesStops, style: TextStyle(color: onSurface.withValues(alpha: 0.6), fontSize: 14.5, fontWeight: FontWeight.w500))),
           const SizedBox(height: 10),
-          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: 'Request a custom bus stop', onTap: null),
+          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: l10n.requestCustomStop, onTap: null),
 
           const SizedBox(height: 22),
 
           // SECTION 3 — Journey logs
-          const _SectionTitle('Journey logs'),
+          _SectionTitle(l10n.journeyLogs),
           const SizedBox(height: 8),
-          _SoftCardButton(icon: IconsaxPlusLinear.refresh_left_square, title: "View all your kids' journeys", onTap: null),
+          _SoftCardButton(icon: IconsaxPlusLinear.refresh_left_square, title: l10n.viewAllJourneys, onTap: null),
 
           const SizedBox(height: 22),
 
           // SECTION 4 — Language & support
-          const _SectionTitle('Language & support'),
+          _SectionTitle(l10n.languageAndSupport),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.global, text: 'Language', onTap: null),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.global, text: l10n.language, onTap: () => showLanguagePicker(context)),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.message_question, text: 'Contact support', onTap: null),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.message_question, text: l10n.contactSupport, onTap: null),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.document_text, text: 'Send a claim', onTap: null),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.document_text, text: l10n.sendClaim, onTap: null),
 
           const SizedBox(height: 10),
         ],
@@ -213,7 +221,7 @@ class _ContactTile extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: const CircleAvatar(backgroundColor: Color(0xFFEBF1FE), child: Icon(IconsaxPlusLinear.call, color: blue, size: 18)),
         title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        subtitle: Text(phone, style: TextStyle(fontSize: 13, color: onSurface.withOpacity(0.6))),
+        subtitle: Text(phone, style: TextStyle(fontSize: 13, color: onSurface.withValues(alpha: 0.6))),
         trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20), onPressed: onDelete),
       ),
     );
@@ -334,7 +342,7 @@ class _WhiteOptionTile extends StatelessWidget {
               Icon(icon, size: 18, color: blue),
               const SizedBox(width: 10),
               Expanded(child: Text(text, style: TextStyle(color: onSurface, fontSize: 14.5, fontWeight: FontWeight.w500))),
-              Icon(Icons.more_vert, size: 16, color: onSurface.withOpacity(0.38)),
+              Icon(Icons.more_vert, size: 16, color: onSurface.withValues(alpha: 0.38)),
             ],
           ),
         ),

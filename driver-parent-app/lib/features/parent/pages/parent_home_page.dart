@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/session/session_storage.dart';
 import '../../../services/child_service.dart';
 import '../../../services/tracking_service.dart';
@@ -69,12 +70,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return _distanceMeters(bus, parent) < 200;
   }
 
-  String get _etaText {
+  String _getEtaText(AppLocalizations l10n) {
     final eta = _tracking?['estimatedArrival']?.toString() ?? '';
     if (eta.isEmpty) return '';
     final asNum = int.tryParse(eta.trim());
-    if (asNum != null) return '$asNum min to reach home';
-    return '$eta to reach home';
+    if (asNum != null) return l10n.minToReachHome(asNum);
+    return l10n.etaToReachHome(eta);
   }
 
   // Prefer live tracking conductor when journey is active
@@ -214,6 +215,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final center = _busLatLng ?? _parentLatLng ?? _kigali;
 
     return MobileLocationGate(
@@ -279,7 +281,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: _StatusBanner(
                     arrived: _busArrived,
-                    etaText: _etaText,
+                    etaText: _getEtaText(l10n),
                   ),
                 ),
               ),
@@ -352,9 +354,10 @@ class _StatusBanner extends StatelessWidget {
     final icon = arrived
         ? IconsaxPlusBold.shield_tick
         : IconsaxPlusLinear.clock;
+    final l10n = AppLocalizations.of(context);
     final label = arrived
-        ? 'Bus has arrived'
-        : (etaText.isNotEmpty ? etaText : 'Bus is on its way');
+        ? l10n.busHasArrived
+        : (etaText.isNotEmpty ? etaText : l10n.busOnItsWay);
 
     return Container(
       height: 52,
@@ -471,8 +474,9 @@ class _BottomPanel extends StatelessWidget {
     final borderColor = isDark ? const Color(0xFF1E2D40) : const Color(0xFFDCE6F5);
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
+    final l10n = AppLocalizations.of(context);
     final conductorName =
-        conductor?['fullName']?.toString() ?? 'No conductor assigned';
+        conductor?['fullName']?.toString() ?? l10n.noConductorAssigned;
     final conductorPhone = conductor?['phoneNumber']?.toString() ?? '—';
     final conductorPhoto = conductor?['photoUrl']?.toString();
     final plateNumber = bus?['plateNumber']?.toString();
@@ -534,7 +538,7 @@ class _BottomPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your conductor',
+                        l10n.yourConductor,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.5),
                           fontSize: 11,
@@ -658,14 +662,14 @@ class _BusArrivedDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
-              'Bus has reached the bus stop',
+            Text(
+              AppLocalizations.of(context).busReachedStop,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 10),
             Text(
-              'The bus has arrived at the bus stop, pick up your kids from the bus stop as soon as possible.',
+              AppLocalizations.of(context).busReachedStopBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade600,
@@ -687,9 +691,9 @@ class _BusArrivedDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Got it',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                child: Text(
+                  AppLocalizations.of(context).gotIt,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
             ),

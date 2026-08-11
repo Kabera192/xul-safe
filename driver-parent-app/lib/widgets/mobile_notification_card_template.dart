@@ -77,6 +77,17 @@ class MobileNotificationCardTemplate extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (notification.formattedSentAt.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      notification.formattedSentAt,
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.4),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

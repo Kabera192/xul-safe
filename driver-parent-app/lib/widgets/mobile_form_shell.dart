@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/app_localizations.dart';
+
 class MobileFormShell extends StatefulWidget {
   final double height;          // height decided by the page
   final Widget child;           // content decided by the page
@@ -133,9 +135,9 @@ class _MobileFormShellState extends State<MobileFormShell> {
                   color: blue.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  "Scroll down ↓",
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).scrollDown,
+                  style: const TextStyle(
                     color: blue,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

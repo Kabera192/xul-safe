@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/profile_service.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
 import '../../../widgets/mobile_form_shell.dart';
@@ -179,6 +180,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   Future<void> _pickPhoto() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
@@ -197,7 +199,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       if (!mounted) return;
 
       setState(() {
-        _photoError = 'Could not pick image';
+        _photoError = l10n.couldNotPickImage;
       });
 
       _showCurrentForm();
@@ -205,11 +207,12 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   Future<void> _savePhoto() async {
+    final l10n = AppLocalizations.of(context);
     final file = _selectedPhotoFile;
 
     if (file == null) {
       setState(() {
-        _photoError = 'Please choose an image first';
+        _photoError = l10n.pleaseChooseImage;
       });
       _showCurrentForm();
       return;
@@ -456,9 +459,9 @@ class _ProfilePictureCard extends StatelessWidget {
                 horizontal: 18,
                 vertical: 8,
               ),
-              child: const Text(
-                'Change photo',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context).changePhoto,
+                style: const TextStyle(
                   color: blue,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

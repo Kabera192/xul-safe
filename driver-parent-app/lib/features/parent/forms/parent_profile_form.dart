@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/config/theme_service.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../models/parent_profile_edit_mode.dart';
 import '../models/parent_profile_model.dart';
 import '../../../main.dart';
@@ -46,7 +47,7 @@ class ParentProfileForm extends StatelessWidget {
           const SizedBox(height: 4),
           Center(
             child: Text(
-              'Parent profile',
+              AppLocalizations.of(context).parentProfile,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w300,
@@ -128,13 +129,13 @@ class ParentProfileForm extends StatelessWidget {
             child: Column(
               children: [
                 _ProfileActionRow(
-                  text: 'Theme',
+                  text: AppLocalizations.of(context).theme,
                   rightWidget: const _ThemeDot(),
                   onTap: () => ThemeService.toggle(),
                 ),
                 const _PaddedDivider(),
                 _ProfileActionRow(
-                  text: 'Sign out',
+                  text: AppLocalizations.of(context).signOut,
                   rightIcon: IconsaxPlusLinear.logout,
                   onTap: () => _signOut(context),
                 ),
@@ -275,7 +276,9 @@ class _ThemeDot extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isDark ? 'Dark' : 'Light',
+              isDark
+                  ? AppLocalizations.of(context).themeDark
+                  : AppLocalizations.of(context).themeLight,
               style: const TextStyle(
                 color: blue,
                 fontSize: 13,

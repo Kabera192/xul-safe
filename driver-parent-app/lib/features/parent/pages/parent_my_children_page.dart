@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
 import '../../../widgets/mobile_form_shell.dart';
 import '../../../widgets/mobile_animated_form_host.dart';
@@ -105,6 +106,7 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, set) {
+          final l10n = AppLocalizations.of(ctx);
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
@@ -223,7 +225,7 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Add a child',
+                          l10n.addAChild,
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -231,9 +233,9 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Fill in the details below to register your child.',
+                          l10n.fillInChildDetails,
                           style: TextStyle(
-                              color: onSurface.withOpacity(0.5),
+                              color: onSurface.withValues(alpha: 0.5),
                               fontSize: 13),
                         ),
                         const SizedBox(height: 22),
@@ -278,10 +280,10 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                                             color:
                                                 onSurface.withOpacity(0.35)),
                                         const SizedBox(height: 8),
-                                        Text('Add photo (optional)',
+                                        Text(l10n.addPhotoOptional,
                                             style: TextStyle(
                                                 color: onSurface
-                                                    .withOpacity(0.45),
+                                                    .withValues(alpha: 0.45),
                                                 fontSize: 13)),
                                       ],
                                     ),
@@ -292,16 +294,16 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                         // ── Full name ────────────────────────────────────
                         inputBox(
                           controller: nameCtrl,
-                          label: 'Full name *',
+                          label: l10n.fullNameField,
                           validator: (v) =>
-                              (v == null || v.trim().isEmpty) ? 'Required' : null,
+                              (v == null || v.trim().isEmpty) ? l10n.required : null,
                         ),
                         const SizedBox(height: 14),
                         // ── Date of birth ────────────────────────────────
                         FormField<DateTime>(
                           initialValue: selectedBirthDate,
                           validator: (_) => selectedBirthDate == null
-                              ? 'Date of birth is required'
+                              ? l10n.dateOfBirthRequired
                               : null,
                           builder: (field) {
                             final hasDate = selectedBirthDate != null;
@@ -339,11 +341,11 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                                             ? '${selectedBirthDate!.year}-'
                                                 '${selectedBirthDate!.month.toString().padLeft(2, '0')}-'
                                                 '${selectedBirthDate!.day.toString().padLeft(2, '0')}'
-                                            : 'Date of birth *',
+                                            : l10n.dateOfBirthField,
                                         style: TextStyle(
                                           color: hasDate
                                               ? onSurface
-                                              : onSurface.withOpacity(0.45),
+                                              : onSurface.withValues(alpha: 0.45),
                                           fontSize: 14.5,
                                         ),
                                       ),
@@ -389,11 +391,11 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                                       ),
                                       child: Center(
                                         child: Text(
-                                          g == 'MALE' ? 'Male' : 'Female',
+                                          g == 'MALE' ? l10n.male : l10n.female,
                                           style: TextStyle(
                                             color: selectedGender == g
                                                 ? Colors.white
-                                                : onSurface.withOpacity(0.6),
+                                                : onSurface.withValues(alpha: 0.6),
                                             fontWeight: selectedGender == g
                                                 ? FontWeight.w700
                                                 : FontWeight.normal,
@@ -411,21 +413,21 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                         // ── Grade ────────────────────────────────────────
                         inputBox(
                           controller: gradeCtrl,
-                          label: 'Grade *',
-                          hint: 'e.g. Grade 3',
+                          label: l10n.gradeField,
+                          hint: l10n.gradeHint,
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Required';
+                              return l10n.required;
                             }
                             final match = RegExp(
                               r'^Grade\s+(\d+)$',
                             ).firstMatch(v.trim());
                             if (match == null) {
-                              return 'Use format: Grade 3';
+                              return l10n.gradeFormat;
                             }
                             final n = int.parse(match.group(1)!);
                             if (n < 1 || n > 13) {
-                              return 'Grade must be between 1 and 13';
+                              return l10n.gradeRange;
                             }
                             return null;
                           },
@@ -510,9 +512,9 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                                         strokeWidth: 2,
                                         color: Colors.white),
                                   )
-                                : const Text(
-                                    'Add child',
-                                    style: TextStyle(
+                                : Text(
+                                    l10n.addChild,
+                                    style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700),
                                   ),
@@ -551,14 +553,14 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'My Children',
-                    style: TextStyle(
+                    AppLocalizations.of(context).myChildren,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

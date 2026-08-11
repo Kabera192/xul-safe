@@ -5,11 +5,9 @@ class ChildModel {
   final String fullName;
   final String? gender;
   final String? photoUrl;
-  final int? pickupStopId;
-  final int? dropoffStopId;
+  final String? stopId;
 
-  final String? pickupStopName;
-  final String? dropoffStopName;
+  final String? stopName;
   final String? guardianPhoneNumber;
 
   final int? createdAt; // ✅ NEW
@@ -21,10 +19,8 @@ class ChildModel {
     required this.fullName,
     required this.gender,
     required this.photoUrl,
-    required this.pickupStopId,
-    required this.dropoffStopId,
-    this.pickupStopName,
-    this.dropoffStopName,
+    required this.stopId,
+    this.stopName,
     this.guardianPhoneNumber,
     this.createdAt,
   });
@@ -37,10 +33,8 @@ class ChildModel {
       fullName: (json['fullName'] ?? '').toString(),
       gender: json['gender']?.toString(),
       photoUrl: json['photoUrl']?.toString(),
-      pickupStopId: _toNullableInt(json['pickupStopId']),
-      dropoffStopId: _toNullableInt(json['dropoffStopId']),
-      pickupStopName: json['pickupStopName']?.toString(),
-      dropoffStopName: json['dropoffStopName']?.toString(),
+      stopId: json['busStopId']?.toString(),
+      stopName: json['busStopName']?.toString(),
       guardianPhoneNumber: json['guardianPhoneNumber']?.toString(),
       createdAt: _toNullableInt(json['createdAt']), // ✅ NEW
     );

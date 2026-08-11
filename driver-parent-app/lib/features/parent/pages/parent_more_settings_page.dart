@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
 import '../../../widgets/mobile_form_shell.dart';
 import '../../../widgets/mobile_animated_form_host.dart';
@@ -75,17 +76,17 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'More settings',
-                    style: TextStyle(
+                    AppLocalizations.of(context).moreSettings,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
-                      fontWeight: FontWeight.w500, // medium
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

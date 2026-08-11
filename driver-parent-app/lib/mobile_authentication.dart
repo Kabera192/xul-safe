@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'core/config/api_config.dart';
+import 'core/l10n/app_localizations.dart';
 import 'core/session/session_storage.dart';
 import 'features/auth/forgot_password_page.dart';
 import 'features/navigation/driver_nav.dart';
@@ -188,7 +189,7 @@ class _LoginFormState extends State<_LoginForm> {
       if (res.statusCode == 200) {
         if (decoded is! Map<String, dynamic>) {
           setState(() {
-            _error = 'Unexpected server response';
+            _error = AppLocalizations.of(context).unexpectedServerResponse;
           });
           return;
         }
@@ -197,7 +198,7 @@ class _LoginFormState extends State<_LoginForm> {
 
         if (user is! Map<String, dynamic>) {
           setState(() {
-            _error = 'User data missing from response';
+            _error = AppLocalizations.of(context).userDataMissing;
           });
           return;
         }
@@ -230,7 +231,7 @@ class _LoginFormState extends State<_LoginForm> {
 
         _goToHomeByRole(role);
       } else {
-        String message = 'Invalid credentials';
+        String message = AppLocalizations.of(context).invalidCredentials;
 
         if (decoded is Map<String, dynamic>) {
           final serverMessage = decoded['message']?.toString();
@@ -251,7 +252,7 @@ class _LoginFormState extends State<_LoginForm> {
       if (!mounted) return;
 
       setState(() {
-        _error = 'Could not reach server';
+        _error = AppLocalizations.of(context).couldNotReachServer;
       });
     } finally {
       if (!mounted) return;
@@ -264,10 +265,10 @@ class _LoginFormState extends State<_LoginForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _FormShell(
-      title: 'Welcome back!',
-      subtitle:
-          'Please provide your login information to sign in to your account.',
+      title: l10n.welcomeBack,
+      subtitle: l10n.loginSubtitle,
       children: [
         Form(
           key: _formKey,
@@ -284,11 +285,11 @@ class _LoginFormState extends State<_LoginForm> {
                 const SizedBox(height: 8),
               ],
               _FInput(
-                label: 'Email or phone number',
+                label: l10n.emailOrPhone,
                 controller: _identifierCtrl,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
-                    return 'This field is required';
+                    return l10n.fieldRequired;
                   }
 
                   return null;
@@ -296,13 +297,13 @@ class _LoginFormState extends State<_LoginForm> {
               ),
               const SizedBox(height: 12),
               _FInput(
-                label: 'Password',
+                label: l10n.password,
                 controller: _passwordCtrl,
                 obscure: true,
                 showEye: true,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
-                    return 'Password is required';
+                    return l10n.passwordRequired;
                   }
 
                   return null;
@@ -326,9 +327,9 @@ class _LoginFormState extends State<_LoginForm> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
-                    'Forgot password?',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.forgotPassword,
+                    style: const TextStyle(
                       color: Color(0xFF0D4896),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -350,7 +351,7 @@ class _LoginFormState extends State<_LoginForm> {
                   ),
                   onPressed: _loading ? null : _onLogin,
                   child: Text(
-                    _loading ? 'Signing in…' : 'Sign in',
+                    _loading ? l10n.signingIn : l10n.signIn,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -366,9 +367,9 @@ class _LoginFormState extends State<_LoginForm> {
         Center(
           child: TextButton(
             onPressed: widget.onSwitch,
-            child: const Text(
-              'New here? Create account',
-              style: TextStyle(
+            child: Text(
+              l10n.newHereCreateAccount,
+              style: const TextStyle(
                 color: Color(0xFF0D4896),
                 fontWeight: FontWeight.w500,
               ),
@@ -455,18 +456,14 @@ class _SignupFormState extends State<_SignupForm> {
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         if (decoded is! Map<String, dynamic>) {
-          setState(() {
-            _error = 'Unexpected server response';
-          });
+          setState(() => _error = AppLocalizations.of(context).unexpectedServerResponse);
           return;
         }
 
         final user = decoded['user'];
 
         if (user is! Map<String, dynamic>) {
-          setState(() {
-            _error = 'User data missing from response';
-          });
+          setState(() => _error = AppLocalizations.of(context).userDataMissing);
           return;
         }
 
@@ -506,8 +503,7 @@ class _SignupFormState extends State<_SignupForm> {
           MaterialPageRoute(builder: (_) => page),
         );
       } else {
-        String message = 'Registration failed';
-
+        String message = AppLocalizations.of(context).registrationFailed;
         if (decoded is Map<String, dynamic>) {
           final serverMessage = decoded['message']?.toString();
           final serverError = decoded['error']?.toString();
@@ -526,9 +522,7 @@ class _SignupFormState extends State<_SignupForm> {
     } catch (_) {
       if (!mounted) return;
 
-      setState(() {
-        _error = 'Could not reach server. Check your connection.';
-      });
+      setState(() => _error = AppLocalizations.of(context).couldNotReachServerCheck);
     } finally {
       if (!mounted) return;
 
@@ -540,10 +534,10 @@ class _SignupFormState extends State<_SignupForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _FormShell(
-      title: 'Create your account',
-      subtitle:
-          'We are happy to have you! Please fill in the details below to create your account.',
+      title: l10n.createYourAccount,
+      subtitle: l10n.registerSubtitle,
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 380),
@@ -553,11 +547,11 @@ class _SignupFormState extends State<_SignupForm> {
               child: Column(
                 children: [
                   _FInput(
-                    label: 'First name',
+                    label: l10n.firstName,
                     controller: _firstNameCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'First name is required';
+                        return l10n.firstNameRequired;
                       }
 
                       return null;
@@ -565,11 +559,11 @@ class _SignupFormState extends State<_SignupForm> {
                   ),
                   const SizedBox(height: 12),
                   _FInput(
-                    label: 'Last name',
+                    label: l10n.lastName,
                     controller: _lastNameCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Last name is required';
+                        return l10n.lastNameRequired;
                       }
 
                       return null;
@@ -577,11 +571,11 @@ class _SignupFormState extends State<_SignupForm> {
                   ),
                   const SizedBox(height: 12),
                   _FInput(
-                    label: 'Phone number',
+                    label: l10n.phoneNumber,
                     controller: _phoneCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Phone number is required';
+                        return l10n.phoneRequired;
                       }
 
                       return null;
@@ -589,15 +583,15 @@ class _SignupFormState extends State<_SignupForm> {
                   ),
                   const SizedBox(height: 12),
                   _FInput(
-                    label: 'Email address',
+                    label: l10n.emailAddress,
                     controller: _emailCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Email is required';
+                        return l10n.emailRequired;
                       }
 
                       if (!_isValidEmail(v.trim())) {
-                        return 'Please enter a valid email';
+                        return l10n.enterValidEmail;
                       }
 
                       return null;
@@ -607,33 +601,30 @@ class _SignupFormState extends State<_SignupForm> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'More fields below ↓',
+                      l10n.moreFieldsBelow,
                       style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.35),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
                         fontSize: 12,
                       ),
                     ),
                   ),
                   const SizedBox(height: 10),
                   _FInput(
-                    label: 'Password',
+                    label: l10n.password,
                     controller: _passwordCtrl,
                     obscure: true,
                     showEye: true,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
-                        return 'Password is required';
+                        return l10n.passwordRequired;
                       }
 
                       if (v.length < 8) {
-                        return 'Password must be at least 8 characters';
+                        return l10n.passwordMin8;
                       }
 
                       if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(v)) {
-                        return 'Password must contain at least one symbol';
+                        return l10n.passwordNeedsSymbol;
                       }
 
                       return null;
@@ -641,17 +632,17 @@ class _SignupFormState extends State<_SignupForm> {
                   ),
                   const SizedBox(height: 12),
                   _FInput(
-                    label: 'Confirm password',
+                    label: l10n.confirmPassword,
                     controller: _confirmCtrl,
                     obscure: true,
                     showEye: true,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
-                        return 'Please confirm your password';
+                        return l10n.pleaseConfirmPassword;
                       }
 
                       if (v != _passwordCtrl.text) {
-                        return 'Passwords do not match';
+                        return l10n.passwordsDoNotMatch;
                       }
 
                       return null;
@@ -679,9 +670,9 @@ class _SignupFormState extends State<_SignupForm> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              'Create account',
-                              style: TextStyle(
+                          : Text(
+                              l10n.createAccount,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -704,9 +695,9 @@ class _SignupFormState extends State<_SignupForm> {
                   Center(
                     child: TextButton(
                       onPressed: widget.onSwitch,
-                      child: const Text(
-                        'Already have an account? Sign in',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.alreadyHaveAccount,
+                        style: const TextStyle(
                           color: Color(0xFF0D4896),
                           fontWeight: FontWeight.w500,
                         ),
@@ -750,7 +741,7 @@ class _FormShell extends StatelessWidget {
           child: Container(
             width: size.width * 0.9,
             decoration: BoxDecoration(
-              color: surface.withOpacity(0.3),
+              color: surface.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
@@ -794,7 +785,7 @@ class _FormShell extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: TextStyle(
-                    color: onSurface.withOpacity(0.6),
+                    color: onSurface.withValues(alpha: 0.6),
                     fontSize: 15,
                     height: 1.4,
                   ),

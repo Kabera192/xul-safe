@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/session/session_storage.dart';
 import '../../../services/child_service.dart';
 
@@ -95,9 +96,9 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Did you know?',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).didYouKnow,
+                        style: const TextStyle(
                           color: blue,
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
@@ -105,9 +106,9 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'You can mark your students as absent easily by tapping them and select absent action.',
+                        AppLocalizations.of(context).didYouKnowBody,
                         style: TextStyle(
-                          color: onSurface.withOpacity(0.6),
+                          color: onSurface.withValues(alpha: 0.6),
                           fontSize: 12.5,
                           height: 1.3,
                         ),
@@ -140,7 +141,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    TextButton(onPressed: _load, child: const Text('Retry')),
+                    TextButton(onPressed: _load, child: Text(AppLocalizations.of(context).retry)),
                   ],
                 ),
               ),
@@ -155,17 +156,17 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     Icon(IconsaxPlusLinear.user_add, size: 48, color: onSurface.withOpacity(0.26)),
                     const SizedBox(height: 12),
                     Text(
-                      'No children added yet',
+                      AppLocalizations.of(context).noChildrenYet,
                       style: TextStyle(
-                        color: onSurface.withOpacity(0.6),
+                        color: onSurface.withValues(alpha: 0.6),
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Tap + to add your first child',
-                      style: TextStyle(color: onSurface.withOpacity(0.45), fontSize: 13),
+                      AppLocalizations.of(context).tapToAddFirstChild,
+                      style: TextStyle(color: onSurface.withValues(alpha: 0.45), fontSize: 13),
                     ),
                   ],
                 ),
@@ -249,6 +250,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
+          final l10n = AppLocalizations.of(ctx);
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
@@ -312,31 +314,31 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                             ],
                           ),
                         ),
-                        Text('Edit details',
+                        Text(l10n.editDetails,
                             style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                                 color: onSurface)),
                         const SizedBox(height: 4),
-                        Text('Changes will be saved immediately.',
+                        Text(l10n.changesSavedImmediately,
                             style: TextStyle(
-                                color: onSurface.withOpacity(0.5),
+                                color: onSurface.withValues(alpha: 0.5),
                                 fontSize: 13)),
                         const SizedBox(height: 22),
                         _SheetInput(
-                          label: 'Full name *',
+                          label: l10n.fullNameField,
                           controller: nameCtrl,
                           fill: inputFill,
                           border: borderColor,
                           textColor: onSurface,
                           validator: (v) =>
                               (v == null || v.trim().isEmpty)
-                                  ? 'Required'
+                                  ? l10n.required
                                   : null,
                         ),
                         const SizedBox(height: 14),
                         _DatePickerRow(
-                          label: 'Date of birth',
+                          label: l10n.dateOfBirthLabel,
                           selected: selectedBirthDate,
                           fill: inputFill,
                           border: borderColor,
@@ -355,26 +357,26 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         ),
                         const SizedBox(height: 14),
                         _SheetInput(
-                          label: 'Grade',
-                          hint: 'e.g. Grade 3',
+                          label: l10n.gradeLabel,
+                          hint: l10n.gradeHint,
                           controller: gradeCtrl,
                           fill: inputFill,
                           border: borderColor,
                           textColor: onSurface,
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Required';
+                              return l10n.required;
                             }
                             final trimmed = v.trim();
                             final match = RegExp(
                               r'^Grade\s+(\d+)$',
                             ).firstMatch(trimmed);
                             if (match == null) {
-                              return 'Use format: Grade 3';
+                              return l10n.gradeFormat;
                             }
                             final n = int.parse(match.group(1)!);
                             if (n < 1 || n > 13) {
-                              return 'Grade must be between 1 and 13';
+                              return l10n.gradeRange;
                             }
                             return null;
                           },
@@ -390,7 +392,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                           children: [
                             Expanded(
                               child: _SheetButton(
-                                label: 'Cancel',
+                                label: l10n.cancel,
                                 outlined: true,
                                 textColor: onSurface,
                                 borderColor: borderColor,
@@ -402,7 +404,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _SheetButton(
-                                label: saving ? '' : 'Save changes',
+                                label: saving ? '' : l10n.saveChanges,
                                 loading: saving,
                                 onTap: saving
                                     ? null
@@ -472,6 +474,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
+          final l10n = AppLocalizations.of(ctx);
           final borderColor =
               isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
           final uploadBg =
@@ -530,14 +533,14 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         ],
                       ),
                     ),
-                    Text('Change photo',
+                    Text(l10n.changePhoto,
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: onSurface)),
                     const SizedBox(height: 4),
                     Text(
-                        'Tap the box below to choose a photo from your gallery.',
+                        l10n.choosePhotoFromGallery,
                         style: TextStyle(
                             color: onSurface.withOpacity(0.5), fontSize: 13)),
                     const SizedBox(height: 22),
@@ -578,7 +581,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                                         size: 38,
                                         color: onSurface.withOpacity(0.35)),
                                     const SizedBox(height: 10),
-                                    Text('Tap to select photo',
+                                    Text(l10n.tapToSelectPhoto,
                                         style: TextStyle(
                                             color:
                                                 onSurface.withOpacity(0.45),
@@ -599,7 +602,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       children: [
                         Expanded(
                           child: _SheetButton(
-                            label: 'Cancel',
+                            label: l10n.cancel,
                             outlined: true,
                             textColor: onSurface,
                             borderColor: borderColor,
@@ -611,7 +614,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _SheetButton(
-                            label: saving ? '' : 'Upload photo',
+                            label: saving ? '' : l10n.uploadPhoto,
                             loading: saving,
                             onTap: (saving || selectedFile == null)
                                 ? null
@@ -675,6 +678,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
+          final l10n = AppLocalizations.of(ctx);
           final inputFill =
               isDark ? const Color(0xFF1A2530) : const Color(0xFFF6F9FE);
           final borderColor =
@@ -746,19 +750,19 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                           size: 22),
                     ),
                     const SizedBox(height: 12),
-                    Text('Mark $name absent',
+                    Text(l10n.markAbsentTitle(name),
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: onSurface)),
                     const SizedBox(height: 4),
                     Text(
-                        'The driver will be notified and the child will be marked as absent.',
+                        l10n.driverNotifiedAbsent,
                         style: TextStyle(
                             color: onSurface.withOpacity(0.5), fontSize: 13)),
                     const SizedBox(height: 22),
                     // Journey type
-                    _SectionLabel(label: 'Journey', color: onSurface),
+                    _SectionLabel(label: l10n.journeyLabel, color: onSurface),
                     const SizedBox(height: 8),
                     _SegmentedJourneyPicker(
                       selected: selectedJourney,
@@ -773,7 +777,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text('Multiple days',
+                          child: Text(l10n.multipleDays,
                               style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: onSurface,
@@ -791,7 +795,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     ),
                     const SizedBox(height: 10),
                     _DatePickerRow(
-                      label: multiDay ? 'Start date' : 'Date',
+                      label: multiDay ? l10n.startDate : l10n.dateLabel,
                       selected: startDate,
                       fill: inputFill,
                       border: borderColor,
@@ -804,7 +808,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     if (multiDay) ...[
                       const SizedBox(height: 12),
                       _DatePickerRow(
-                        label: 'End date',
+                        label: l10n.endDate,
                         selected: endDate,
                         fill: inputFill,
                         border: borderColor,
@@ -824,7 +828,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       children: [
                         Expanded(
                           child: _SheetButton(
-                            label: 'Cancel',
+                            label: l10n.cancel,
                             outlined: true,
                             textColor: onSurface,
                             borderColor: borderColor,
@@ -836,7 +840,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _SheetButton(
-                            label: saving ? '' : 'Mark absent',
+                            label: saving ? '' : l10n.markAbsentBtn,
                             loading: saving,
                             color: Colors.orange,
                             onTap: saving
@@ -885,7 +889,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
     if (marked && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$name marked absent'),
+          content: Text(AppLocalizations.of(context).markedAbsentSnack(name)),
           backgroundColor: Colors.orange,
         ),
       );
@@ -910,6 +914,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
+          final l10n = AppLocalizations.of(ctx);
           final borderColor =
               isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
 
@@ -977,14 +982,14 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                           color: Colors.red, size: 22),
                     ),
                     const SizedBox(height: 14),
-                    Text('Remove "$name"?',
+                    Text(l10n.removeChildTitle(name),
                         style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w700,
                             color: onSurface)),
                     const SizedBox(height: 8),
                     Text(
-                        'This will permanently delete this child record and all related data. This cannot be undone.',
+                        l10n.removeChildBody,
                         style: TextStyle(
                             color: onSurface.withOpacity(0.55),
                             fontSize: 14,
@@ -1000,7 +1005,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       children: [
                         Expanded(
                           child: _SheetButton(
-                            label: 'Keep',
+                            label: l10n.keep,
                             outlined: true,
                             textColor: onSurface,
                             borderColor: borderColor,
@@ -1012,7 +1017,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _SheetButton(
-                            label: deleting ? '' : 'Yes, remove',
+                            label: deleting ? '' : l10n.yesRemove,
                             loading: deleting,
                             color: Colors.red,
                             onTap: deleting
@@ -1081,6 +1086,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
+          final l10n = AppLocalizations.of(ctx);
           final inputFill =
               isDark ? const Color(0xFF1A2530) : const Color(0xFFF6F9FE);
           final borderColor =
@@ -1149,17 +1155,17 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                           color: Colors.orange, size: 22),
                     ),
                     const SizedBox(height: 12),
-                    Text('Edit $name\'s absence',
+                    Text(l10n.editAbsenceTitle(name),
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: onSurface)),
                     const SizedBox(height: 4),
-                    Text('Update the dates or journey type.',
+                    Text(l10n.updateDatesOrJourney,
                         style: TextStyle(
                             color: onSurface.withOpacity(0.5), fontSize: 13)),
                     const SizedBox(height: 22),
-                    _SectionLabel(label: 'Journey', color: onSurface),
+                    _SectionLabel(label: l10n.journeyLabel, color: onSurface),
                     const SizedBox(height: 8),
                     _SegmentedJourneyPicker(
                       selected: selectedJourney,
@@ -1173,7 +1179,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text('Multiple days',
+                          child: Text(l10n.multipleDays,
                               style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: onSurface,
@@ -1191,7 +1197,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     ),
                     const SizedBox(height: 10),
                     _DatePickerRow(
-                      label: multiDay ? 'Start date' : 'Date',
+                      label: multiDay ? l10n.startDate : l10n.dateLabel,
                       selected: startDate,
                       fill: inputFill,
                       border: borderColor,
@@ -1204,7 +1210,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                     if (multiDay) ...[
                       const SizedBox(height: 12),
                       _DatePickerRow(
-                        label: 'End date',
+                        label: l10n.endDate,
                         selected: endDate,
                         fill: inputFill,
                         border: borderColor,
@@ -1225,7 +1231,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       children: [
                         Expanded(
                           child: _SheetButton(
-                            label: 'Cancel',
+                            label: l10n.cancel,
                             outlined: true,
                             textColor: onSurface,
                             borderColor: borderColor,
@@ -1237,7 +1243,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _SheetButton(
-                            label: saving ? '' : 'Save changes',
+                            label: saving ? '' : l10n.saveChanges,
                             loading: saving,
                             color: Colors.orange,
                             onTap: saving
@@ -1307,6 +1313,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final surface = Theme.of(ctx).colorScheme.surface;
           final onSurface = Theme.of(ctx).colorScheme.onSurface;
+          final l10n = AppLocalizations.of(ctx);
           final borderColor =
               isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
 
@@ -1374,16 +1381,16 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                           color: Colors.green, size: 22),
                     ),
                     const SizedBox(height: 14),
-                    Text('$name is available?',
+                    Text(l10n.nameIsAvailable(name),
                         style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w700,
                             color: onSurface)),
                     const SizedBox(height: 8),
                     Text(
-                        'This will cancel the absence marked from $startFmt'
-                        '${endFmt != startFmt ? " to $endFmt" : ""}. '
-                        'The driver will be notified that $name is back.',
+                        endFmt != startFmt
+                            ? l10n.cancelAbsenceRange(name, startFmt, endFmt)
+                            : l10n.cancelAbsenceSingle(name, startFmt),
                         style: TextStyle(
                             color: onSurface.withOpacity(0.55),
                             fontSize: 14,
@@ -1399,7 +1406,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                       children: [
                         Expanded(
                           child: _SheetButton(
-                            label: 'Keep absence',
+                            label: l10n.keepAbsence,
                             outlined: true,
                             textColor: onSurface,
                             borderColor: borderColor,
@@ -1411,7 +1418,7 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _SheetButton(
-                            label: cancelling ? '' : 'Yes, cancel it',
+                            label: cancelling ? '' : l10n.yesCancelIt,
                             loading: cancelling,
                             color: Colors.green,
                             onTap: cancelling
@@ -1596,8 +1603,8 @@ class _ChildActionsSheetState extends State<_ChildActionsSheet> {
                         color: Colors.orange.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text('Absent',
-                          style: TextStyle(
+                      child: Text(AppLocalizations.of(context).absent,
+                          style: const TextStyle(
                               color: Colors.orange,
                               fontSize: 11,
                               fontWeight: FontWeight.w700)),
@@ -1610,16 +1617,16 @@ class _ChildActionsSheetState extends State<_ChildActionsSheet> {
             _SheetTile(
               icon: IconsaxPlusLinear.edit,
               iconColor: blue,
-              label: 'Edit details',
-              subtitle: 'Update name, grade or birth date',
+              label: AppLocalizations.of(context).editDetails,
+              subtitle: AppLocalizations.of(context).editDetailsSubtitle,
               onTap: widget.onEditDetails,
             ),
             Divider(color: borderColor, height: 1, indent: 68),
             _SheetTile(
               icon: IconsaxPlusLinear.gallery_edit,
               iconColor: const Color(0xFF5A7FBF),
-              label: 'Change photo',
-              subtitle: 'Upload a profile picture',
+              label: AppLocalizations.of(context).changePhoto,
+              subtitle: AppLocalizations.of(context).changePhotoSubtitle,
               onTap: widget.onChangePhoto,
             ),
             Divider(color: borderColor, height: 1, indent: 68),
@@ -1639,32 +1646,32 @@ class _ChildActionsSheetState extends State<_ChildActionsSheet> {
               _SheetTile(
                 icon: IconsaxPlusLinear.calendar_edit,
                 iconColor: Colors.orange,
-                label: 'Edit absence',
-                subtitle: 'Change the dates or journey type',
+                label: AppLocalizations.of(context).editAbsenceAction,
+                subtitle: AppLocalizations.of(context).editAbsenceSubtitle,
                 onTap: () => widget.onEditAbsence(_activeAbsence!),
               ),
               Divider(color: borderColor, height: 1, indent: 68),
               _SheetTile(
                 icon: IconsaxPlusLinear.calendar_tick,
                 iconColor: Colors.green,
-                label: 'Cancel absence',
-                subtitle: '${widget.name} is available, remove the absence',
+                label: AppLocalizations.of(context).cancelAbsenceAction,
+                subtitle: AppLocalizations.of(context).cancelAbsenceSubtitle(widget.name),
                 onTap: () => widget.onCancelAbsence(_activeAbsence!),
               ),
             ] else
               _SheetTile(
                 icon: IconsaxPlusLinear.calendar_remove,
                 iconColor: Colors.orange,
-                label: 'Mark as absent',
-                subtitle: 'Notify driver for one or more days',
+                label: AppLocalizations.of(context).markAsAbsentAction,
+                subtitle: AppLocalizations.of(context).markAsAbsentSubtitle,
                 onTap: widget.onMarkAbsent,
               ),
             Divider(color: borderColor, height: 1, indent: 68),
             _SheetTile(
               icon: IconsaxPlusLinear.trash,
               iconColor: Colors.red,
-              label: 'Remove child',
-              subtitle: 'Permanently delete this record',
+              label: AppLocalizations.of(context).removeChildAction,
+              subtitle: AppLocalizations.of(context).removeChildSubtitle,
               labelColor: Colors.red,
               onTap: widget.onRemoveChild,
             ),
@@ -1835,9 +1842,9 @@ class _ChildTileState extends State<_ChildTile> {
                       color: Colors.orange.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Absent',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).absent,
+                      style: const TextStyle(
                           color: Colors.orange,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700),
@@ -2034,7 +2041,7 @@ class _DatePickerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final display = selected != null
         ? '${selected!.year}-${selected!.month.toString().padLeft(2, '0')}-${selected!.day.toString().padLeft(2, '0')}'
-        : 'Select date';
+        : AppLocalizations.of(context).selectDate;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2107,7 +2114,7 @@ class _GenderPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Gender',
+        Text(AppLocalizations.of(context).genderLabel,
             style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
@@ -2135,12 +2142,10 @@ class _GenderPicker extends StatelessWidget {
           items: [
             DropdownMenuItem(
                 value: 'MALE',
-                child:
-                    Text('Male', style: TextStyle(color: textColor))),
+                child: Text(AppLocalizations.of(context).male, style: TextStyle(color: textColor))),
             DropdownMenuItem(
                 value: 'FEMALE',
-                child:
-                    Text('Female', style: TextStyle(color: textColor))),
+                child: Text(AppLocalizations.of(context).female, style: TextStyle(color: textColor))),
           ],
           onChanged: onChanged,
         ),
@@ -2168,9 +2173,9 @@ class _SegmentedJourneyPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const options = [
-      ('MORNING', 'Morning'),
-      ('EVENING', 'Evening'),
+    final options = [
+      ('MORNING', AppLocalizations.of(context).morning),
+      ('EVENING', AppLocalizations.of(context).evening),
     ];
 
     return Row(

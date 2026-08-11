@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/config/theme_service.dart';
+import '../../../core/l10n/app_localizations.dart';
+import '../../../core/l10n/locale_service.dart';
+import '../../../widgets/language_picker_sheet.dart';
 import '../models/driver_profile_edit_mode.dart';
 import '../models/driver_profile_model.dart';
 import '../../../main.dart';
@@ -48,7 +51,7 @@ class DriverProfileForm extends StatelessWidget {
           const SizedBox(height: 4),
           Center(
             child: Text(
-              'Conductor profile',
+              AppLocalizations.of(context).conductorProfile,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -119,7 +122,7 @@ class DriverProfileForm extends StatelessWidget {
           _ProfileButtonCard(
             bgColor: settingsBg,
             leftIcon: IconsaxPlusLinear.setting_2,
-            text: 'Bus & route settings',
+            text: AppLocalizations.of(context).busRouteSettings,
             onTap: onBusRouteTap,
           ),
 
@@ -134,13 +137,19 @@ class DriverProfileForm extends StatelessWidget {
             child: Column(
               children: [
                 _DriverActionRow(
-                  text: 'Theme',
+                  text: AppLocalizations.of(context).theme,
                   rightWidget: const _ThemeDot(),
                   onTap: () => ThemeService.toggle(),
                 ),
                 Divider(height: 1, color: stroke),
                 _DriverActionRow(
-                  text: 'Sign out',
+                  text: AppLocalizations.of(context).language,
+                  rightWidget: _LangDot(),
+                  onTap: () => showLanguagePicker(context),
+                ),
+                Divider(height: 1, color: stroke),
+                _DriverActionRow(
+                  text: AppLocalizations.of(context).signOut,
                   rightIcon: IconsaxPlusLinear.logout,
                   onTap: () => _signOut(context),
                 ),
@@ -215,7 +224,9 @@ class _ThemeDot extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isDark ? 'Dark' : 'Light',
+              isDark
+                  ? AppLocalizations.of(context).themeDark
+                  : AppLocalizations.of(context).themeLight,
               style: const TextStyle(
                 color: blue,
                 fontSize: 13,
@@ -233,6 +244,31 @@ class _ThemeDot extends StatelessWidget {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _LangDot extends StatelessWidget {
+  const _LangDot();
+
+  static const _names = {'en': 'English', 'fr': 'Français', 'rw': 'Kinyarwanda'};
+
+  @override
+  Widget build(BuildContext context) {
+    const blue = Color(0xFF0D4896);
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LocaleService.notifier,
+      builder: (context, locale, _) {
+        final name = _names[locale.languageCode] ?? 'English';
+        return Text(
+          name,
+          style: const TextStyle(
+            color: blue,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         );
       },
     );
