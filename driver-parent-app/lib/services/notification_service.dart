@@ -3,98 +3,98 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../core/config/api_config.dart';
-import '../core/session/session_storage.dart';
+import '../core/network/authenticated_http_client.dart';
 
 class NotificationService {
   static Future<List<Map<String, dynamic>>> getMyNotifications() async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/notifications/me');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/notifications/me',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
     if (res.statusCode == 200) {
       // Backend returns a raw list; some other endpoints return { "data": [...] }
       final list = decoded is Map ? decoded['data'] : decoded;
+
       if (list is! List) {
         throw Exception('Unexpected notifications response');
       }
+
       return list.whereType<Map<String, dynamic>>().toList();
     }
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to load notifications'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to load notifications',
+      ),
     );
   }
 
   static Future<List<Map<String, dynamic>>> getUnreadNotifications() async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/notifications/me/unread');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/notifications/me/unread',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
     if (res.statusCode == 200) {
       final list = decoded is Map ? decoded['data'] : decoded;
+
       if (list is! List) {
         throw Exception('Unexpected unread notifications response');
       }
+
       return list.whereType<Map<String, dynamic>>().toList();
     }
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to load unread notifications'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to load unread notifications',
+      ),
     );
   }
 
   static Future<void> markAsRead(int notificationId) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/notifications/$notificationId/read',
     );
 
-    final res = await http.patch(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PATCH', uri);
+      request.headers['Content-Type'] = 'application/json';
 
-    if (res.statusCode == 200 || res.statusCode == 204) return;
+      return request;
+    });
+
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to mark notification as read'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to mark notification as read',
+      ),
     );
-  }
-
-  static Future<String> _requireToken() async {
-    final token = await SessionStorage.getToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception('No session token found');
-    }
-
-    return token;
   }
 
   static dynamic _decodeBody(String body) {
@@ -111,13 +111,21 @@ class NotificationService {
     }
   }
 
-  static String _extractErrorMessage(dynamic decoded, String fallback) {
+  static String _extractErrorMessage(
+    dynamic decoded,
+    String fallback,
+  ) {
     if (decoded is Map<String, dynamic>) {
       final message = decoded['message']?.toString();
       final error = decoded['error']?.toString();
 
-      if (message != null && message.isNotEmpty) return message;
-      if (error != null && error.isNotEmpty) return error;
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+
+      if (error != null && error.isNotEmpty) {
+        return error;
+      }
     }
 
     return fallback;

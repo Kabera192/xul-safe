@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/config/theme_service.dart';
-import '../../../core/session/session_storage.dart';
-import '../../../mobile_authentication.dart';
 import '../models/parent_profile_edit_mode.dart';
 import '../models/parent_profile_model.dart';
+import '../../../main.dart';
 
 class ParentProfileForm extends StatelessWidget {
   final ParentProfileModel? profile;
@@ -24,13 +23,7 @@ class ParentProfileForm extends StatelessWidget {
   static const blue = Color(0xFF0D4896);
 
   Future<void> _signOut(BuildContext context) async {
-    await SessionStorage.clearSession();
-
-    if (!context.mounted) return;
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-    );
+    await logoutAndReturnToLogin();
   }
 
   @override

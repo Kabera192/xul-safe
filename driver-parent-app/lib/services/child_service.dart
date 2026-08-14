@@ -1,26 +1,26 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../core/config/api_config.dart';
+import '../core/network/authenticated_http_client.dart';
 import '../core/session/session_storage.dart';
 
 class ChildService {
   static Future<List<Map<String, dynamic>>> getMyBusChildren() async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/me/bus/children');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/me/bus/children',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -32,23 +32,27 @@ class ChildService {
       return decoded.whereType<Map<String, dynamic>>().toList();
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load children'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load children',
+      ),
+    );
   }
 
-  static Future<Map<String, dynamic>> getMyBusChildById(String childId) async {
-    final token = await _requireToken();
-
+  static Future<Map<String, dynamic>> getMyBusChildById(
+    String childId,
+  ) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/me/bus/children/$childId',
     );
 
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -60,15 +64,18 @@ class ChildService {
       return decoded;
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load child'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load child',
+      ),
+    );
   }
 
   static Future<List<Map<String, dynamic>>> getAbsentChildren({
     required DateTime date,
     required String journey,
   }) async {
-    final token = await _requireToken();
-
     final dateText = _formatDate(date);
 
     final uri = Uri.parse(
@@ -76,13 +83,12 @@ class ChildService {
       '?date=$dateText&journey=$journey',
     );
 
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -95,7 +101,10 @@ class ChildService {
     }
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to load absent children'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to load absent children',
+      ),
     );
   }
 
@@ -103,29 +112,32 @@ class ChildService {
     required int stopId,
     required List<String> childIds,
   }) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/me/bus/children/assign-to-stop/$stopId',
     );
 
-    final res = await http.patch(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'childIds': childIds,
-      }),
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PATCH', uri);
 
-    if (res.statusCode == 204) return;
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'childIds': childIds,
+      });
+
+      return request;
+    });
+
+    if (res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
 
     throw Exception(
-      _extractErrorMessage(decoded, 'Failed to assign children'),
+      _extractErrorMessage(
+        decoded,
+        'Failed to assign children',
+      ),
     );
   }
 
@@ -135,16 +147,6 @@ class ChildService {
     final d = date.day.toString().padLeft(2, '0');
 
     return '$y-$m-$d';
-  }
-
-  static Future<String> _requireToken() async {
-    final token = await SessionStorage.getToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception('No session token found');
-    }
-
-    return token;
   }
 
   static dynamic _decodeBody(String body) {
@@ -166,33 +168,41 @@ class ChildService {
   /// GET /api/v1/children?parent_id={userId}
   /// Returns the list of children belonging to the logged-in parent.
   static Future<List<Map<String, dynamic>>> getMyChildren() async {
-    final token = await _requireToken();
     final userId = await SessionStorage.getUserId();
-    if (userId == null) throw Exception('Not logged in');
+
+    if (userId == null) {
+      throw Exception('Not logged in');
+    }
 
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/children?parent_id=$userId',
     );
 
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
     if (res.statusCode == 200) {
       final data = decoded is Map ? decoded['data'] : decoded;
+
       if (data is List) {
         return data.whereType<Map<String, dynamic>>().toList();
       }
+
       return [];
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load children'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load children',
+      ),
+    );
   }
 
   /// POST /api/v1/children
@@ -203,28 +213,41 @@ class ChildService {
     String? gender,
     String? grade,
   }) async {
-    final token = await _requireToken();
     final userId = await SessionStorage.getUserId();
-    if (userId == null) throw Exception('Not logged in');
+
+    if (userId == null) {
+      throw Exception('Not logged in');
+    }
 
     final payload = <String, dynamic>{
       'fullName': fullName.trim(),
       'parentId': userId,
     };
-    if (birthDate != null && birthDate.isNotEmpty) payload['birthDate'] = birthDate;
-    if (gender != null && gender.isNotEmpty) payload['gender'] = gender;
-    if (grade != null && grade.isNotEmpty) payload['grade'] = grade;
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children');
+    if (birthDate != null && birthDate.isNotEmpty) {
+      payload['birthDate'] = birthDate;
+    }
 
-    final res = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(payload),
+    if (gender != null && gender.isNotEmpty) {
+      payload['gender'] = gender;
+    }
+
+    if (grade != null && grade.isNotEmpty) {
+      payload['grade'] = grade;
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(payload);
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -232,20 +255,37 @@ class ChildService {
       final data = decoded is Map && decoded['data'] != null
           ? decoded['data']
           : decoded;
-      if (data is Map<String, dynamic>) return data;
+
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+
       throw Exception('Unexpected response');
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to add child'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to add child',
+      ),
+    );
   }
 
-  static String _extractErrorMessage(dynamic decoded, String fallback) {
+  static String _extractErrorMessage(
+    dynamic decoded,
+    String fallback,
+  ) {
     if (decoded is Map<String, dynamic>) {
       final message = decoded['message']?.toString();
       final error = decoded['error']?.toString();
 
-      if (message != null && message.isNotEmpty) return message;
-      if (error != null && error.isNotEmpty) return error;
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+
+      if (error != null && error.isNotEmpty) {
+        return error;
+      }
     }
 
     return fallback;
@@ -261,80 +301,118 @@ class ChildService {
     String? gender,
     String? grade,
   }) async {
-    final token = await _requireToken();
     final userId = await SessionStorage.getUserId();
-    if (userId == null) throw Exception('Not logged in');
+
+    if (userId == null) {
+      throw Exception('Not logged in');
+    }
 
     final payload = <String, dynamic>{
       'fullName': fullName.trim(),
       'parentId': userId,
     };
-    if (birthDate != null && birthDate.isNotEmpty) payload['birthDate'] = birthDate;
-    if (gender != null && gender.isNotEmpty) payload['gender'] = gender;
-    if (grade != null && grade.isNotEmpty) payload['grade'] = grade;
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children/$childId');
+    if (birthDate != null && birthDate.isNotEmpty) {
+      payload['birthDate'] = birthDate;
+    }
 
-    final res = await http.put(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(payload),
+    if (gender != null && gender.isNotEmpty) {
+      payload['gender'] = gender;
+    }
+
+    if (grade != null && grade.isNotEmpty) {
+      payload['grade'] = grade;
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children/$childId',
     );
 
-    if (res.statusCode == 200 || res.statusCode == 204) return;
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PUT', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(payload);
+
+      return request;
+    });
+
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
-    throw Exception(_extractErrorMessage(decoded, 'Failed to update child'));
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to update child',
+      ),
+    );
   }
 
   /// DELETE /api/v1/children/{childId}
   static Future<void> deleteChild(String childId) async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children/$childId');
-
-    final res = await http.delete(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children/$childId',
     );
 
-    if (res.statusCode == 200 || res.statusCode == 204) return;
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('DELETE', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
+
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
-    throw Exception(_extractErrorMessage(decoded, 'Failed to delete child'));
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to delete child',
+      ),
+    );
   }
 
   // ── Absence sub-resource ──────────────────────────────────────────────────
 
   /// GET /api/v1/children/{childId}/absences
-  static Future<List<Map<String, dynamic>>> getChildAbsences(String childId) async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children/$childId/absences');
-
-    final res = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+  static Future<List<Map<String, dynamic>>> getChildAbsences(
+    String childId,
+  ) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children/$childId/absences',
     );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
     if (res.statusCode == 200) {
       final data = decoded is Map ? decoded['data'] : decoded;
-      if (data is List) return data.whereType<Map<String, dynamic>>().toList();
+
+      if (data is List) {
+        return data.whereType<Map<String, dynamic>>().toList();
+      }
+
       return [];
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to load absences'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load absences',
+      ),
+    );
   }
 
   /// POST /api/v1/children/{childId}/absences
@@ -346,23 +424,23 @@ class ChildService {
     String? endDate,
     required int parentId,
   }) async {
-    final token = await _requireToken();
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children/$childId/absences',
+    );
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children/$childId/absences');
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
 
-    final res = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
         'parentId': parentId,
         'absenceType': absenceType,
         'startDate': startDate,
         'endDate': endDate ?? startDate,
-      }),
-    );
+      });
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -370,11 +448,20 @@ class ChildService {
       final data = decoded is Map && decoded['data'] != null
           ? decoded['data']
           : decoded;
-      if (data is Map<String, dynamic>) return data;
+
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+
       return {};
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to create absence'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to create absence',
+      ),
+    );
   }
 
   /// PUT /api/v1/children/{childId}/absences/{absenceId}
@@ -385,25 +472,23 @@ class ChildService {
     required String startDate,
     required String endDate,
   }) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/absences/$absenceId',
     );
 
-    final res = await http.put(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('PUT', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
         'absenceType': absenceType,
         'startDate': startDate,
         'endDate': endDate,
         'status': 'ACTIVE',
-      }),
-    );
+      });
+
+      return request;
+    });
 
     final decoded = _decodeBody(res.body);
 
@@ -411,11 +496,20 @@ class ChildService {
       final data = decoded is Map && decoded['data'] != null
           ? decoded['data']
           : decoded;
-      if (data is Map<String, dynamic>) return data;
+
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+
       return {};
     }
 
-    throw Exception(_extractErrorMessage(decoded, 'Failed to update absence'));
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to update absence',
+      ),
+    );
   }
 
   /// DELETE /api/v1/children/{childId}/absences/{absenceId}
@@ -423,69 +517,89 @@ class ChildService {
     required String childId,
     required int absenceId,
   }) async {
-    final token = await _requireToken();
-
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/absences/$absenceId',
     );
 
-    final res = await http.delete(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('DELETE', uri);
+      request.headers['Content-Type'] = 'application/json';
 
-    if (res.statusCode == 200 || res.statusCode == 204) return;
+      return request;
+    });
+
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
-    throw Exception(_extractErrorMessage(decoded, 'Failed to cancel absence'));
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to cancel absence',
+      ),
+    );
   }
 
-  // ── Child photo ────────────────────────────────────────────────────────────
+  // ── Child photo ───────────────────────────────────────────────────────────
 
-  /// PATCH /api/v1/children/{childId}/photo  (multipart)
+  /// PATCH /api/v1/children/{childId}/photo (multipart)
   static Future<void> uploadChildPhoto({
     required String childId,
     required File imageFile,
   }) async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children/$childId/photo');
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children/$childId/photo',
+    );
 
     final ext = imageFile.path.split('.').last.toLowerCase();
     final mime = ext == 'png' ? 'png' : 'jpeg';
 
-    final req = http.MultipartRequest('PATCH', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..files.add(await http.MultipartFile.fromPath(
-        'file',
-        imageFile.path,
-        contentType: MediaType('image', mime),
-      ));
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.MultipartRequest('PATCH', uri);
 
-    final streamed = await req.send();
-    final res = await http.Response.fromStream(streamed);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+          contentType: MediaType('image', mime),
+        ),
+      );
 
-    if (res.statusCode == 200) return;
+      return request;
+    });
+
+    if (res.statusCode == 200) {
+      return;
+    }
 
     final decoded = _decodeBody(res.body);
-    throw Exception(_extractErrorMessage(decoded, 'Failed to upload photo'));
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to upload photo',
+      ),
+    );
   }
 
-  /// GET /api/v1/children/{childId}/photo  → raw bytes
-  static Future<Uint8List?> getChildPhotoBytes(String childId) async {
-    final token = await _requireToken();
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/children/$childId/photo');
-
-    final res = await http.get(
-      uri,
-      headers: {'Authorization': 'Bearer $token'},
+  /// GET /api/v1/children/{childId}/photo → raw bytes
+  static Future<Uint8List?> getChildPhotoBytes(
+    String childId,
+  ) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/children/$childId/photo',
     );
 
-    if (res.statusCode == 200) return res.bodyBytes;
-    return null; // 404 = no photo set
+    final res = await AuthenticatedHttpClient.send(() async {
+      return http.Request('GET', uri);
+    });
+
+    if (res.statusCode == 200) {
+      return res.bodyBytes;
+    }
+
+    return null;
   }
 }

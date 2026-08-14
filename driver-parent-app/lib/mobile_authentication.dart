@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'core/config/api_config.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/config/api_config.dart';
+import 'core/session/session_storage.dart';
 import 'features/auth/forgot_password_page.dart';
 import 'features/navigation/driver_nav.dart';
 import 'features/navigation/parent_nav.dart';
@@ -43,9 +44,11 @@ class _LoginPageState extends State<LoginPage>
 
     Future.delayed(const Duration(milliseconds: 1500), () async {
       if (!mounted) return;
+
       setState(() {
         _entryShown = true;
       });
+
       _controller.value = 0;
       await _controller.forward();
     });
@@ -59,6 +62,7 @@ class _LoginPageState extends State<LoginPage>
 
   Future<void> _toggleForm() async {
     if (_isAnimating) return;
+
     _isAnimating = true;
 
     await _controller.reverse();
@@ -110,7 +114,10 @@ class _LoginPageState extends State<LoginPage>
 
 class _LoginForm extends StatefulWidget {
   final VoidCallback onSwitch;
-  const _LoginForm({required this.onSwitch});
+
+  const _LoginForm({
+    required this.onSwitch,
+  });
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
@@ -134,28 +141,11 @@ class _LoginFormState extends State<_LoginForm> {
     super.dispose();
   }
 
-  Future<void> _saveSession({
-    required String token,
-    required String refreshToken,
-    required String tokenExpiresAt,
-    required String refreshTokenExpiresAt,
-    required int userId,
-    required String role,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
-    await prefs.setString('refresh_token', refreshToken);
-    await prefs.setString('token_expires_at', tokenExpiresAt);
-    await prefs.setString('refresh_token_expires_at', refreshTokenExpiresAt);
-    await prefs.setInt('user_id', userId);
-    await prefs.setString('role', role);
-    await prefs.setBool('is_logged_in', true);
-  }
-
   void _goToHomeByRole(String role) {
     final normalizedRole = role.toUpperCase();
 
     Widget page;
+
     if (normalizedRole == 'DRIVER') {
       page = const DriverNav();
     } else {
@@ -177,9 +167,12 @@ class _LoginFormState extends State<_LoginForm> {
 
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/login');
+
       final res = await http.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode({
           'identifier': _identifierCtrl.text.trim(),
           'password': _passwordCtrl.text,
@@ -189,7 +182,8 @@ class _LoginFormState extends State<_LoginForm> {
       if (!mounted) return;
 
       final bodyText = res.body.trim();
-      final dynamic decoded = bodyText.isNotEmpty ? jsonDecode(bodyText) : null;
+      final dynamic decoded =
+          bodyText.isNotEmpty ? jsonDecode(bodyText) : null;
 
       if (res.statusCode == 200) {
         if (decoded is! Map<String, dynamic>) {
@@ -200,6 +194,7 @@ class _LoginFormState extends State<_LoginForm> {
         }
 
         final user = decoded['user'];
+
         if (user is! Map<String, dynamic>) {
           setState(() {
             _error = 'User data missing from response';
@@ -208,17 +203,20 @@ class _LoginFormState extends State<_LoginForm> {
         }
 
         final roles = user['roles'];
+
         String role = 'PARENT';
+
         if (roles is List && roles.isNotEmpty) {
           role = roles.first.toString();
         }
 
         final userIdRaw = user['user_id'];
+
         final int userId = userIdRaw is int
             ? userIdRaw
             : int.tryParse(userIdRaw.toString()) ?? 0;
 
-        await _saveSession(
+        await SessionStorage.saveSession(
           token: decoded['token']?.toString() ?? '',
           refreshToken: decoded['refresh_token']?.toString() ?? '',
           tokenExpiresAt: decoded['token_expires_at']?.toString() ?? '',
@@ -229,6 +227,7 @@ class _LoginFormState extends State<_LoginForm> {
         );
 
         if (!mounted) return;
+
         _goToHomeByRole(role);
       } else {
         String message = 'Invalid credentials';
@@ -250,12 +249,16 @@ class _LoginFormState extends State<_LoginForm> {
       }
     } catch (_) {
       if (!mounted) return;
+
       setState(() {
         _error = 'Could not reach server';
       });
     } finally {
       if (!mounted) return;
-      setState(() => _loading = false);
+
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
@@ -287,6 +290,7 @@ class _LoginFormState extends State<_LoginForm> {
                   if (v == null || v.trim().isEmpty) {
                     return 'This field is required';
                   }
+
                   return null;
                 },
               ),
@@ -300,20 +304,25 @@ class _LoginFormState extends State<_LoginForm> {
                   if (v == null || v.trim().isEmpty) {
                     return 'Password is required';
                   }
+
                   return null;
                 },
               ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ForgotPasswordPage(),
-                    ),
-                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordPage(),
+                      ),
+                    );
+                  },
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 2),
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -373,7 +382,10 @@ class _LoginFormState extends State<_LoginForm> {
 
 class _SignupForm extends StatefulWidget {
   final VoidCallback onSwitch;
-  const _SignupForm({required this.onSwitch});
+
+  const _SignupForm({
+    required this.onSwitch,
+  });
 
   @override
   State<_SignupForm> createState() => _SignupFormState();
@@ -406,6 +418,7 @@ class _SignupFormState extends State<_SignupForm> {
   bool _isValidEmail(String value) {
     final emailRegex =
         RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+
     return emailRegex.hasMatch(value);
   }
 
@@ -419,9 +432,12 @@ class _SignupFormState extends State<_SignupForm> {
 
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/register');
+
       final res = await http.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode({
           'firstName': _firstNameCtrl.text.trim(),
           'lastName': _lastNameCtrl.text.trim(),
@@ -434,44 +450,55 @@ class _SignupFormState extends State<_SignupForm> {
       if (!mounted) return;
 
       final bodyText = res.body.trim();
-      final dynamic decoded = bodyText.isNotEmpty ? jsonDecode(bodyText) : null;
+      final dynamic decoded =
+          bodyText.isNotEmpty ? jsonDecode(bodyText) : null;
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         if (decoded is! Map<String, dynamic>) {
-          setState(() => _error = 'Unexpected server response');
+          setState(() {
+            _error = 'Unexpected server response';
+          });
           return;
         }
 
         final user = decoded['user'];
+
         if (user is! Map<String, dynamic>) {
-          setState(() => _error = 'User data missing from response');
+          setState(() {
+            _error = 'User data missing from response';
+          });
           return;
         }
 
         final roles = user['roles'];
+
         String role = 'PARENT';
+
         if (roles is List && roles.isNotEmpty) {
           role = roles.first.toString();
         }
 
         final userIdRaw = user['user_id'];
+
         final int userId = userIdRaw is int
             ? userIdRaw
             : int.tryParse(userIdRaw.toString()) ?? 0;
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', decoded['token']?.toString() ?? '');
-        await prefs.setString('refresh_token', decoded['refresh_token']?.toString() ?? '');
-        await prefs.setString('token_expires_at', decoded['token_expires_at']?.toString() ?? '');
-        await prefs.setString('refresh_token_expires_at', decoded['refresh_token_expires_at']?.toString() ?? '');
-        await prefs.setInt('user_id', userId);
-        await prefs.setString('role', role);
-        await prefs.setBool('is_logged_in', true);
+        await SessionStorage.saveSession(
+          token: decoded['token']?.toString() ?? '',
+          refreshToken: decoded['refresh_token']?.toString() ?? '',
+          tokenExpiresAt: decoded['token_expires_at']?.toString() ?? '',
+          refreshTokenExpiresAt:
+              decoded['refresh_token_expires_at']?.toString() ?? '',
+          userId: userId,
+          role: role,
+        );
 
         if (!mounted) return;
 
         final normalizedRole = role.toUpperCase();
-        Widget page = normalizedRole == 'DRIVER'
+
+        final Widget page = normalizedRole == 'DRIVER'
             ? const DriverNav()
             : const ParentNav();
 
@@ -480,21 +507,34 @@ class _SignupFormState extends State<_SignupForm> {
         );
       } else {
         String message = 'Registration failed';
+
         if (decoded is Map<String, dynamic>) {
           final serverMessage = decoded['message']?.toString();
           final serverError = decoded['error']?.toString();
+
           if (serverMessage != null && serverMessage.isNotEmpty) {
             message = serverMessage;
           } else if (serverError != null && serverError.isNotEmpty) {
             message = serverError;
           }
         }
-        setState(() => _error = message);
+
+        setState(() {
+          _error = message;
+        });
       }
-    } catch (e) {
-      if (mounted) setState(() => _error = 'Could not reach server. Check your connection.');
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = 'Could not reach server. Check your connection.';
+      });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
@@ -519,6 +559,7 @@ class _SignupFormState extends State<_SignupForm> {
                       if (v == null || v.trim().isEmpty) {
                         return 'First name is required';
                       }
+
                       return null;
                     },
                   ),
@@ -530,6 +571,7 @@ class _SignupFormState extends State<_SignupForm> {
                       if (v == null || v.trim().isEmpty) {
                         return 'Last name is required';
                       }
+
                       return null;
                     },
                   ),
@@ -541,6 +583,7 @@ class _SignupFormState extends State<_SignupForm> {
                       if (v == null || v.trim().isEmpty) {
                         return 'Phone number is required';
                       }
+
                       return null;
                     },
                   ),
@@ -552,9 +595,11 @@ class _SignupFormState extends State<_SignupForm> {
                       if (v == null || v.trim().isEmpty) {
                         return 'Email is required';
                       }
+
                       if (!_isValidEmail(v.trim())) {
                         return 'Please enter a valid email';
                       }
+
                       return null;
                     },
                   ),
@@ -564,7 +609,10 @@ class _SignupFormState extends State<_SignupForm> {
                     child: Text(
                       'More fields below ↓',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.35),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.35),
                         fontSize: 12,
                       ),
                     ),
@@ -579,12 +627,15 @@ class _SignupFormState extends State<_SignupForm> {
                       if (v == null || v.isEmpty) {
                         return 'Password is required';
                       }
+
                       if (v.length < 8) {
                         return 'Password must be at least 8 characters';
                       }
+
                       if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(v)) {
                         return 'Password must contain at least one symbol';
                       }
+
                       return null;
                     },
                   ),
@@ -598,9 +649,11 @@ class _SignupFormState extends State<_SignupForm> {
                       if (v == null || v.isEmpty) {
                         return 'Please confirm your password';
                       }
+
                       if (v != _passwordCtrl.text) {
                         return 'Passwords do not match';
                       }
+
                       return null;
                     },
                   ),
@@ -636,15 +689,17 @@ class _SignupFormState extends State<_SignupForm> {
                             ),
                     ),
                   ),
-                  if (_error != null) ...
-                    [
-                      const SizedBox(height: 10),
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red, fontSize: 13),
-                        textAlign: TextAlign.center,
+                  if (_error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 13,
                       ),
-                    ],
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   Center(
                     child: TextButton(
@@ -709,8 +764,12 @@ class _FormShell extends StatelessWidget {
         ),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24)
-              .copyWith(top: 32, bottom: 24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+          ).copyWith(
+            top: 32,
+            bottom: 24,
+          ),
           decoration: BoxDecoration(
             color: surface,
             borderRadius: const BorderRadius.only(
@@ -759,7 +818,6 @@ class _FInput extends StatefulWidget {
   final TextEditingController? controller;
 
   const _FInput({
-    // super.key,
     required this.label,
     this.obscure = false,
     this.showEye = false,
@@ -785,7 +843,8 @@ class _FInputState extends State<_FInput> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final inputFill = isDark ? const Color(0xFF1A2530) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2A3A50) : const Color(0xFFE0E0E0);
+    final borderColor =
+        isDark ? const Color(0xFF2A3A50) : const Color(0xFFE0E0E0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -801,7 +860,10 @@ class _FInputState extends State<_FInput> {
             children: const [
               TextSpan(
                 text: ' *',
-                style: TextStyle(color: Colors.red, fontSize: 14),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -813,12 +875,17 @@ class _FInputState extends State<_FInput> {
           keyboardType: widget.label.toLowerCase().contains('email')
               ? TextInputType.emailAddress
               : TextInputType.text,
-          style: TextStyle(color: onSurface, fontSize: 15),
+          style: TextStyle(
+            color: onSurface,
+            fontSize: 15,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor: inputFill,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 16,
+            ),
             suffixIcon: widget.showEye
                 ? IconButton(
                     icon: Icon(
@@ -827,7 +894,11 @@ class _FInputState extends State<_FInput> {
                           : Icons.visibility_outlined,
                       color: onSurface.withOpacity(0.5),
                     ),
-                    onPressed: () => setState(() => _hidden = !_hidden),
+                    onPressed: () {
+                      setState(() {
+                        _hidden = !_hidden;
+                      });
+                    },
                   )
                 : null,
             enabledBorder: OutlineInputBorder(
@@ -836,8 +907,10 @@ class _FInputState extends State<_FInput> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFF0D4896), width: 1.3),
+              borderSide: const BorderSide(
+                color: Color(0xFF0D4896),
+                width: 1.3,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),

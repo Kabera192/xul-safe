@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SessionStorage {
   static const _keyToken = 'token';
   static const _keyRefreshToken = 'refresh_token';
+  static const _keyTokenExpiresAt = 'token_expires_at';
+  static const _keyRefreshTokenExpiresAt = 'refresh_token_expires_at';
   static const _keyUserId = 'user_id';
   static const _keyRole = 'role';
   static const _keyIsLoggedIn = 'is_logged_in';
@@ -16,6 +18,8 @@ class SessionStorage {
   static Future<void> saveSession({
     required String token,
     required String refreshToken,
+    required String tokenExpiresAt,
+    required String refreshTokenExpiresAt,
     required int userId,
     required String role,
   }) async {
@@ -23,6 +27,11 @@ class SessionStorage {
 
     await prefs.setString(_keyToken, token);
     await prefs.setString(_keyRefreshToken, refreshToken);
+    await prefs.setString(_keyTokenExpiresAt, tokenExpiresAt);
+    await prefs.setString(
+      _keyRefreshTokenExpiresAt,
+      refreshTokenExpiresAt,
+    );
     await prefs.setInt(_keyUserId, userId);
     await prefs.setString(_keyRole, role);
     await prefs.setBool(_keyIsLoggedIn, true);
@@ -64,6 +73,16 @@ class SessionStorage {
     return prefs.getString(_keyRefreshToken);
   }
 
+  static Future<String?> getTokenExpiresAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyTokenExpiresAt);
+  }
+
+  static Future<String?> getRefreshTokenExpiresAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyRefreshTokenExpiresAt);
+  }
+
   static Future<int?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_keyUserId);
@@ -87,6 +106,8 @@ class SessionStorage {
 
     await prefs.remove(_keyToken);
     await prefs.remove(_keyRefreshToken);
+    await prefs.remove(_keyTokenExpiresAt);
+    await prefs.remove(_keyRefreshTokenExpiresAt);
     await prefs.remove(_keyUserId);
     await prefs.remove(_keyRole);
 

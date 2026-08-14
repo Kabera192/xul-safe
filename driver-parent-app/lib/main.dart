@@ -1,8 +1,39 @@
 import 'package:flutter/material.dart';
+
 import 'core/config/theme_service.dart';
-import 'widgets/mobile_network_gate.dart';
-import 'widgets/mobile_location_gate.dart';
+import 'core/session/session_storage.dart';
+import 'mobile_authentication.dart';
 import 'widgets/mobile_auth_gate.dart';
+import 'widgets/mobile_location_gate.dart';
+import 'widgets/mobile_network_gate.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey =
+    GlobalKey<NavigatorState>();
+
+bool _isReturningToLogin = false;
+
+Future<void> logoutAndReturnToLogin() async {
+  if (_isReturningToLogin) return;
+
+  _isReturningToLogin = true;
+
+  try {
+    await SessionStorage.clearSession();
+
+    final navigator = appNavigatorKey.currentState;
+
+    if (navigator == null) return;
+
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
+      (_) => false,
+    );
+  } finally {
+    _isReturningToLogin = false;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +57,7 @@ class _MyAppState extends State<MyApp> {
       valueListenable: ThemeService.notifier,
       builder: (context, themeMode, _) {
         return MaterialApp(
+          navigatorKey: appNavigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'Bus App',
           themeMode: themeMode,
