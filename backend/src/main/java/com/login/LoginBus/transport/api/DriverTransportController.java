@@ -51,7 +51,7 @@ public class DriverTransportController {
     @PatchMapping("/bus/route/stops/{stopId}")
     public ResponseEntity<StopResponse> updateStop(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Long stopId,
+            @PathVariable String stopId,
             @RequestBody UpdateStopRequest request) {
         return ResponseEntity.ok(driverTransportService.updateStop(jwt, stopId, request));
     }
@@ -60,7 +60,7 @@ public class DriverTransportController {
     @DeleteMapping("/bus/route/stops/{stopId}")
     public ResponseEntity<Void> deleteStop(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Long stopId) {
+            @PathVariable String stopId) {
         driverTransportService.deleteStop(jwt, stopId);
         return ResponseEntity.noContent().build();
     }

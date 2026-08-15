@@ -64,7 +64,7 @@ public class DriverAttendanceController {
     @PostMapping("/notify-arrival")
     public ResponseEntity<Void> notifyStopArrival(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam Long stopId,
+            @RequestParam String stopId,
             @RequestParam String session) {
 
         driverAttendanceService.notifyStopArrival(jwt, stopId, session);

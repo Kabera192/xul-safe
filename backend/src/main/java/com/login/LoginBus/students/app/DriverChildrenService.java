@@ -12,5 +12,5 @@ public interface DriverChildrenService {
     DriverChildSummaryDto getChild(Jwt jwt, String childId);
     List<DriverChildSummaryDto> getAbsentChildren(Jwt jwt, LocalDate date, String journey);
     List<DriverChildSummaryDto> getPresentChildren(Jwt jwt, LocalDate date, String journey);
-    void assignChildrenToStop(Jwt jwt, Long stopId, AssignChildrenToStopRequest request);
+    void assignChildrenToStop(Jwt jwt, String stopId, AssignChildrenToStopRequest request);
 }

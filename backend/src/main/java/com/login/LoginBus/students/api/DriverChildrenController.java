@@ -59,7 +59,7 @@ public class DriverChildrenController {
     @PatchMapping("/assign-to-stop/{stopId}")
     public ResponseEntity<Void> assignChildrenToStop(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Long stopId,
+            @PathVariable String stopId,
             @RequestBody AssignChildrenToStopRequest request) {
         driverChildrenService.assignChildrenToStop(jwt, stopId, request);
         return ResponseEntity.noContent().build();
