@@ -9,7 +9,6 @@ export interface Child {
   parentId?: number;
   photoUrl?: string;
   busId?: number;
-  routeId?: number;
   busStopId?: string;
   createdAt?: number;
   updatedAt?: string;
@@ -31,8 +30,6 @@ export interface ChildDetail {
   busDeviceId?: string;
   conductorId?: number;
   conductorName?: string;
-  routeId?: number;
-  routeName?: string;
   busStopId?: string;
   busStopName?: string;
   busStopLocation?: string;

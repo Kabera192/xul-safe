@@ -21,10 +21,6 @@
           <option value="">All buses</option>
           <option *ngFor="let bus of busOptions" [value]="bus">{{ bus }}</option>
         </select>
-        <select class="filter-select" [(ngModel)]="selectedRoute" (ngModelChange)="onFilterChange()">
-          <option value="">All routes</option>
-          <option *ngFor="let route of routeOptions" [value]="route">{{ route }}</option>
-        </select>
       </div>
     </div>
 
@@ -40,7 +36,6 @@
       <div>No</div>
       <div>Student name</div>
       <div>Assigned bus</div>
-      <div>Route</div>
       <div>Bus stop</div>
       <div>Bus device ID</div>
       <div>Location</div>
@@ -51,7 +46,6 @@
       <div class="muted">{{ student.no }}</div>
       <div>{{ student.name }}</div>
       <div>{{ student.bus }}</div>
-      <div>{{ student.route }}</div>
       <div>{{ student.stop }}</div>
       <div>{{ student.deviceId }}</div>
       <div>{{ student.location }}</div>

@@ -11,7 +11,6 @@ interface StudentViewModel {
   no: string;
   name: string;
   bus: string;
-  route: string;
   stop: string;
   deviceId: string;
   location: string;
@@ -30,7 +29,6 @@ export class Students implements OnInit {
 
   searchTerm = '';
   selectedBus = '';
-  selectedRoute = '';
   totalStudents = 0;
   showDeleteConfirm = false;
   selectedStudentId = '';
@@ -89,7 +87,6 @@ export class Students implements OnInit {
       no: String(index + 1).padStart(2, '0'),
       name: child.fullName,
       bus: child.busPlateNumber || 'N/A',
-      route: child.routeName || 'N/A',
       stop: child.busStopName || 'N/A',
       deviceId: child.busDeviceId || 'N/A',
       location: child.busStopLocation || 'N/A'
@@ -130,14 +127,12 @@ export class Students implements OnInit {
       const matchesTerm = !term || (
         student.name.toLowerCase().includes(term) ||
         student.bus.toLowerCase().includes(term) ||
-        student.route.toLowerCase().includes(term) ||
         student.stop.toLowerCase().includes(term) ||
         student.deviceId.toLowerCase().includes(term) ||
         student.location.toLowerCase().includes(term)
       );
       const matchesBus = !this.selectedBus || student.bus === this.selectedBus;
-      const matchesRoute = !this.selectedRoute || student.route === this.selectedRoute;
-      return matchesTerm && matchesBus && matchesRoute;
+      return matchesTerm && matchesBus;
     });
   }
 
@@ -164,12 +159,6 @@ export class Students implements OnInit {
   get busOptions(): string[] {
     return Array.from(new Set(this.students.map((student) => student.bus)))
       .filter((bus) => bus && bus !== 'N/A')
-      .sort();
-  }
-
-  get routeOptions(): string[] {
-    return Array.from(new Set(this.students.map((student) => student.route)))
-      .filter((route) => route && route !== 'N/A')
       .sort();
   }
 
