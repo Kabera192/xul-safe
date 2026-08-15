@@ -49,11 +49,9 @@ export interface DriverChild {
   grade?: string;
   gender?: string;
   photoUrl?: string;
-  pickupStopId?: number;
-  dropoffStopId?: number;
+  busStopId?: number;
 }
 
 export interface AssignChildrenToStopRequest {
   childIds: string[];
-  stopType?: 'PICKUP' | 'DROPOFF';
 }

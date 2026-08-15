@@ -27,4 +27,22 @@ export class BusStopService {
       map(response => response.data)
     );
   }
+
+  create(busStop: Partial<BusStop>): Observable<BusStop> {
+    return this.http.post<ApiResponse<BusStop>>(`${this.basePath}`, busStop).pipe(
+      map(response => response.data)
+    );
+  }
+
+  update(busStopId: string, busStop: Partial<BusStop>): Observable<BusStop> {
+    return this.http.put<ApiResponse<BusStop>>(`${this.basePath}/${busStopId}`, busStop).pipe(
+      map(response => response.data)
+    );
+  }
+
+  delete(busStopId: string): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.basePath}/${busStopId}`).pipe(
+      map(() => void 0)
+    );
+  }
 }

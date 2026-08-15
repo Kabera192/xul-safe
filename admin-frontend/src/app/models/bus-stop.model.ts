@@ -2,8 +2,8 @@ export interface BusStop {
   id?: string;
   name: string;
   description?: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   address?: string;
   routeId?: number;
   order?: number;

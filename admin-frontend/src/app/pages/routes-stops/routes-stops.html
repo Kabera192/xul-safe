@@ -67,6 +67,9 @@
     <div class="card stops-card">
       <div class="card-header">
         <h2>Bus Stops{{ selectedRoute ? ' - ' + selectedRoute.name : '' }}</h2>
+        <button class="btn-primary btn-sm" type="button" *ngIf="selectedRoute" (click)="openAddStopModal()">
+          Add bus stop
+        </button>
       </div>
 
       <div class="stops-table" *ngIf="selectedRoute">
@@ -77,6 +80,7 @@
               <th>#</th>
               <th>Stop Name</th>
               <th>Location</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -84,9 +88,31 @@
               <td>{{ stop.order || (i + 1) }}</td>
               <td>{{ stop.name }}</td>
               <td>{{ stop.location }}</td>
+              <td class="stop-actions">
+                <button class="icon-btn" type="button" title="Assign students" (click)="openAssignStudentsModal(stop, $event)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </button>
+                <button class="icon-btn" type="button" title="Edit stop" (click)="openEditStopModal(stop, $event)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                  </svg>
+                </button>
+                <button class="icon-btn danger" type="button" title="Remove stop" (click)="deleteStop(stop, $event)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                  </svg>
+                </button>
+              </td>
             </tr>
             <tr *ngIf="stops.length === 0">
-              <td colspan="3" class="empty-cell">No bus stops assigned to this route yet.</td>
+              <td colspan="4" class="empty-cell">No bus stops assigned to this route yet.</td>
             </tr>
           </tbody>
         </table>
@@ -99,6 +125,7 @@
   </div>
 </div>
 
+<!-- Route modal -->
 <div class="modal-overlay" *ngIf="showRouteModal">
   <div class="modal-backdrop" (click)="closeRouteModal()"></div>
 
@@ -138,6 +165,114 @@
 
     <button class="primary-btn" type="button" (click)="saveRoute()" [disabled]="isSaving || !routeName.trim()">
       {{ submitButtonText }}
+    </button>
+  </div>
+</div>
+
+<!-- Bus stop modal -->
+<div class="modal-overlay" *ngIf="showStopModal">
+  <div class="modal-backdrop" (click)="closeStopModal()"></div>
+
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="icon route-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+        </span>
+        <h3>{{ stopModalTitle }}</h3>
+      </div>
+      <button class="icon-close" type="button" (click)="closeStopModal()">×</button>
+    </div>
+
+    <label class="field">
+      Stop name *
+      <input type="text" placeholder="Enter stop name" [(ngModel)]="stopName" />
+    </label>
+
+    <label class="field">
+      Address
+      <input type="text" placeholder="Enter address (optional)" [(ngModel)]="stopAddress" />
+    </label>
+
+    <label class="field">
+      Latitude
+      <input type="number" placeholder="e.g. -1.9441 (optional)" [(ngModel)]="stopLatitude" step="any" />
+    </label>
+
+    <label class="field">
+      Longitude
+      <input type="number" placeholder="e.g. 30.0619 (optional)" [(ngModel)]="stopLongitude" step="any" />
+    </label>
+
+    <label class="field">
+      Stop order
+      <input type="number" placeholder="Order along the route (optional)" [(ngModel)]="stopOrder" min="1" />
+    </label>
+
+    <button class="primary-btn" type="button" (click)="saveStop()" [disabled]="isSavingStop || !stopFormValid">
+      {{ stopSubmitButtonText }}
+    </button>
+  </div>
+</div>
+
+<!-- Assign students modal -->
+<div class="modal-overlay" *ngIf="showAssignStudentsModal">
+  <div class="modal-backdrop" (click)="closeAssignStudentsModal()"></div>
+
+  <div class="modal-card assign-modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="icon route-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </span>
+        <h3>Assign students{{ assigningStop ? ' – ' + assigningStop.name : '' }}</h3>
+      </div>
+      <button class="icon-close" type="button" (click)="closeAssignStudentsModal()">×</button>
+    </div>
+
+    <div class="loading-state" *ngIf="isLoadingAssignCandidates">Loading students...</div>
+
+    <ng-container *ngIf="!isLoadingAssignCandidates">
+      <div class="empty-state" *ngIf="!routeBus">
+        No bus is assigned to this route yet. Assign a bus to the route before adding students to its stops.
+      </div>
+
+      <div class="empty-state" *ngIf="routeBus && assignCandidates.length === 0">
+        No students are on bus {{ routeBus.plateNumber }} yet.
+      </div>
+
+      <p class="assign-hint" *ngIf="routeBus && assignCandidates.length > 0">
+        Check a student to assign them here, uncheck to remove them from this stop. Changes save immediately.
+      </p>
+
+      <div class="assign-list" *ngIf="routeBus && assignCandidates.length > 0">
+        <label class="assign-row" *ngFor="let child of assignCandidates" [class.saving]="savingChildIds.has(child.id!)">
+          <input
+            type="checkbox"
+            [checked]="selectedChildIds.has(child.id!)"
+            [disabled]="savingChildIds.has(child.id!)"
+            (change)="toggleChildSelection(child)"
+          />
+          <span class="assign-name">{{ child.fullName }}</span>
+          <span class="assign-spinner" *ngIf="savingChildIds.has(child.id!)">Saving...</span>
+          <span class="assign-badge reassign" *ngIf="isReassign(child)">
+            Re-assign from {{ child.busStopName || 'another stop' }}
+          </span>
+        </label>
+      </div>
+    </ng-container>
+
+    <button class="primary-btn" type="button" (click)="closeAssignStudentsModal()">
+      Done
     </button>
   </div>
 </div>
