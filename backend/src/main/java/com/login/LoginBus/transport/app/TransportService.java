@@ -88,6 +88,30 @@ public interface TransportService {
     BusStop getBusStopById(String busStopId);
 
     /**
+     * Create a new bus stop and associate it with a route.
+     *
+     * @param busStop The bus stop to create (must include routeId)
+     * @return The created bus stop
+     */
+    BusStop createBusStop(BusStop busStop);
+
+    /**
+     * Update an existing bus stop.
+     *
+     * @param busStopId The bus stop ID
+     * @param busStop   Updated fields
+     * @return The updated bus stop
+     */
+    BusStop updateBusStop(String busStopId, BusStop busStop);
+
+    /**
+     * Delete a bus stop.
+     *
+     * @param busStopId The bus stop ID
+     */
+    void deleteBusStop(String busStopId);
+
+    /**
      * Get assigned route/bus stop for a child.
      *
      * @param childId The child ID

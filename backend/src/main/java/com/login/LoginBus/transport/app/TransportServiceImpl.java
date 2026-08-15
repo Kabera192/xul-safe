@@ -268,6 +268,86 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
     }
 
     @Override
+    @Transactional
+    public BusStop createBusStop(BusStop busStop) {
+        if (busStop.getName() == null || busStop.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Bus stop name is required");
+        }
+        if (busStop.getRouteId() == null) {
+            throw new IllegalArgumentException("Route ID is required when creating a bus stop");
+        }
+        if (!routeRepository.existsById(busStop.getRouteId())) {
+            throw new IllegalArgumentException("Route not found with ID: " + busStop.getRouteId());
+        }
+
+        BusStopJpaEntity entity = new BusStopJpaEntity();
+        entity.setName(busStop.getName().trim());
+        entity.setRouteId(busStop.getRouteId());
+        entity.setLatitude(busStop.getLatitude());
+        entity.setLongitude(busStop.getLongitude());
+        entity.setAddress(busStop.getAddress());
+        entity.setDescription(busStop.getDescription());
+        entity.setStopOrder(busStop.getStopOrder() != null ? busStop.getStopOrder() : 0);
+
+        BusStopJpaEntity saved = busStopRepository.save(entity);
+        return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public BusStop updateBusStop(String busStopId, BusStop busStop) {
+        BusStopJpaEntity entity = busStopRepository.findById(busStopId)
+            .orElseThrow(() -> new IllegalArgumentException("Bus stop not found with ID: " + busStopId));
+
+        if (busStop.getName() != null && !busStop.getName().trim().isEmpty()) {
+            entity.setName(busStop.getName().trim());
+        }
+        if (busStop.getAddress() != null) {
+            entity.setAddress(busStop.getAddress());
+        }
+        if (busStop.getDescription() != null) {
+            entity.setDescription(busStop.getDescription());
+        }
+        if (busStop.getLatitude() != null) {
+            entity.setLatitude(busStop.getLatitude());
+        }
+        if (busStop.getLongitude() != null) {
+            entity.setLongitude(busStop.getLongitude());
+        }
+        if (busStop.getStopOrder() != null) {
+            entity.setStopOrder(busStop.getStopOrder());
+        }
+        if (busStop.getRouteId() != null) {
+            if (!routeRepository.existsById(busStop.getRouteId())) {
+                throw new IllegalArgumentException("Route not found with ID: " + busStop.getRouteId());
+            }
+            entity.setRouteId(busStop.getRouteId());
+        }
+
+        BusStopJpaEntity saved = busStopRepository.save(entity);
+        return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public void deleteBusStop(String busStopId) {
+        if (!busStopRepository.existsById(busStopId)) {
+            throw new IllegalArgumentException("Bus stop not found with ID: " + busStopId);
+        }
+        clearChildReferencesToStop(busStopId);
+        busStopRepository.deleteById(busStopId);
+    }
+
+    private void clearChildReferencesToStop(String stopId) {
+        List<com.login.LoginBus.students.infra.ChildJpaEntity> affected =
+            childRepository.findByAnyStopReference(stopId);
+        for (com.login.LoginBus.students.infra.ChildJpaEntity child : affected) {
+            if (stopId.equals(child.getBusStopId())) child.setBusStopId(null);
+        }
+        childRepository.saveAll(affected);
+    }
+
+    @Override
     public Map<String, Object> getChildRoute(String childId) {
         Map<String, Object> details = getChildRouteDetails(childId);
         if (details.get("routeId") == null) {
