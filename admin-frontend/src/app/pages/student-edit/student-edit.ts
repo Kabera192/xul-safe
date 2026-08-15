@@ -33,7 +33,6 @@ export class StudentEditPage implements OnInit, OnDestroy {
   dob = '';
   grade = '';
   selectedBusId: number | null = null;
-  selectedRouteId: number | null = null;
   selectedBusStopId: string | null = null;
   photoPreview = '';
   parentId = '';
@@ -70,7 +69,6 @@ export class StudentEditPage implements OnInit, OnDestroy {
     this.dob = '';
     this.grade = '';
     this.selectedBusId = null;
-    this.selectedRouteId = null;
     this.selectedBusStopId = null;
     this.photoPreview = '';
     this.parentId = '';
@@ -117,10 +115,21 @@ export class StudentEditPage implements OnInit, OnDestroy {
       this.parentId = String(student.parentId ?? '');
       this.photoPreview = this.normalizePhotoUrl(student.photoUrl);
       this.selectedBusId = student.busId ?? null;
-      this.selectedRouteId = student.routeId ?? null;
       this.selectedBusStopId = student.busStopId ?? null;
       this.cdr.detectChanges();
     });
+  }
+
+  /**
+   * The route is never picked independently — it's always whatever route the
+   * selected bus takes, so it's shown read-only and derived here instead of
+   * being a separate dropdown the admin could set out of sync with the bus.
+   */
+  get derivedRouteName(): string {
+    if (!this.selectedBusId) return 'Select a bus first';
+    const bus = this.buses.find(b => b.id === this.selectedBusId);
+    if (!bus?.routeId) return 'No route assigned to this bus';
+    return this.routes.find(r => r.id === bus.routeId)?.name ?? 'Unknown route';
   }
 
   onPhotoSelected(event: Event): void {
@@ -152,7 +161,6 @@ export class StudentEditPage implements OnInit, OnDestroy {
       parentId: Number(this.parentId || 0),
       photoUrl: this.photoPreview || undefined,
       busId: this.selectedBusId ?? undefined,
-      routeId: this.selectedRouteId ?? undefined,
       busStopId: this.selectedBusStopId ?? undefined
     }).pipe(
       timeout(10000),
