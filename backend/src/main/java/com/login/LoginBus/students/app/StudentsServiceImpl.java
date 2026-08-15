@@ -139,8 +139,10 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     // ========== Absence Operations ==========
 
     @Override
+    @Transactional
     public List<Absence> getAllAbsences() {
         return absenceRepository.findAll().stream()
+            .map(this::autoCompleteIfExpired)
             .map(entity -> {
                 Absence absence = entity.toDomain();
                 // Enrich with child name
@@ -153,19 +155,39 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     }
 
     @Override
+    @Transactional
     public List<Absence> getAbsencesForChild(String childId) {
         List<AbsenceJpaEntity> entities = absenceRepository.findByChildId(childId);
         return entities.stream()
+            .map(this::autoCompleteIfExpired)
             .map(AbsenceJpaEntity::toDomain)
             .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public List<Absence> getAbsencesForParent(Long parentId) {
         List<AbsenceJpaEntity> entities = absenceRepository.findByParentId(parentId);
         return entities.stream()
+            .map(this::autoCompleteIfExpired)
             .map(AbsenceJpaEntity::toDomain)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Nothing else ever transitions an absence from ACTIVE to COMPLETED — there's
+     * no scheduled job, so we self-heal it here on every read: if it's still
+     * marked ACTIVE but its end date has already passed, flip it to COMPLETED
+     * and persist that before returning it.
+     */
+    private AbsenceJpaEntity autoCompleteIfExpired(AbsenceJpaEntity entity) {
+        if (entity.getStatus() == com.login.LoginBus.students.domain.AbsenceStatus.ACTIVE
+                && entity.getEndDate() != null
+                && entity.getEndDate().isBefore(java.time.LocalDate.now())) {
+            entity.setStatus(com.login.LoginBus.students.domain.AbsenceStatus.COMPLETED);
+            return absenceRepository.save(entity);
+        }
+        return entity;
     }
 
     @Override
@@ -250,9 +272,12 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     }
 
     @Override
+    @Transactional
     public List<Absence> getActiveAbsencesForParent(Long parentId) {
         List<AbsenceJpaEntity> entities = absenceRepository.findByParentIdAndStatus(parentId, com.login.LoginBus.students.domain.AbsenceStatus.ACTIVE);
         return entities.stream()
+            .map(this::autoCompleteIfExpired)
+            .filter(e -> e.getStatus() == com.login.LoginBus.students.domain.AbsenceStatus.ACTIVE)
             .map(AbsenceJpaEntity::toDomain)
             .collect(Collectors.toList());
     }
