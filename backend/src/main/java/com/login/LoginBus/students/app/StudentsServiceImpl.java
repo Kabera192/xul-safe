@@ -113,9 +113,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         if (child.getParentId() != null) {
             existing.setParentId(child.getParentId());
         }
-        // Update bus, route, and bus stop assignments
+        // Update bus and bus stop assignment. Route lives only on the bus —
+        // a child has no independent route of their own.
         existing.setBusId(child.getBusId());
-        existing.setRouteId(child.getRouteId());
         existing.setBusStopId(child.getBusStopId());
 
         ChildJpaEntity saved = childRepository.save(existing);
@@ -276,18 +276,11 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     // ========== StudentsPublicService Implementation ==========
 
     @Override
-    public List<Child> getChildrenForRoute(Long routeId) {
-        // TODO: Implement when ChildRoute relationship is added
-        return List.of();
-    }
-
-    @Override
     @Transactional
-    public void assignBusStop(String childId, String busStopId, Long routeId) {
+    public void assignBusStop(String childId, String busStopId) {
         ChildJpaEntity entity = childRepository.findById(childId)
             .orElseThrow(() -> new IllegalArgumentException("Child not found with ID: " + childId));
         entity.setBusStopId(busStopId);
-        entity.setRouteId(routeId);
         childRepository.save(entity);
     }
 }

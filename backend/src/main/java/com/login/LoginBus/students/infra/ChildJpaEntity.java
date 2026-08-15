@@ -37,9 +37,6 @@ public class ChildJpaEntity {
     @Column(name = "bus_id")
     private Long busId;
 
-    @Column(name = "route_id")
-    private Long routeId;
-
     @Column(name = "bus_stop_id")
     private String busStopId;
 
@@ -78,7 +75,6 @@ public class ChildJpaEntity {
             this.photoUrl,
             this.parentId,
             this.busId,
-            this.routeId,
             this.busStopId,
             this.createdAt
         );
@@ -100,7 +96,6 @@ public class ChildJpaEntity {
         entity.setPhotoUrl(child.getPhotoUrl());
         entity.setParentId(child.getParentId());
         entity.setBusId(child.getBusId());
-        entity.setRouteId(child.getRouteId());
         entity.setBusStopId(child.getBusStopId());
         entity.createdAt = child.getCreatedAt();
         return entity;
@@ -169,14 +164,6 @@ public class ChildJpaEntity {
 
     public void setBusId(Long busId) {
         this.busId = busId;
-    }
-
-    public Long getRouteId() {
-        return routeId;
-    }
-
-    public void setRouteId(Long routeId) {
-        this.routeId = routeId;
     }
 
     public String getBusStopId() {

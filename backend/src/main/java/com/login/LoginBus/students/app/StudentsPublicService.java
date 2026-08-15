@@ -20,14 +20,6 @@ public interface StudentsPublicService {
     List<Child> getChildrenForParent(Long parentId);
 
     /**
-     * Get all children for a specific route.
-     *
-     * @param routeId The route ID
-     * @return List of children on that route
-     */
-    List<Child> getChildrenForRoute(Long routeId);
-
-    /**
      * Get a specific child by ID.
      *
      * @param childId The child ID
@@ -44,11 +36,10 @@ public interface StudentsPublicService {
     boolean childExists(String childId);
 
     /**
-     * Assign a bus stop (and its parent route) to a child.
+     * Assign a bus stop to a child.
      *
      * @param childId   The child ID
      * @param busStopId The bus stop ID
-     * @param routeId   The route the bus stop belongs to
      */
-    void assignBusStop(String childId, String busStopId, Long routeId);
+    void assignBusStop(String childId, String busStopId);
 }
