@@ -6,6 +6,8 @@ import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
 import com.login.LoginBus.transport.api.dto.*;
 import com.login.LoginBus.transport.infra.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,8 @@ import java.util.List;
 
 @Service
 public class DriverTransportServiceImpl implements DriverTransportService {
+
+    private static final Logger log = LoggerFactory.getLogger(DriverTransportServiceImpl.class);
 
     private final ConductorRepository conductorRepository;
     private final BusRepository busRepository;
@@ -74,9 +78,20 @@ public class DriverTransportServiceImpl implements DriverTransportService {
         stop.setLatitude(request.getLatitude());
         stop.setLongitude(request.getLongitude());
         stop.setAddress("");
-        stop.setStopOrder(request.getOrderIndex());
+        // Callers (the driver app doesn't) may omit an explicit order — default
+        // to appending after the last stop on the route instead of leaving it
+        // null, which would make the new stop sort unpredictably.
+        stop.setStopOrder(request.getOrderIndex() != null
+                ? request.getOrderIndex()
+                : nextStopOrder(bus.getRouteId()));
         stop = busStopRepository.save(stop);
         return toStopResponse(stop);
+    }
+
+    private int nextStopOrder(Long routeId) {
+        return busStopRepository.findByRouteIdOrderByStopOrderAsc(routeId).stream()
+                .mapToInt(s -> s.getStopOrder() != null ? s.getStopOrder() : 0)
+                .max().orElse(-1) + 1;
     }
 
     @Override
@@ -101,12 +116,16 @@ public class DriverTransportServiceImpl implements DriverTransportService {
 
     @Override
     @Transactional
-    public void deleteStop(Jwt jwt, String stopId) {
+    public void deleteStop(Jwt jwt, String stopId, String reason) {
         BusJpaEntity bus = resolveDriverBus(jwt);
         BusStopJpaEntity stop = busStopRepository.findById(stopId)
                 .orElseThrow(() -> new IllegalArgumentException("Stop not found"));
         if (!stop.getRouteId().equals(bus.getRouteId())) {
             throw new IllegalStateException("Stop does not belong to your route");
+        }
+        if (reason != null && !reason.isBlank()) {
+            log.info("Bus stop {} ('{}') deleted by conductor on bus {}, reason: {}",
+                    stopId, stop.getName(), bus.getId(), reason.trim());
         }
         List<ChildJpaEntity> affected = childRepository.findByAnyStopReference(stopId);
         for (ChildJpaEntity child : affected) {

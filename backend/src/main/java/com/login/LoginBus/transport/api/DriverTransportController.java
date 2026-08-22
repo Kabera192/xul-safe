@@ -60,8 +60,10 @@ public class DriverTransportController {
     @DeleteMapping("/bus/route/stops/{stopId}")
     public ResponseEntity<Void> deleteStop(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String stopId) {
-        driverTransportService.deleteStop(jwt, stopId);
+            @PathVariable String stopId,
+            @RequestBody(required = false) DeleteStopRequest request) {
+        String reason = request != null ? request.getReason() : null;
+        driverTransportService.deleteStop(jwt, stopId, reason);
         return ResponseEntity.noContent().build();
     }
 }

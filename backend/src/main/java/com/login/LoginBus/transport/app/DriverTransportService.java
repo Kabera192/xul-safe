@@ -11,5 +11,5 @@ public interface DriverTransportService {
     List<StopResponse> getMyStops(Jwt jwt);
     StopResponse addStop(Jwt jwt, CreateStopRequest request);
     StopResponse updateStop(Jwt jwt, String stopId, UpdateStopRequest request);
-    void deleteStop(Jwt jwt, String stopId);
+    void deleteStop(Jwt jwt, String stopId, String reason);
 }
