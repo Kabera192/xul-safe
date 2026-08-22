@@ -45,13 +45,13 @@ export class DriverService {
     );
   }
 
-  updateRouteStop(stopId: number, stop: UpdateStopRequest): Observable<DriverStop> {
+  updateRouteStop(stopId: string, stop: UpdateStopRequest): Observable<DriverStop> {
     return this.http.patch<ApiResponse<DriverStop>>(`${this.basePath}/bus/route/stops/${stopId}`, stop).pipe(
       map(response => response.data)
     );
   }
 
-  deleteRouteStop(stopId: number): Observable<void> {
+  deleteRouteStop(stopId: string): Observable<void> {
     return this.http.delete<ApiResponse<void>>(`${this.basePath}/bus/route/stops/${stopId}`).pipe(
       map(() => void 0)
     );
@@ -85,7 +85,7 @@ export class DriverService {
     );
   }
 
-  assignChildrenToStop(stopId: number, request: AssignChildrenToStopRequest): Observable<void> {
+  assignChildrenToStop(stopId: string, request: AssignChildrenToStopRequest): Observable<void> {
     return this.http.patch<ApiResponse<void>>(`${this.basePath}/bus/children/assign-to-stop/${stopId}`, request).pipe(
       map(() => void 0)
     );
