@@ -101,7 +101,7 @@
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 60px 150px 120px 150px 110px 140px 100px 120px;
+  grid-template-columns: 60px 150px 120px 110px 140px 100px 120px;
   align-items: center;
   gap: 0.5rem;
 }
@@ -258,7 +258,7 @@
 @media (max-width: 1200px) {
   .table-head,
   .table-row {
-    grid-template-columns: 50px 140px 110px 140px 100px 120px 90px 110px;
+    grid-template-columns: 50px 140px 110px 100px 120px 90px 110px;
   }
 }
 
