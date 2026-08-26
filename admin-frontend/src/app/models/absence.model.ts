@@ -1,5 +1,5 @@
-export type AbsenceType = 'MORNING' | 'AFTERNOON' | 'FULL_DAY';
-export type AbsenceStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type AbsenceType = 'MORNING' | 'EVENING' | 'MULTIPLE_DAYS';
+export type AbsenceStatus = 'ACTIVE' | 'COMPLETED';
 
 export interface Absence {
   id?: number;

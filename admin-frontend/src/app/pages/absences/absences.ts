@@ -26,7 +26,6 @@ export class AbsencesPage implements OnInit {
     { value: 'ALL', label: 'All statuses' },
     { value: 'ACTIVE', label: 'Active' },
     { value: 'COMPLETED', label: 'Completed' },
-    { value: 'CANCELLED', label: 'Cancelled' },
   ];
 
   ngOnInit(): void {
@@ -73,10 +72,6 @@ export class AbsencesPage implements OnInit {
 
   get completedCount(): number {
     return this.absences.filter(a => a.status === 'COMPLETED').length;
-  }
-
-  get cancelledCount(): number {
-    return this.absences.filter(a => a.status === 'CANCELLED').length;
   }
 
   formatType(type: string): string {

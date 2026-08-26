@@ -102,11 +102,6 @@
     border-left-color: #10B981;
     .summary-value { color: #059669; }
   }
-
-  &.cancelled {
-    border-left-color: #9CA3AF;
-    .summary-value { color: #6B7280; }
-  }
 }
 
 .filters-card {
@@ -272,7 +267,6 @@ table {
 
   &.active    { background: #FEF3C7; color: #D97706; }
   &.completed { background: #D1FAE5; color: #059669; }
-  &.cancelled { background: #F3F4F6; color: #6B7280; }
 }
 
 @media (max-width: 768px) {
