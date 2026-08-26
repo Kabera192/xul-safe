@@ -14,7 +14,6 @@ public class Child {
     private String photoUrl;
     private Long parentId;
     private Long busId;
-    private Long routeId;
     private String busStopId;
     private Long createdAt;
 
@@ -25,7 +24,7 @@ public class Child {
     // Full constructor
     public Child(String id, String fullName, String birthDate, Gender gender,
                  String grade, String photoUrl, Long parentId, Long busId,
-                 Long routeId, String busStopId, Long createdAt) {
+                 String busStopId, Long createdAt) {
         this.id = id;
         this.fullName = fullName;
         this.birthDate = birthDate;
@@ -34,7 +33,6 @@ public class Child {
         this.photoUrl = photoUrl;
         this.parentId = parentId;
         this.busId = busId;
-        this.routeId = routeId;
         this.busStopId = busStopId;
         this.createdAt = createdAt;
     }
@@ -128,14 +126,6 @@ public class Child {
 
     public void setBusId(Long busId) {
         this.busId = busId;
-    }
-
-    public Long getRouteId() {
-        return routeId;
-    }
-
-    public void setRouteId(Long routeId) {
-        this.routeId = routeId;
     }
 
     public String getBusStopId() {

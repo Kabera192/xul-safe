@@ -21,8 +21,6 @@ public class ChildDetailDto {
     private String busDeviceId;
     private Long conductorId;
     private String conductorName;
-    private Long routeId;
-    private String routeName;
     private String busStopId;
     private String busStopName;
     private String busStopLocation;
@@ -36,7 +34,7 @@ public class ChildDetailDto {
      */
     public static ChildDetailDto fromChild(Child child, String busPlateNumber, String busDeviceId,
                                            Long conductorId, String conductorName,
-                                           String routeName, String busStopName, String busStopLocation) {
+                                           String busStopName, String busStopLocation) {
         ChildDetailDto dto = new ChildDetailDto();
         dto.id = child.getId();
         dto.fullName = child.getFullName();
@@ -50,8 +48,6 @@ public class ChildDetailDto {
         dto.busDeviceId = busDeviceId;
         dto.conductorId = conductorId;
         dto.conductorName = conductorName;
-        dto.routeId = child.getRouteId();
-        dto.routeName = routeName;
         dto.busStopId = child.getBusStopId();
         dto.busStopName = busStopName;
         dto.busStopLocation = busStopLocation;
@@ -154,22 +150,6 @@ public class ChildDetailDto {
 
     public void setConductorName(String conductorName) {
         this.conductorName = conductorName;
-    }
-
-    public Long getRouteId() {
-        return routeId;
-    }
-
-    public void setRouteId(Long routeId) {
-        this.routeId = routeId;
-    }
-
-    public String getRouteName() {
-        return routeName;
-    }
-
-    public void setRouteName(String routeName) {
-        this.routeName = routeName;
     }
 
     public String getBusStopId() {

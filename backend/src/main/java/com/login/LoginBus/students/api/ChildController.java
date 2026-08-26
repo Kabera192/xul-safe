@@ -10,7 +10,6 @@ import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.transport.app.TransportService;
 import com.login.LoginBus.transport.domain.Bus;
 import com.login.LoginBus.transport.domain.BusStop;
-import com.login.LoginBus.transport.domain.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -96,7 +95,6 @@ public class ChildController {
             String busDeviceId = null;
             Long conductorId = null;
             String conductorName = null;
-            String routeName = null;
             String busStopName = null;
             String busStopLocation = null;
 
@@ -116,14 +114,6 @@ public class ChildController {
                 }
             }
 
-            // Get route info
-            if (child.getRouteId() != null) {
-                Route route = transportService.getRouteById(child.getRouteId());
-                if (route != null) {
-                    routeName = route.getName();
-                }
-            }
-
             // Get bus stop info
             if (child.getBusStopId() != null) {
                 BusStop busStop = transportService.getBusStopById(child.getBusStopId());
@@ -134,7 +124,7 @@ public class ChildController {
             }
 
             enrichedChildren.add(ChildDetailDto.fromChild(
-                child, busPlateNumber, busDeviceId, conductorId, conductorName, routeName, busStopName, busStopLocation
+                child, busPlateNumber, busDeviceId, conductorId, conductorName, busStopName, busStopLocation
             ));
         }
 
@@ -165,7 +155,6 @@ public class ChildController {
         String busDeviceId = null;
         Long conductorId = null;
         String conductorName = null;
-        String routeName = null;
         String busStopName = null;
         String busStopLocation = null;
 
@@ -185,14 +174,6 @@ public class ChildController {
             }
         }
 
-        // Get route info
-        if (child.getRouteId() != null) {
-            Route route = transportService.getRouteById(child.getRouteId());
-            if (route != null) {
-                routeName = route.getName();
-            }
-        }
-
         // Get bus stop info
         if (child.getBusStopId() != null) {
             BusStop busStop = transportService.getBusStopById(child.getBusStopId());
@@ -203,7 +184,7 @@ public class ChildController {
         }
 
         ChildDetailDto enrichedChild = ChildDetailDto.fromChild(
-            child, busPlateNumber, busDeviceId, conductorId, conductorName, routeName, busStopName, busStopLocation
+            child, busPlateNumber, busDeviceId, conductorId, conductorName, busStopName, busStopLocation
         );
 
         return ResponseEntity.ok(new ApiResponse<>(

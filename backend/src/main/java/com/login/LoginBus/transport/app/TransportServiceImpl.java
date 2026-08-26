@@ -844,7 +844,7 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             );
         }
 
-        studentsService.assignBusStop(childId, busStopId, busEntity.getRouteId());
+        studentsService.assignBusStop(childId, busStopId);
     }
 
     @Override
@@ -894,8 +894,8 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
         BusStopJpaEntity savedStop = busStopRepository.save(newStop);
 
-        // Link the child to the new stop and route
-        studentsService.assignBusStop(requestEntity.getChildId(), savedStop.getId(), routeId);
+        // Link the child to the new stop
+        studentsService.assignBusStop(requestEntity.getChildId(), savedStop.getId());
 
         // Mark the request as approved
         requestEntity.setStatus(RouteRequestStatus.APPROVED);
