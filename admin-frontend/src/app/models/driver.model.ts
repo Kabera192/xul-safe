@@ -20,7 +20,7 @@ export interface DriverRoute {
 
 /** A stop on the driver's route. Returned by GET /me/bus/route/stops. */
 export interface DriverStop {
-  id: number;
+  id: string;
   routeId: number;
   locationName: string;
   locationLat: number;
@@ -49,7 +49,7 @@ export interface DriverChild {
   grade?: string;
   gender?: string;
   photoUrl?: string;
-  busStopId?: number;
+  busStopId?: string;
 }
 
 export interface AssignChildrenToStopRequest {
