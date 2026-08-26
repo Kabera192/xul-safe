@@ -86,27 +86,65 @@ export class TripAttendance implements OnInit {
   }
 
   nextWeek(): void {
+    if (!this.canGoNext) return;
     this.currentWeekStart = new Date(this.currentWeekStart);
     this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
     this.loadAttendance();
   }
 
-  private getMonday(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(d.setDate(diff));
+  /** Jump straight to the week containing an arbitrary picked date. */
+  onDatePicked(value: string): void {
+    if (!value) return;
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return;
+    this.currentWeekStart = this.getMonday(new Date(year, month - 1, day));
+    this.loadAttendance();
   }
 
+  /** The current week can't be navigated past — there's nothing to show yet. */
+  get canGoNext(): boolean {
+    return this.getMonday(new Date()).getTime() > this.currentWeekStart.getTime();
+  }
+
+  /** Caps the date picker so admins can't jump into a future week either. */
+  get todayStr(): string {
+    return this.formatDate(new Date());
+  }
+
+  private getMonday(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+    return d;
+  }
+
+  /**
+   * Builds a plain "yyyy-MM-dd" string from the Date's LOCAL calendar fields.
+   * Using `toISOString()` here would convert to UTC first, which silently
+   * shifts the date by a day for any timezone ahead of UTC in the early
+   * morning — throwing off which week is requested from the backend.
+   */
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private updatePeriodLabel(): void {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = monthNames[this.currentWeekStart.getMonth()];
-    const weekOfMonth = Math.ceil(this.currentWeekStart.getDate() / 7);
-    this.periodLabel = `${month} | Week ${weekOfMonth} attendance`;
+    const start = this.currentWeekStart;
+    const end = new Date(start);
+    end.setDate(end.getDate() + 4);
+
+    const startLabel = `${monthNames[start.getMonth()]} ${start.getDate()}`;
+    const endLabel = start.getMonth() === end.getMonth()
+      ? `${end.getDate()}`
+      : `${monthNames[end.getMonth()]} ${end.getDate()}`;
+
+    this.periodLabel = `${startLabel}–${endLabel}, ${end.getFullYear()}`;
   }
 
   get filteredRows(): AttendanceRow[] {
@@ -122,6 +160,14 @@ export class TripAttendance implements OnInit {
 
   isPresent(mark: AttendanceMark): boolean {
     return mark === 'present';
+  }
+
+  isPending(mark: AttendanceMark): boolean {
+    return mark === 'pending';
+  }
+
+  isAbsent(mark: AttendanceMark): boolean {
+    return mark === 'absent';
   }
 
   openDetail(row: AttendanceRow): void {
@@ -151,10 +197,15 @@ export class TripAttendance implements OnInit {
       { label: 'Friday',    key: 'fri' },
     ];
 
-    const badge = (mark: AttendanceMark | undefined) =>
-      mark === 'present'
-        ? '<span style="display:inline-block;background:#D1FAE5;color:#065F46;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">✓ Present</span>'
-        : '<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">✗ Absent</span>';
+    const badge = (mark: AttendanceMark | undefined) => {
+      if (mark === 'present') {
+        return '<span style="display:inline-block;background:#D1FAE5;color:#065F46;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">✓ Present</span>';
+      }
+      if (mark === 'pending') {
+        return '<span style="display:inline-block;background:#F3F4F6;color:#6B7280;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">• Upcoming</span>';
+      }
+      return '<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">✗ Absent</span>';
+    };
 
     const tableRows = rows.map(row => `
       <tr>
