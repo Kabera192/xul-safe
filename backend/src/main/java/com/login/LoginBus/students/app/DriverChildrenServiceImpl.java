@@ -11,13 +11,14 @@ import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
 import com.login.LoginBus.transport.infra.BusJpaEntity;
 import com.login.LoginBus.transport.infra.BusRepository;
-import com.login.LoginBus.transport.infra.StopJpaEntity;
-import com.login.LoginBus.transport.infra.StopRepository;
+import com.login.LoginBus.transport.infra.BusStopJpaEntity;
+import com.login.LoginBus.transport.infra.BusStopRepository;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,18 +30,18 @@ public class DriverChildrenServiceImpl implements DriverChildrenService {
     private final BusRepository busRepository;
     private final ChildRepository childRepository;
     private final AbsenceRepository absenceRepository;
-    private final StopRepository stopRepository;
+    private final BusStopRepository busStopRepository;
 
     public DriverChildrenServiceImpl(ConductorRepository conductorRepository,
                                      BusRepository busRepository,
                                      ChildRepository childRepository,
                                      AbsenceRepository absenceRepository,
-                                     StopRepository stopRepository) {
+                                     BusStopRepository busStopRepository) {
         this.conductorRepository = conductorRepository;
         this.busRepository = busRepository;
         this.childRepository = childRepository;
         this.absenceRepository = absenceRepository;
-        this.stopRepository = stopRepository;
+        this.busStopRepository = busStopRepository;
     }
 
     @Override
@@ -103,33 +104,35 @@ public class DriverChildrenServiceImpl implements DriverChildrenService {
 
     @Override
     @Transactional
-    public void assignChildrenToStop(Jwt jwt, Long stopId, AssignChildrenToStopRequest request) {
+    public void assignChildrenToStop(Jwt jwt, String stopId, AssignChildrenToStopRequest request) {
         BusJpaEntity bus = resolveDriverBus(jwt);
-        StopJpaEntity stop = stopRepository.findById(stopId)
+        BusStopJpaEntity stop = busStopRepository.findById(stopId)
                 .orElseThrow(() -> new IllegalArgumentException("Stop not found"));
 
         if (bus.getRouteId() == null || !bus.getRouteId().equals(stop.getRouteId())) {
             throw new IllegalStateException("Stop does not belong to your route");
         }
 
-        boolean isPickup = "PICKUP".equalsIgnoreCase(request.getStopType());
-        boolean isDropoff = "DROPOFF".equalsIgnoreCase(request.getStopType());
+        List<String> requestedIds = request.getChildIds();
+        Set<String> desiredChildIds = new HashSet<>(requestedIds != null ? requestedIds : List.of());
 
-        if (!isPickup && !isDropoff) {
-            throw new IllegalArgumentException("stop_type must be PICKUP or DROPOFF");
-        }
-
-        List<String> childIds = request.getChildIds();
-        if (childIds == null || childIds.isEmpty()) return;
-
-        for (String childId : childIds) {
-            childRepository.findById(childId).ifPresent(child -> {
-                if (bus.getId().equals(child.getBusId())) {
-                    if (isPickup) child.setPickupStopId(stopId);
-                    else child.setDropoffStopId(stopId);
-                    childRepository.save(child);
-                }
-            });
+        // Set-membership semantics: every bus child currently on this stop who ISN'T
+        // in the desired list gets detached, and everyone in the desired list gets
+        // attached. This lets the driver app show an accurate "who's on this stop"
+        // checklist where unchecking someone actually removes them, instead of the
+        // assignment being add-only. A child boards and alights at the same stop, so
+        // there's a single busStopId rather than separate pickup/dropoff fields.
+        List<ChildJpaEntity> busChildren = childRepository.findByBusId(bus.getId());
+        for (ChildJpaEntity child : busChildren) {
+            boolean shouldHaveStop = desiredChildIds.contains(child.getId());
+            boolean currentlyHasStop = stopId.equals(child.getBusStopId());
+            if (shouldHaveStop && !currentlyHasStop) {
+                child.setBusStopId(stopId);
+                childRepository.save(child);
+            } else if (!shouldHaveStop && currentlyHasStop) {
+                child.setBusStopId(null);
+                childRepository.save(child);
+            }
         }
     }
 
@@ -147,10 +150,9 @@ public class DriverChildrenServiceImpl implements DriverChildrenService {
     }
 
     private List<AbsenceType> absenceTypesForJourney(String journey) {
-        if ("RETURN".equalsIgnoreCase(journey)) {
+        if ("RETURN".equalsIgnoreCase(journey) || "AFTERNOON".equalsIgnoreCase(journey)) {
             return List.of(AbsenceType.EVENING, AbsenceType.MULTIPLE_DAYS);
         }
-        // Default / MORNING
         return List.of(AbsenceType.MORNING, AbsenceType.MULTIPLE_DAYS);
     }
 
@@ -161,8 +163,7 @@ public class DriverChildrenServiceImpl implements DriverChildrenService {
                 child.getGrade(),
                 child.getGender() != null ? child.getGender().name() : null,
                 child.getPhotoUrl(),
-                child.getPickupStopId(),
-                child.getDropoffStopId()
+                child.getBusStopId()
         );
     }
 }

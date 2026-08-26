@@ -14,7 +14,7 @@ import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
 import com.login.LoginBus.transport.infra.BusJpaEntity;
 import com.login.LoginBus.transport.infra.BusRepository;
-import com.login.LoginBus.transport.infra.StopRepository;
+import com.login.LoginBus.transport.infra.BusStopRepository;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +34,20 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
     private final ChildRepository childRepository;
     private final AttendanceRepository attendanceRepository;
     private final NotificationsPublicService notificationsPublicService;
-    private final StopRepository stopRepository;
+    private final BusStopRepository busStopRepository;
 
     public DriverAttendanceServiceImpl(ConductorRepository conductorRepository,
                                         BusRepository busRepository,
                                         ChildRepository childRepository,
                                         AttendanceRepository attendanceRepository,
                                         NotificationsPublicService notificationsPublicService,
-                                        StopRepository stopRepository) {
+                                        BusStopRepository busStopRepository) {
         this.conductorRepository = conductorRepository;
         this.busRepository = busRepository;
         this.childRepository = childRepository;
         this.attendanceRepository = attendanceRepository;
         this.notificationsPublicService = notificationsPublicService;
-        this.stopRepository = stopRepository;
+        this.busStopRepository = busStopRepository;
     }
 
     @Override
@@ -205,18 +205,18 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
 
     @Override
     @Transactional(readOnly = true)
-    public void notifyStopArrival(Jwt jwt, Long stopId, String session) {
+    public void notifyStopArrival(Jwt jwt, String stopId, String session) {
         ConductorJpaEntity conductor = resolveConductor(jwt);
         BusJpaEntity bus = resolveBus(conductor);
         AttendanceSession sess = parseSession(session);
 
-        String stopName = stopRepository.findById(stopId)
+        String stopName = busStopRepository.findById(stopId)
                 .map(s -> s.getName())
                 .orElse("a bus stop");
 
-        List<ChildJpaEntity> children = (sess == AttendanceSession.MORNING)
-                ? childRepository.findByBusIdAndPickupStopId(bus.getId(), stopId)
-                : childRepository.findByBusIdAndDropoffStopId(bus.getId(), stopId);
+        // A child boards and alights at the same stop, so the same busStopId
+        // applies for both the morning pickup and afternoon drop-off session.
+        List<ChildJpaEntity> children = childRepository.findByBusIdAndBusStopId(bus.getId(), stopId);
 
         for (ChildJpaEntity child : children) {
             Long parentUserId = child.getParentId();

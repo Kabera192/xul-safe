@@ -3,7 +3,7 @@ package com.login.LoginBus.transport.api.dto;
 public class StopResponse {
 
     // Field names match Flutter StopModel.fromApiResponse expectations
-    private Long id;          // Flutter reads 'id'
+    private String id;        // Flutter reads 'id'
     private Long routeId;     // Flutter reads 'routeId'
     private String locationName;  // Flutter reads 'locationName'
     private Double locationLat;   // Flutter reads 'locationLat'
@@ -12,7 +12,7 @@ public class StopResponse {
 
     public StopResponse() {}
 
-    public StopResponse(Long id, Long routeId, String locationName, Double locationLat,
+    public StopResponse(String id, Long routeId, String locationName, Double locationLat,
                         Double locationLong, Integer orderIndex) {
         this.id = id;
         this.routeId = routeId;
@@ -22,8 +22,8 @@ public class StopResponse {
         this.orderIndex = orderIndex;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     public Long getRouteId() { return routeId; }
     public void setRouteId(Long routeId) { this.routeId = routeId; }
     public String getLocationName() { return locationName; }

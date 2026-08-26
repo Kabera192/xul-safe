@@ -2,6 +2,8 @@ package com.login.LoginBus.transport.app;
 
 import com.login.LoginBus.accounts.infra.ConductorJpaEntity;
 import com.login.LoginBus.accounts.infra.ConductorRepository;
+import com.login.LoginBus.students.infra.ChildJpaEntity;
+import com.login.LoginBus.students.infra.ChildRepository;
 import com.login.LoginBus.transport.api.dto.*;
 import com.login.LoginBus.transport.infra.*;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -16,16 +18,19 @@ public class DriverTransportServiceImpl implements DriverTransportService {
     private final ConductorRepository conductorRepository;
     private final BusRepository busRepository;
     private final RouteRepository routeRepository;
-    private final StopRepository stopRepository;
+    private final BusStopRepository busStopRepository;
+    private final ChildRepository childRepository;
 
     public DriverTransportServiceImpl(ConductorRepository conductorRepository,
                                       BusRepository busRepository,
                                       RouteRepository routeRepository,
-                                      StopRepository stopRepository) {
+                                      BusStopRepository busStopRepository,
+                                      ChildRepository childRepository) {
         this.conductorRepository = conductorRepository;
         this.busRepository = busRepository;
         this.routeRepository = routeRepository;
-        this.stopRepository = stopRepository;
+        this.busStopRepository = busStopRepository;
+        this.childRepository = childRepository;
     }
 
     @Override
@@ -50,7 +55,7 @@ public class DriverTransportServiceImpl implements DriverTransportService {
     public List<StopResponse> getMyStops(Jwt jwt) {
         BusJpaEntity bus = resolveDriverBus(jwt);
         if (bus.getRouteId() == null) return List.of();
-        return stopRepository.findByRouteIdOrderByOrderIndexAsc(bus.getRouteId())
+        return busStopRepository.findByRouteIdOrderByStopOrderAsc(bus.getRouteId())
                 .stream().map(this::toStopResponse).toList();
     }
 
@@ -63,21 +68,22 @@ public class DriverTransportServiceImpl implements DriverTransportService {
         BusJpaEntity bus = resolveDriverBus(jwt);
         if (bus.getRouteId() == null) throw new IllegalStateException("No route assigned to your bus");
 
-        StopJpaEntity stop = new StopJpaEntity();
+        BusStopJpaEntity stop = new BusStopJpaEntity();
         stop.setRouteId(bus.getRouteId());
         stop.setName(request.getName().trim());
         stop.setLatitude(request.getLatitude());
         stop.setLongitude(request.getLongitude());
-        stop.setOrderIndex(request.getOrderIndex());
-        stop = stopRepository.save(stop);
+        stop.setAddress("");
+        stop.setStopOrder(request.getOrderIndex());
+        stop = busStopRepository.save(stop);
         return toStopResponse(stop);
     }
 
     @Override
     @Transactional
-    public StopResponse updateStop(Jwt jwt, Long stopId, UpdateStopRequest request) {
+    public StopResponse updateStop(Jwt jwt, String stopId, UpdateStopRequest request) {
         BusJpaEntity bus = resolveDriverBus(jwt);
-        StopJpaEntity stop = stopRepository.findById(stopId)
+        BusStopJpaEntity stop = busStopRepository.findById(stopId)
                 .orElseThrow(() -> new IllegalArgumentException("Stop not found"));
         if (!stop.getRouteId().equals(bus.getRouteId())) {
             throw new IllegalStateException("Stop does not belong to your route");
@@ -87,22 +93,27 @@ public class DriverTransportServiceImpl implements DriverTransportService {
             stop.setName(request.getName().trim());
         if (request.getLatitude() != null) stop.setLatitude(request.getLatitude());
         if (request.getLongitude() != null) stop.setLongitude(request.getLongitude());
-        if (request.getOrderIndex() != null) stop.setOrderIndex(request.getOrderIndex());
+        if (request.getOrderIndex() != null) stop.setStopOrder(request.getOrderIndex());
 
-        stop = stopRepository.save(stop);
+        stop = busStopRepository.save(stop);
         return toStopResponse(stop);
     }
 
     @Override
     @Transactional
-    public void deleteStop(Jwt jwt, Long stopId) {
+    public void deleteStop(Jwt jwt, String stopId) {
         BusJpaEntity bus = resolveDriverBus(jwt);
-        StopJpaEntity stop = stopRepository.findById(stopId)
+        BusStopJpaEntity stop = busStopRepository.findById(stopId)
                 .orElseThrow(() -> new IllegalArgumentException("Stop not found"));
         if (!stop.getRouteId().equals(bus.getRouteId())) {
             throw new IllegalStateException("Stop does not belong to your route");
         }
-        stopRepository.delete(stop);
+        List<ChildJpaEntity> affected = childRepository.findByAnyStopReference(stopId);
+        for (ChildJpaEntity child : affected) {
+            if (stopId.equals(child.getBusStopId())) child.setBusStopId(null);
+        }
+        childRepository.saveAll(affected);
+        busStopRepository.delete(stop);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -140,14 +151,14 @@ public class DriverTransportServiceImpl implements DriverTransportService {
         );
     }
 
-    private StopResponse toStopResponse(StopJpaEntity stop) {
+    private StopResponse toStopResponse(BusStopJpaEntity stop) {
         return new StopResponse(
                 stop.getId(),
                 stop.getRouteId(),
-                stop.getName(),       // mapped to locationName in StopResponse
-                stop.getLatitude(),   // mapped to locationLat in StopResponse
-                stop.getLongitude(),  // mapped to locationLong in StopResponse
-                stop.getOrderIndex()
+                stop.getName(),
+                stop.getLatitude(),
+                stop.getLongitude(),
+                stop.getStopOrder()
         );
     }
 }
