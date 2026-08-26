@@ -49,10 +49,7 @@
       </label>
       <label>
         Route
-        <select [(ngModel)]="selectedRouteId">
-          <option [ngValue]="null">-- Select Route --</option>
-          <option *ngFor="let r of routes" [ngValue]="r.id">{{ r.name }}</option>
-        </select>
+        <input type="text" [value]="derivedRouteName" disabled title="Follows the assigned bus's route automatically" />
       </label>
       <label>
         Bus stop

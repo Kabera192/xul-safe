@@ -53,21 +53,18 @@
       </label>
       <label>
         Assigned bus
-        <select [(ngModel)]="selectedBusId">
+        <select [(ngModel)]="selectedBusId" (change)="onBusChange()">
           <option value="">Select bus</option>
           <option *ngFor="let bus of buses" [value]="bus.id">{{ bus.plateNumber }}</option>
         </select>
       </label>
       <label>
         Route
-        <select [(ngModel)]="selectedRouteId" (change)="onRouteChange()">
-          <option value="">Select route</option>
-          <option *ngFor="let route of routes" [value]="route.id">{{ route.name }}</option>
-        </select>
+        <input type="text" [value]="derivedRouteName" disabled title="Follows the assigned bus's route automatically" />
       </label>
       <label>
         Bus stop
-        <select [(ngModel)]="selectedBusStopId" [disabled]="!selectedRouteId">
+        <select [(ngModel)]="selectedBusStopId" [disabled]="!selectedBusId">
           <option value="">Select bus stop</option>
           <option *ngFor="let stop of busStops" [value]="stop.id">{{ stop.name }}</option>
         </select>
