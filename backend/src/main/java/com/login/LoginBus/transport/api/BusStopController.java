@@ -4,6 +4,7 @@ import com.login.LoginBus.shared.api.ApiResponse;
 import com.login.LoginBus.transport.app.TransportService;
 import com.login.LoginBus.transport.domain.BusStop;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -73,6 +74,59 @@ public class BusStopController {
         return ResponseEntity.ok(new ApiResponse<>(
             "Route bus stops retrieved successfully",
             busStops
+        ));
+    }
+
+    /**
+     * Create a new bus stop and associate it with a route.
+     * POST /api/v1/bus-stops
+     *
+     * @param busStop The bus stop data (must include routeId)
+     * @return The created bus stop
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse<BusStop>> createBusStop(@RequestBody BusStop busStop) {
+        BusStop created = transportService.createBusStop(busStop);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(
+            "Bus stop created successfully",
+            created
+        ));
+    }
+
+    /**
+     * Update an existing bus stop.
+     * PUT /api/v1/bus-stops/{busStopId}
+     *
+     * @param busStopId The bus stop ID
+     * @param busStop   Updated fields
+     * @return The updated bus stop
+     */
+    @PutMapping("/{busStopId}")
+    public ResponseEntity<ApiResponse<BusStop>> updateBusStop(
+            @PathVariable String busStopId,
+            @RequestBody BusStop busStop) {
+        BusStop updated = transportService.updateBusStop(busStopId, busStop);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Bus stop updated successfully",
+            updated
+        ));
+    }
+
+    /**
+     * Delete a bus stop.
+     * DELETE /api/v1/bus-stops/{busStopId}
+     *
+     * @param busStopId The bus stop ID
+     */
+    @DeleteMapping("/{busStopId}")
+    public ResponseEntity<ApiResponse<Void>> deleteBusStop(@PathVariable String busStopId) {
+        transportService.deleteBusStop(busStopId);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Bus stop deleted successfully",
+            null
         ));
     }
 }
