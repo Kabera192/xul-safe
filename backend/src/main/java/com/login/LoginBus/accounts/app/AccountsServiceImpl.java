@@ -322,4 +322,12 @@ public class AccountsServiceImpl implements AccountsService, AccountsPublicServi
 
         emergencyContactRepository.deleteById(contactId);
     }
+
+    @Override
+    public List<User> getUsersByRole(UserRole role) {
+        return userRepository.findByRole(role)
+                .stream()
+                .map(UserJpaEntity::toDomain)
+                .collect(Collectors.toList());
+    }
 }

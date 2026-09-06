@@ -51,6 +51,14 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     }
 
     @Override
+    public List<Child> getChildrenForBus(Long busId) {
+        List<ChildJpaEntity> entities = childRepository.findByBusId(busId);
+        return entities.stream()
+                .map(ChildJpaEntity::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Child> getAllChildren() {
         List<ChildJpaEntity> entities = childRepository.findAll();
         return entities.stream()
