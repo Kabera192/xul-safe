@@ -9,5 +9,6 @@ public enum NotificationCategory {
     BUS_PROBLEM_REPORTED,
     BUS_REACHED_STOP,
     JOURNEY_STARTED,
-    JOURNEY_ENDED
+    JOURNEY_ENDED,
+    INCIDENT_REPORTED
 }

@@ -20,6 +20,14 @@ public interface StudentsPublicService {
     List<Child> getChildrenForParent(Long parentId);
 
     /**
+     * Get all children assigned to a bus.
+     *
+     * @param busId The bus ID
+     * @return List of children assigned to the bus
+     */
+    List<Child> getChildrenForBus(Long busId);
+
+    /**
      * Get a specific child by ID.
      *
      * @param childId The child ID
@@ -39,7 +47,7 @@ public interface StudentsPublicService {
      * Assign a bus stop to a child.
      *
      * @param childId   The child ID
-     * @param busStopId The bus stop ID
+     * @param busStopId The predefined bus stop ID
      */
     void assignBusStop(String childId, String busStopId);
 }

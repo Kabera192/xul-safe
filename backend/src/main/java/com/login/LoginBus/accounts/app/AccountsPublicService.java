@@ -1,8 +1,10 @@
 package com.login.LoginBus.accounts.app;
 
 import com.login.LoginBus.accounts.domain.User;
+import com.login.LoginBus.accounts.domain.UserRole;
 import com.login.LoginBus.accounts.domain.Parent;
 import com.login.LoginBus.accounts.domain.Conductor;
+import java.util.List;
 
 /**
  * Public service interface for Accounts module.
@@ -84,4 +86,12 @@ public interface AccountsPublicService {
      * @return The updated user
      */
     User updateUser(Long userId, User user);
+
+    /**
+     * Get all users with a specific role.
+     *
+     * @param role The user role
+     * @return List of users with that role
+     */
+    List<User> getUsersByRole(UserRole role);
 }

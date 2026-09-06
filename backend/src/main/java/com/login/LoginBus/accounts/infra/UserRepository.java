@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 
 import com.login.LoginBus.accounts.domain.UserRole;
 import java.util.Optional;
+import java.util.List;
 
 /**
  * Repository for User JPA entities.
@@ -36,4 +37,6 @@ public interface UserRepository extends JpaRepository<UserJpaEntity, Long> {
      * @return true if at least one user with that role exists
      */
     boolean existsByRole(UserRole role);
+
+    List<UserJpaEntity> findByRole(UserRole role);
 }

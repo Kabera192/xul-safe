@@ -24,6 +24,25 @@ public interface TransportPublicService {
     BusTracking getActiveBusTracking(String childId);
 
     /**
+     * Get active bus tracking for a specific bus.
+     *
+     * @param busId The bus ID
+     * @return The active bus tracking, or null if no active tracking
+     */
+    BusTracking getActiveBusTrackingForBus(Long busId);
+
+    /**
+     * Get the bus assigned to a transport user.
+     *
+     * The user ID is the authenticated User ID. This follows the existing
+     * user -> conductor profile -> bus assignment used by the driver endpoints.
+     *
+     * @param userId The authenticated user ID
+     * @return The assigned bus, or null if none is assigned
+     */
+    Bus getAssignedBusForUser(Long userId);
+
+    /**
      * Get all bus stops for a specific route.
      *
      * @param routeId The route ID

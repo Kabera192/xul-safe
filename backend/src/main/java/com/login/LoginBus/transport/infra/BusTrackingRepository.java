@@ -16,18 +16,12 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
 
     /**
      * Find the latest bus tracking for a specific child.
-     *
-     * @param childId The child ID
-     * @return The latest tracking, or null if not found
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.childId = :childId ORDER BY bt.updatedAt DESC LIMIT 1")
     BusTrackingJpaEntity findLatestByChildId(@Param("childId") String childId);
 
     /**
      * Find the latest bus tracking for a specific route.
-     *
-     * @param routeId The route ID
-     * @return The latest tracking, or null if not found
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.routeId = :routeId ORDER BY bt.updatedAt DESC LIMIT 1")
     BusTrackingJpaEntity findLatestByRouteId(@Param("routeId") Long routeId);
@@ -35,9 +29,6 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
     /**
      * Find active bus tracking for a specific child.
      * Active means status is not NOT_IN_ROUTE.
-     *
-     * @param childId The child ID
-     * @return Optional containing active tracking, or empty
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.childId = :childId AND bt.status <> 'NOT_IN_ROUTE' ORDER BY bt.updatedAt DESC LIMIT 1")
     Optional<BusTrackingJpaEntity> findActiveBusTrackingByChildId(@Param("childId") String childId);
@@ -45,9 +36,6 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
     /**
      * Find active bus tracking for a specific route.
      * Active means status is not NOT_IN_ROUTE.
-     *
-     * @param routeId The route ID
-     * @return Optional containing active tracking, or empty
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.routeId = :routeId AND bt.status <> 'NOT_IN_ROUTE' ORDER BY bt.updatedAt DESC LIMIT 1")
     Optional<BusTrackingJpaEntity> findActiveBusTrackingByRouteId(@Param("routeId") Long routeId);
@@ -55,10 +43,15 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
     /**
      * Find active bus tracking for a specific conductor.
      * Active means status is not NOT_IN_ROUTE.
-     *
-     * @param conductorId The conductor ID
-     * @return Optional containing active tracking, or empty
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.conductorId = :conductorId AND bt.status <> 'NOT_IN_ROUTE' ORDER BY bt.updatedAt DESC LIMIT 1")
     Optional<BusTrackingJpaEntity> findActiveBusTrackingByConductorId(@Param("conductorId") Long conductorId);
+
+    /**
+     * Find active bus tracking for a specific bus.
+     * Used by features that need to know whether a bus is currently
+     * involved in an active transport operation.
+     */
+    @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.busId = :busId AND bt.status <> 'NOT_IN_ROUTE' ORDER BY bt.updatedAt DESC LIMIT 1")
+    Optional<BusTrackingJpaEntity> findActiveBusTrackingByBusId(@Param("busId") Long busId);
 }
