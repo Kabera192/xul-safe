@@ -16,6 +16,7 @@ import '../models/child_model.dart';
 import '../models/driver_profile_model.dart';
 import '../models/stop_model.dart';
 import '../pages/driver_bus_route_page.dart';
+import '../pages/driver_incident_type_page.dart';
 import '../widgets/stop_attendance_sheet.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -52,6 +53,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
   // Attendance popup state
   final Set<int> _confirmedStopIds = {};
   bool _popupShowing = false;
+
+  // Incident quick-action menu
+bool _incidentActionsOpen = false;
 
   bool get _journeyActive => _activeJourney != null;
   String? get _journeyId => _activeJourney?['id']?.toString();
@@ -392,6 +396,31 @@ class _DriverHomePageState extends State<DriverHomePage> {
     );
   }
 
+  void _toggleIncidentActions() {
+    setState(() {
+      _incidentActionsOpen = !_incidentActionsOpen;
+    });
+  }
+
+  void _closeIncidentActions() {
+    if (!_incidentActionsOpen) return;
+
+    setState(() {
+      _incidentActionsOpen = false;
+    });
+  }
+
+  void _openIncidentReport() {
+    _closeIncidentActions();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DriverIncidentTypePage(),
+      ),
+    );
+  }
+
   void _showSnack(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -497,6 +526,18 @@ class _DriverHomePageState extends State<DriverHomePage> {
             ),
           ),
 
+          // ── Incident menu backdrop ────────────────────────────────────────
+          if (_incidentActionsOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _closeIncidentActions,
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.16),
+                ),
+              ),
+            ),
+
           // ── Recenter button + bottom info card (stacked so button is always
           //    above the card regardless of card height) ──────────────────────
           Positioned(
@@ -507,30 +548,83 @@ class _DriverHomePageState extends State<DriverHomePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Recenter button pinned to right, 10px above the card
+                // Floating map + incident controls above the journey card
                 Padding(
-                  padding: const EdgeInsets.only(right: 14, bottom: 10),
-                  child: _RecenterButton(onTap: _recenter, isDark: isDark),
+                  padding: const EdgeInsets.only(
+                    right: 14,
+                    bottom: 10,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (_incidentActionsOpen) ...[
+                        _IncidentQuickAction(
+                          label: 'Manage incidents',
+                          icon: IconsaxPlusLinear.document_text,
+                          onTap: () {
+                            // Real Manage Incidents destination will be wired
+                            // when that page is created.
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _IncidentQuickAction(
+                          label: 'Report incident',
+                          icon: IconsaxPlusLinear.add,
+                          onTap: _openIncidentReport,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IgnorePointer(
+                            ignoring: _incidentActionsOpen,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 180),
+                              opacity: _incidentActionsOpen ? 0.45 : 1,
+                              child: _RecenterButton(
+                                onTap: _recenter,
+                                isDark: isDark,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _IncidentEmergencyButton(
+                            onTap: _toggleIncidentActions,
+                            isOpen: _incidentActionsOpen,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
 
                 // Card with horizontal margins
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: _DriverInfoCard(
-                    loading: _loading,
-                    error: _error,
-                    bus: _bus,
-                    route: _route,
-                    childCount: _children.length,
-                    journeyActive: _journeyActive,
-                    tripType: _tripType,
-                    nearestStop: nearestStop,
-                    nearestStopNumber: nearestIdx + 1,
-                    onStartJourney: _showStartJourneyDialog,
-                    onEndJourney: _showEndJourneyDialog,
-                    onRefresh: _loadData,
-                    onShowChildren: _showAllChildrenSheet,
-                    onRouteSettings: _openBusRouteSettings,
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 180),
+                  opacity: _incidentActionsOpen ? 0.55 : 1,
+                  child: IgnorePointer(
+                    ignoring: _incidentActionsOpen,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: _DriverInfoCard(
+                        loading: _loading,
+                        error: _error,
+                        bus: _bus,
+                        route: _route,
+                        childCount: _children.length,
+                        journeyActive: _journeyActive,
+                        tripType: _tripType,
+                        nearestStop: nearestStop,
+                        nearestStopNumber: nearestIdx + 1,
+                        onStartJourney: _showStartJourneyDialog,
+                        onEndJourney: _showEndJourneyDialog,
+                        onRefresh: _loadData,
+                        onShowChildren: _showAllChildrenSheet,
+                        onRouteSettings: _openBusRouteSettings,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -644,6 +738,116 @@ class _RecenterButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _IncidentEmergencyButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final bool isOpen;
+
+  const _IncidentEmergencyButton({
+    required this.onTap,
+    required this.isOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: isOpen ? 7 : 4,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Center(
+            child: Icon(
+              IconsaxPlusBold.warning_2,
+              color: Colors.red.shade600,
+              size: 21,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IncidentQuickAction extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _IncidentQuickAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  static const _blue = Color(0xFF0D4896);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final surface =
+        isDark ? const Color(0xFF1A2530) : Colors.white;
+
+    final onSurface =
+        Theme.of(context).colorScheme.onSurface;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: surface,
+          elevation: 3,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: surface,
+          elevation: 4,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.hardEdge,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: _blue,
+                  size: 19,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
