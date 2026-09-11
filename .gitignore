@@ -49,6 +49,8 @@ backend/src/main/resources/.env
 ENV/
 bin/
 lib/
+!driver-parent-app/lib/
+!driver-parent-app/lib/**
 develop-eggs/
 dist/
 downloads/
