@@ -18,6 +18,7 @@ import '../models/stop_model.dart';
 import '../pages/driver_bus_route_page.dart';
 import '../pages/driver_incident_type_page.dart';
 import '../widgets/stop_attendance_sheet.dart';
+import '../pages/driver_manage_incidents_page.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -410,13 +411,26 @@ bool _incidentActionsOpen = false;
     });
   }
 
-  void _openIncidentReport() {
+  Future<void> _openIncidentReport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DriverIncidentTypePage(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    _closeIncidentActions();
+  }
+
+  void _openManageIncidents() {
     _closeIncidentActions();
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const DriverIncidentTypePage(),
+        builder: (_) => const DriverManageIncidentsPage(),
       ),
     );
   }
@@ -533,7 +547,7 @@ bool _incidentActionsOpen = false;
                 behavior: HitTestBehavior.opaque,
                 onTap: _closeIncidentActions,
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.16),
+                  color: Colors.black.withValues(alpha: 0.50),
                 ),
               ),
             ),
@@ -561,10 +575,7 @@ bool _incidentActionsOpen = false;
                         _IncidentQuickAction(
                           label: 'Manage incidents',
                           icon: IconsaxPlusLinear.document_text,
-                          onTap: () {
-                            // Real Manage Incidents destination will be wired
-                            // when that page is created.
-                          },
+                          onTap: _openManageIncidents,
                         ),
                         const SizedBox(height: 10),
                         _IncidentQuickAction(

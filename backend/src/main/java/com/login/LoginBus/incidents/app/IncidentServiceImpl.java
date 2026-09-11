@@ -664,9 +664,16 @@ private void validateTransportUserCreatedIncident(
 
         } catch (Exception e) {
             /*
-             * Notification failure must not prevent the incident itself
-             * from being created.
+             * Thrown as IllegalArgumentException (not IllegalStateException)
+             * so it maps to HTTP 400 in IncidentExceptionHandler — the
+             * admin frontend's error interceptor only surfaces the real
+             * server-provided message for 400s; 500s are shown generically.
              */
+            throw new IllegalArgumentException(
+                    "Incident was not reported: failed to notify recipients ("
+                            + e.getMessage() + ")",
+                    e
+            );
         }
     }
 
