@@ -44,6 +44,7 @@ public class IncidentController {
                         IncidentResponse.fromDomain(incident)
                 ));
     }
+    
 
     /**
      * Get all incidents.
@@ -62,6 +63,26 @@ public class IncidentController {
                 )
         );
     }
+
+/**
+ * Get incidents related to the authenticated transport user.
+ */
+@GetMapping("/me")
+public ResponseEntity<ApiResponse<List<IncidentResponse>>> getMyIncidents(
+        @AuthenticationPrincipal Jwt jwt
+) {
+    List<IncidentResponse> incidents = incidentService.getMyIncidents(jwt)
+            .stream()
+            .map(IncidentResponse::fromDomain)
+            .toList();
+
+    return ResponseEntity.ok(
+            new ApiResponse<>(
+                    "Transport-user incidents retrieved successfully",
+                    incidents
+            )
+    );
+}
 
     /**
      * Get one incident by ID.

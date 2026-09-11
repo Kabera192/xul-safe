@@ -166,6 +166,47 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     @Override
+@Transactional(readOnly = true)
+public List<Incident> getMyIncidents(Jwt jwt) {
+    Long userId = getAuthenticatedUserId(jwt);
+    User user = requireAllowedIncidentUser(userId);
+
+    if (!isTransportUser(user)) {
+        throw new IllegalArgumentException(
+                "Only DRIVER or CONDUCTOR users can retrieve transport-user incidents"
+        );
+    }
+
+    Bus assignedBus =
+            transportService.getAssignedBusForUser(userId);
+
+    Long assignedBusId =
+            assignedBus != null ? assignedBus.getId() : null;
+
+    Set<String> assignedChildIds =
+            assignedBusId == null
+                    ? new HashSet<>()
+                    : studentsService.getChildrenForBus(assignedBusId)
+                            .stream()
+                            .map(Child::getId)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
+
+    return incidentRepository.findAllByOrderByCreatedAtDesc()
+            .stream()
+            .filter(entity ->
+                    isIncidentRelatedToTransportUser(
+                            entity,
+                            userId,
+                            assignedBusId,
+                            assignedChildIds
+                    )
+            )
+            .map(IncidentJpaEntity::toDomain)
+            .collect(Collectors.toList());
+}
+
+    @Override
     @Transactional
     public Incident updateIncident(
             Long incidentId,
@@ -181,6 +222,12 @@ public class IncidentServiceImpl implements IncidentService {
                                 "Incident not found with ID: " + incidentId
                         )
                 );
+                if (isTransportUser(user)) {
+                        validateTransportUserCreatedIncident(
+                                userId,
+                                entity
+                        );
+                        }
 
         if (entity.getStatus() == IncidentStatus.RESOLVED) {
             throw new IllegalArgumentException(
@@ -269,6 +316,7 @@ public class IncidentServiceImpl implements IncidentService {
                                 "Incident not found with ID: " + incidentId
                         )
                 );
+                
 
         if (entity.getStatus() == IncidentStatus.RESOLVED) {
             throw new IllegalArgumentException(
@@ -277,15 +325,15 @@ public class IncidentServiceImpl implements IncidentService {
         }
 
         /*
-         * Transport users may only resolve incidents that still concern
-         * their own transport context.
-         */
+        * Transport users may only resolve incidents they created.
+        *
+        * Visibility of another related incident does not grant management rights.
+        */
         if (isTransportUser(user)) {
-            validateTransportUserTargets(
-                    userId,
-                    entity.getAffectedBusIds(),
-                    entity.getAffectedChildIds()
-            );
+        validateTransportUserCreatedIncident(
+                userId,
+                entity
+        );
         }
 
         entity.setStatus(IncidentStatus.RESOLVED);
@@ -405,6 +453,51 @@ public class IncidentServiceImpl implements IncidentService {
             }
         }
     }
+
+    private boolean isIncidentRelatedToTransportUser(
+        IncidentJpaEntity incident,
+        Long userId,
+        Long assignedBusId,
+        Set<String> assignedChildIds
+) {
+    if (Objects.equals(
+            incident.getCreatedBy(),
+            userId
+    )) {
+        return true;
+    }
+
+    if (assignedBusId != null
+            && incident.getAffectedBusIds() != null
+            && incident.getAffectedBusIds().contains(assignedBusId)) {
+        return true;
+    }
+
+    if (incident.getAffectedChildIds() != null
+            && !incident.getAffectedChildIds().isEmpty()
+            && !assignedChildIds.isEmpty()) {
+
+        return incident.getAffectedChildIds()
+                .stream()
+                .anyMatch(assignedChildIds::contains);
+    }
+
+    return false;
+}
+
+private void validateTransportUserCreatedIncident(
+        Long userId,
+        IncidentJpaEntity incident
+) {
+    if (!Objects.equals(
+            incident.getCreatedBy(),
+            userId
+    )) {
+        throw new IllegalArgumentException(
+                "Transport users can only modify or resolve incidents they created"
+        );
+    }
+}
 
     private User requireAllowedIncidentUser(
             Long userId
@@ -571,9 +664,16 @@ public class IncidentServiceImpl implements IncidentService {
 
         } catch (Exception e) {
             /*
-             * Notification failure must not prevent the incident itself
-             * from being created.
+             * Thrown as IllegalArgumentException (not IllegalStateException)
+             * so it maps to HTTP 400 in IncidentExceptionHandler — the
+             * admin frontend's error interceptor only surfaces the real
+             * server-provided message for 400s; 500s are shown generically.
              */
+            throw new IllegalArgumentException(
+                    "Incident was not reported: failed to notify recipients ("
+                            + e.getMessage() + ")",
+                    e
+            );
         }
     }
 
