@@ -18,7 +18,26 @@ public interface IncidentService {
 
     List<Incident> getAllIncidents();
 
-    Incident updateIncident(Long incidentId, Jwt jwt, UpdateIncidentRequest request);
+    /**
+     * Get incidents related to the authenticated transport user.
+     *
+     * An incident is related when the authenticated DRIVER/CONDUCTOR:
+     * - created the incident, or
+     * - has an assigned bus listed in affectedBusIds, or
+     * - has a child assigned to their bus listed in affectedChildIds.
+     *
+     * Both ACTIVE and RESOLVED incidents are returned.
+     */
+    List<Incident> getMyIncidents(Jwt jwt);
 
-    Incident resolveIncident(Long incidentId, Jwt jwt);
+    Incident updateIncident(
+            Long incidentId,
+            Jwt jwt,
+            UpdateIncidentRequest request
+    );
+
+    Incident resolveIncident(
+            Long incidentId,
+            Jwt jwt
+    );
 }
