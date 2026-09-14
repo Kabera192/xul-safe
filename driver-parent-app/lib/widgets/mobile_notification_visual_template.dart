@@ -31,6 +31,14 @@ class MobileNotificationVisualTemplate {
       return Icon(IconsaxPlusLinear.warning_2, color: iconColor, size: 28);
     }
 
+    if (normalized == 'INCIDENT_REPORTED') {
+      return Icon(
+        IconsaxPlusBold.warning_2,
+        color: iconColor,
+        size: 28,
+      );
+    }
+
     if (normalized == 'BUS_REACHED_STOP') {
       return Icon(IconsaxPlusLinear.location, color: iconColor, size: 28);
     }
