@@ -3,6 +3,7 @@ package com.login.LoginBus.incidents.api;
 import com.login.LoginBus.incidents.api.dto.CreateIncidentRequest;
 import com.login.LoginBus.incidents.api.dto.IncidentResponse;
 import com.login.LoginBus.incidents.api.dto.UpdateIncidentRequest;
+import com.login.LoginBus.incidents.api.dto.ParentIncidentResponse;
 import com.login.LoginBus.incidents.app.IncidentService;
 import com.login.LoginBus.incidents.domain.Incident;
 import com.login.LoginBus.shared.api.ApiResponse;
@@ -79,6 +80,24 @@ public ResponseEntity<ApiResponse<List<IncidentResponse>>> getMyIncidents(
     return ResponseEntity.ok(
             new ApiResponse<>(
                     "Transport-user incidents retrieved successfully",
+                    incidents
+            )
+    );
+}
+
+/**
+ * Get incidents visible to the authenticated parent.
+ */
+@GetMapping("/parent/me")
+public ResponseEntity<ApiResponse<List<ParentIncidentResponse>>> getParentIncidents(
+        @AuthenticationPrincipal Jwt jwt
+) {
+    List<ParentIncidentResponse> incidents =
+            incidentService.getParentIncidents(jwt);
+
+    return ResponseEntity.ok(
+            new ApiResponse<>(
+                    "Parent incidents retrieved successfully",
                     incidents
             )
     );

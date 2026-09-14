@@ -8,6 +8,7 @@ import 'package:http_parser/http_parser.dart';
 import '../core/config/api_config.dart';
 import '../core/network/authenticated_http_client.dart';
 import '../core/session/session_storage.dart';
+import '../features/parent/models/child_model.dart';
 
 class ChildService {
   static Future<List<Map<String, dynamic>>> getMyBusChildren() async {
@@ -203,6 +204,18 @@ class ChildService {
         'Failed to load children',
       ),
     );
+  }
+
+  /// Returns the logged-in parent's children as typed models.
+  ///
+  /// New parent features should prefer this over the legacy raw-map
+  /// getMyChildren() method.
+  static Future<List<ChildModel>> getMyChildrenModels() async {
+    final children = await getMyChildren();
+
+    return children
+        .map(ChildModel.fromApiResponse)
+        .toList();
   }
 
   /// POST /api/v1/children
