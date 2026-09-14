@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../core/config/api_config.dart';
 import '../core/network/authenticated_http_client.dart';
 import '../features/driver/models/driver_incident_model.dart';
+import '../features/parent/models/parent_incident_model.dart';
 
 class IncidentService {
   static Future<DriverIncidentModel> createIncident({
@@ -88,6 +89,41 @@ class IncidentService {
     );
   }
 
+  static Future<List<ParentIncidentModel>> getParentIncidents() async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/incidents/parent/me',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = _extractData(decoded);
+
+      if (data is! List) {
+        throw Exception('Unexpected parent incidents response');
+      }
+
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ParentIncidentModel.fromJson)
+          .toList();
+    }
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load parent incidents',
+      ),
+    );
+  }
+  
   static Future<DriverIncidentModel> updateIncident({
     required int incidentId,
     String? description,
