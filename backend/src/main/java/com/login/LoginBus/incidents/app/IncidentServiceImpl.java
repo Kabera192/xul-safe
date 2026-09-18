@@ -5,6 +5,7 @@ import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.accounts.domain.UserRole;
 import com.login.LoginBus.incidents.api.dto.CreateIncidentRequest;
 import com.login.LoginBus.incidents.api.dto.UpdateIncidentRequest;
+import com.login.LoginBus.incidents.api.dto.ParentIncidentResponse;
 import com.login.LoginBus.incidents.domain.Incident;
 import com.login.LoginBus.incidents.domain.IncidentStatus;
 import com.login.LoginBus.incidents.domain.JourneyImpact;
@@ -206,6 +207,49 @@ public List<Incident> getMyIncidents(Jwt jwt) {
             .collect(Collectors.toList());
 }
 
+@Override
+@Transactional(readOnly = true)
+public List<ParentIncidentResponse> getParentIncidents(Jwt jwt) {
+    Long parentId = getAuthenticatedUserId(jwt);
+
+    User parent = accountsService.getUserById(parentId);
+
+    if (parent == null) {
+        throw new IllegalArgumentException(
+                "Authenticated user not found"
+        );
+    }
+
+    if (parent.getRole() != UserRole.PARENT) {
+        throw new IllegalArgumentException(
+                "Only PARENT users can retrieve parent incidents"
+        );
+    }
+
+    List<Child> parentChildren =
+            studentsService.getChildrenForParent(parentId);
+
+    Set<String> parentChildIds = parentChildren.stream()
+            .map(Child::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    Set<Long> parentBusIds = parentChildren.stream()
+            .map(Child::getBusId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    return incidentRepository.findAllByOrderByCreatedAtDesc()
+            .stream()
+            .map(entity -> toParentIncidentResponse(
+                    entity,
+                    parentChildIds,
+                    parentBusIds
+            ))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+}
+
     @Override
     @Transactional
     public Incident updateIncident(
@@ -342,6 +386,146 @@ public List<Incident> getMyIncidents(Jwt jwt) {
 
         return incidentRepository.save(entity).toDomain();
     }
+
+    private ParentIncidentResponse toParentIncidentResponse(
+        IncidentJpaEntity entity,
+        Set<String> parentChildIds,
+        Set<Long> parentBusIds
+) {
+    Incident incident = entity.toDomain();
+
+    Set<String> incidentChildIds =
+            incident.getAffectedChildIds() != null
+                    ? incident.getAffectedChildIds()
+                    : Set.of();
+
+    Set<Long> incidentBusIds =
+            incident.getAffectedBusIds() != null
+                    ? incident.getAffectedBusIds()
+                    : Set.of();
+
+    // Which explicitly affected children belong to this parent?
+    Set<String> directlyAffectedParentChildIds =
+            incidentChildIds.stream()
+                    .filter(parentChildIds::contains)
+                    .collect(Collectors.toSet());
+
+    boolean parentHasDirectlyAffectedChild =
+            !directlyAffectedParentChildIds.isEmpty();
+
+    boolean affectsParentBus =
+            incidentBusIds.stream()
+                    .anyMatch(parentBusIds::contains);
+
+    /*
+     * CASE 1:
+     * One or more of this parent's children are explicitly affected.
+     *
+     * Parent receives the real description, but only their own affected
+     * child IDs are exposed.
+     */
+    if (parentHasDirectlyAffectedChild) {
+        return new ParentIncidentResponse(
+                incident.getId(),
+                incident.getType(),
+                incident.getDescription(),
+                incident.getStatus(),
+                incident.getJourneyImpact(),
+                incident.getCreatedAt(),
+                incident.getResolvedAt(),
+                directlyAffectedParentChildIds
+        );
+    }
+
+    /*
+     * CASE 2:
+     * General bus-level incident.
+     *
+     * No children were individually targeted, so parents whose children
+     * use the affected bus may see the actual incident description.
+     */
+    if (incidentChildIds.isEmpty() && affectsParentBus) {
+        return new ParentIncidentResponse(
+                incident.getId(),
+                incident.getType(),
+                incident.getDescription(),
+                incident.getStatus(),
+                incident.getJourneyImpact(),
+                incident.getCreatedAt(),
+                incident.getResolvedAt(),
+                Set.of()
+        );
+    }
+
+    /*
+     * CASE 3:
+     * Specific children are involved, but none belong to this parent.
+     *
+     * If the incident is disrupting this parent's child's bus journey,
+     * the parent receives only a sanitized operational version.
+     */
+    if (!incidentChildIds.isEmpty()
+            && affectsParentBus
+            && incident.getJourneyImpact() != JourneyImpact.NONE) {
+
+        return new ParentIncidentResponse(
+                incident.getId(),
+                incident.getType(),
+                sanitizedOperationalDescription(incident),
+                incident.getStatus(),
+                incident.getJourneyImpact(),
+                incident.getCreatedAt(),
+                incident.getResolvedAt(),
+                Set.of()
+        );
+    }
+
+    /*
+     * CASE 4:
+     * The incident is not relevant to this parent.
+     */
+    return null;
+}
+
+private String sanitizedOperationalDescription(
+        Incident incident
+) {
+    String cause = switch (incident.getType()) {
+        case CHILD_BEHAVIOR ->
+                "a student behavior incident";
+
+        case MEDICAL ->
+                "a medical incident";
+
+        case ACCIDENT ->
+                "an accident";
+
+        case VEHICLE_BREAKDOWN ->
+                "a mechanical issue";
+
+        case ROAD_OBSTRUCTION ->
+                "a road obstruction";
+
+        case DELAY ->
+                "a journey delay";
+
+        case OTHER ->
+                "an incident";
+    };
+
+    return switch (incident.getJourneyImpact()) {
+        case STOPPED ->
+                "The bus journey has been stopped due to "
+                        + cause + ".";
+
+        case DELAYED ->
+                "The bus journey is delayed due to "
+                        + cause + ".";
+
+        case NONE ->
+                "An incident has been reported.";
+    };
+}
 
     private void validateCreateRequest(
             CreateIncidentRequest request
@@ -484,6 +668,8 @@ public List<Incident> getMyIncidents(Jwt jwt) {
 
     return false;
 }
+
+
 
 private void validateTransportUserCreatedIncident(
         Long userId,
@@ -647,9 +833,7 @@ private void validateTransportUserCreatedIncident(
 
                 if (!operationalRecipients.isEmpty()) {
                     String operationalMessage =
-                            incident.getJourneyImpact() == JourneyImpact.STOPPED
-                                    ? "The bus journey has been stopped due to an active incident."
-                                    : "The bus journey is delayed due to an active incident.";
+        sanitizedOperationalDescription(incident);
 
                     notificationsService.sendNotificationToUsers(
                             List.copyOf(operationalRecipients),

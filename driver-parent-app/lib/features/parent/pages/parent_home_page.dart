@@ -11,6 +11,8 @@ import '../../../core/session/session_storage.dart';
 import '../../../services/child_service.dart';
 import '../../../services/tracking_service.dart';
 import '../../../services/transport_service.dart';
+import '../../../services/incident_service.dart';
+import 'parent_incidents_page.dart';
 import '../../../widgets/mobile_location_gate.dart';
 
 class ParentHomePage extends StatefulWidget {
@@ -45,6 +47,11 @@ class _ParentHomePageState extends State<ParentHomePage> {
   String? _lastTrackingId;
 
   Timer? _pollTimer;
+  Timer? _incidentPollTimer;
+
+  // Parent incident state
+  bool _hasActiveIncident = false;
+  
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -107,9 +114,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
       _startLocationStream(),
       _loadChildren(),
       _loadAssignedBus(),
+      _loadIncidentState(),
     ]);
+
     if (!mounted) return;
+
     _startPolling();
+    _startIncidentPolling();
   }
 
   Future<void> _startLocationStream() async {
@@ -145,6 +156,55 @@ class _ParentHomePageState extends State<ParentHomePage> {
         }
       });
     } catch (_) {}
+  }
+
+  void _startIncidentPolling() {
+    _incidentPollTimer?.cancel();
+
+    _incidentPollTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _loadIncidentState(),
+    );
+  }
+
+  Future<void> _openIncidents() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ParentIncidentsPage(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    // An incident may have been resolved while the parent
+    // was viewing the incident pages.
+    await _loadIncidentState();
+  }
+
+  Future<void> _loadIncidentState() async {
+    try {
+      final incidents =
+          await IncidentService.getParentIncidents();
+
+      if (!mounted) return;
+
+      final hasActive =
+          incidents.any((incident) => incident.isActive);
+
+      if (_hasActiveIncident == hasActive) {
+        return;
+      }
+
+      setState(() {
+        _hasActiveIncident = hasActive;
+      });
+    } catch (_) {
+      /*
+      * Keep the previous visual state if the incident
+      * status cannot currently be refreshed.
+      */
+    }
   }
 
   Future<void> _loadAssignedBus() async {
@@ -207,6 +267,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   void dispose() {
     _posSub?.cancel();
     _pollTimer?.cancel();
+    _incidentPollTimer?.cancel();
     super.dispose();
   }
 
@@ -288,15 +349,37 @@ class _ParentHomePageState extends State<ParentHomePage> {
             Positioned(
               right: 14,
               bottom: 190,
-              child: Material(
-                color: Colors.white,
-                elevation: 4,
-                shape: const CircleBorder(),
-                child: IconButton(
-                  onPressed: _recenter,
-                  icon: const Icon(IconsaxPlusLinear.gps, color: _blue),
-                  tooltip: 'Recenter',
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Material(
+                    color: Colors.white,
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.hardEdge,
+                    child: InkWell(
+                      onTap: _recenter,
+                      child: const SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: Center(
+                          child: Icon(
+                            IconsaxPlusLinear.gps,
+                            color: _blue,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  _ParentIncidentButton(
+                    hasActiveIncident: _hasActiveIncident,
+                    onTap: _openIncidents,
+                  ),
+                ],
               ),
             ),
 
@@ -383,6 +466,45 @@ class _StatusBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ParentIncidentButton extends StatelessWidget {
+  final bool hasActiveIncident;
+  final VoidCallback onTap;
+
+  const _ParentIncidentButton({
+    required this.hasActiveIncident,
+    required this.onTap,
+  });
+
+  static const _activeRed = Color(0xFFFC4A4A);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color:
+          hasActiveIncident ? _activeRed : Colors.white,
+      elevation: hasActiveIncident ? 7 : 4,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Center(
+            child: Icon(
+              IconsaxPlusBold.warning_2,
+              color: hasActiveIncident
+                  ? Colors.white
+                  : _activeRed,
+              size: 21,
+            ),
+          ),
+        ),
       ),
     );
   }
