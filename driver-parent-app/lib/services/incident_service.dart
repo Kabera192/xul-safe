@@ -7,6 +7,7 @@ import '../core/network/authenticated_http_client.dart';
 import '../features/driver/models/driver_incident_model.dart';
 import '../features/parent/models/parent_incident_model.dart';
 import '../features/parent/models/incident_attachment_model.dart';
+import 'package:http_parser/http_parser.dart';
 
 class IncidentService {
   static Future<DriverIncidentModel> createIncident({
@@ -16,9 +17,7 @@ class IncidentService {
     required Set<int> affectedBusIds,
     required Set<String> affectedChildIds,
   }) async {
-    final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/incidents',
-    );
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/incidents');
 
     final res = await AuthenticatedHttpClient.send(() async {
       final request = http.Request('POST', uri);
@@ -47,12 +46,7 @@ class IncidentService {
       return DriverIncidentModel.fromApiResponse(data);
     }
 
-    throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to create incident',
-      ),
-    );
+    throw Exception(_extractErrorMessage(decoded, 'Failed to create incident'));
   }
 
   static Future<void> addAttachment({
@@ -62,22 +56,32 @@ class IncidentService {
   }) async {
     final normalizedType = type.trim().toUpperCase();
 
-    if (normalizedType != 'IMAGE' &&
-        normalizedType != 'AUDIO') {
-      throw Exception(
-        'Unsupported incident attachment type',
-      );
+    if (normalizedType != 'IMAGE' && normalizedType != 'AUDIO') {
+      throw Exception('Unsupported incident attachment type');
     }
 
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/incidents/$incidentId/attachments',
     );
 
+    final MediaType contentType;
+
+    if (normalizedType == 'IMAGE') {
+      final ext = file.path.split('.').last.toLowerCase();
+
+      contentType = switch (ext) {
+        'png' => MediaType('image', 'png'),
+        'webp' => MediaType('image', 'webp'),
+        _ => MediaType('image', 'jpeg'),
+      };
+    } else {
+      // BussApp voice notes are recorded as AAC audio
+      // in an M4A/MP4 container.
+      contentType = MediaType('audio', 'mp4');
+    }
+
     final res = await AuthenticatedHttpClient.send(() async {
-      final request = http.MultipartRequest(
-        'POST',
-        uri,
-      );
+      final request = http.MultipartRequest('POST', uri);
 
       request.fields['type'] = normalizedType;
 
@@ -85,6 +89,7 @@ class IncidentService {
         await http.MultipartFile.fromPath(
           'file',
           file.path,
+          contentType: contentType,
         ),
       );
 
@@ -93,23 +98,17 @@ class IncidentService {
 
     final decoded = _decodeBody(res.body);
 
-    if (res.statusCode == 200 ||
-        res.statusCode == 201) {
+    if (res.statusCode == 200 || res.statusCode == 201) {
       return;
     }
 
     throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to upload incident attachment',
-      ),
+      _extractErrorMessage(decoded, 'Failed to upload incident attachment'),
     );
   }
-  
+
   static Future<List<DriverIncidentModel>> getMyIncidents() async {
-    final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/incidents/me',
-    );
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/incidents/me');
 
     final res = await AuthenticatedHttpClient.send(() async {
       final request = http.Request('GET', uri);
@@ -133,18 +132,11 @@ class IncidentService {
           .toList();
     }
 
-    throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to load incidents',
-      ),
-    );
+    throw Exception(_extractErrorMessage(decoded, 'Failed to load incidents'));
   }
 
   static Future<List<ParentIncidentModel>> getParentIncidents() async {
-    final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/incidents/parent/me',
-    );
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/incidents/parent/me');
 
     final res = await AuthenticatedHttpClient.send(() async {
       final request = http.Request('GET', uri);
@@ -169,13 +161,10 @@ class IncidentService {
     }
 
     throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to load parent incidents',
-      ),
+      _extractErrorMessage(decoded, 'Failed to load parent incidents'),
     );
   }
-  
+
   static Future<List<IncidentAttachmentModel>> getAttachments(
     int incidentId,
   ) async {
@@ -206,10 +195,7 @@ class IncidentService {
     }
 
     throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to load incident attachments',
-      ),
+      _extractErrorMessage(decoded, 'Failed to load incident attachments'),
     );
   }
 
@@ -235,13 +221,10 @@ class IncidentService {
     final decoded = _decodeBody(res.body);
 
     throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to load incident attachment',
-      ),
+      _extractErrorMessage(decoded, 'Failed to load incident attachment'),
     );
   }
-  
+
   static Future<DriverIncidentModel> updateIncident({
     required int incidentId,
     String? description,
@@ -249,9 +232,7 @@ class IncidentService {
     Set<int>? affectedBusIds,
     Set<String>? affectedChildIds,
   }) async {
-    final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/incidents/$incidentId',
-    );
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/incidents/$incidentId');
 
     final payload = <String, dynamic>{};
 
@@ -292,17 +273,10 @@ class IncidentService {
       return DriverIncidentModel.fromApiResponse(data);
     }
 
-    throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to update incident',
-      ),
-    );
+    throw Exception(_extractErrorMessage(decoded, 'Failed to update incident'));
   }
 
-  static Future<DriverIncidentModel> resolveIncident(
-    int incidentId,
-  ) async {
+  static Future<DriverIncidentModel> resolveIncident(int incidentId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/incidents/$incidentId/resolve',
     );
@@ -327,10 +301,7 @@ class IncidentService {
     }
 
     throw Exception(
-      _extractErrorMessage(
-        decoded,
-        'Failed to resolve incident',
-      ),
+      _extractErrorMessage(decoded, 'Failed to resolve incident'),
     );
   }
 
@@ -356,10 +327,7 @@ class IncidentService {
     return decoded;
   }
 
-  static String _extractErrorMessage(
-    dynamic decoded,
-    String fallback,
-  ) {
+  static String _extractErrorMessage(dynamic decoded, String fallback) {
     if (decoded is Map<String, dynamic>) {
       final message = decoded['message']?.toString();
       final error = decoded['error']?.toString();
