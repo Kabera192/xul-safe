@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:record/record.dart';
 
 class DriverIncidentDetailsForm extends StatefulWidget {
 
@@ -20,6 +23,8 @@ class DriverIncidentDetailsForm extends StatefulWidget {
   final Future<void> Function({
     required String description,
     required String journeyImpact,
+    File? image,
+    File? audio,
   }) onSubmit;
 
   const DriverIncidentDetailsForm({
@@ -50,6 +55,13 @@ class _DriverIncidentDetailsFormState
   final TextEditingController _descriptionCtrl = TextEditingController();
 
   String? _selectedImpact;
+  final ImagePicker _imagePicker = ImagePicker();
+  final AudioRecorder _audioRecorder = AudioRecorder();
+
+  File? _selectedImage;
+  File? _recordedAudio;
+
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -146,6 +158,10 @@ class _DriverIncidentDetailsFormState
   }
 
   bool get _showsPhotoPlaceholder {
+    if (widget.isEditing) {
+      return false;
+    }
+
     switch (widget.incidentType) {
       case 'ACCIDENT':
       case 'VEHICLE_BREAKDOWN':
@@ -158,6 +174,10 @@ class _DriverIncidentDetailsFormState
   }
 
   bool get _showsVoicePlaceholder {
+    if (widget.isEditing) {
+      return false;
+    }
+
     switch (widget.incidentType) {
       case 'ACCIDENT':
       case 'VEHICLE_BREAKDOWN':
@@ -175,18 +195,164 @@ class _DriverIncidentDetailsFormState
         _selectedImpact != null;
   }
 
+  Future<void> _choosePhotoSource() async {
+    if (widget.submitting || _selectedImage != null) return;
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(IconsaxPlusLinear.camera),
+                title: const Text('Take photo'),
+                onTap: () {
+                  Navigator.pop(
+                    context,
+                    ImageSource.camera,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(IconsaxPlusLinear.gallery),
+                title: const Text('Choose from gallery'),
+                onTap: () {
+                  Navigator.pop(
+                    context,
+                    ImageSource.gallery,
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    final XFile? image = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+
+    if (image == null || !mounted) return;
+
+    setState(() {
+      _selectedImage = File(image.path);
+    });
+  }
+
+  void _removePhoto() {
+    if (widget.submitting) return;
+
+    setState(() {
+      _selectedImage = null;
+    });
+  }
+
+  Future<void> _toggleRecording() async {
+    if (widget.submitting) return;
+
+    if (_isRecording) {
+      final path = await _audioRecorder.stop();
+
+      if (!mounted) return;
+
+      setState(() {
+        _isRecording = false;
+
+        if (path != null) {
+          _recordedAudio = File(path);
+        }
+      });
+
+      return;
+    }
+
+    if (_recordedAudio != null) return;
+
+    final hasPermission =
+        await _audioRecorder.hasPermission();
+
+    if (!hasPermission) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Microphone permission is required to record a voice note.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    final directory = Directory.systemTemp;
+
+    final path =
+        '${directory.path}/incident_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    await _audioRecorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+      ),
+      path: path,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isRecording = true;
+    });
+  }
+
+  Future<void> _removeAudio() async {
+    if (widget.submitting) return;
+
+    if (_isRecording) {
+      await _audioRecorder.stop();
+    }
+
+    final audio = _recordedAudio;
+
+    setState(() {
+      _isRecording = false;
+      _recordedAudio = null;
+    });
+
+    if (audio != null && await audio.exists()) {
+      try {
+        await audio.delete();
+      } catch (_) {
+        // Failure to delete a temporary recording should not block the form.
+      }
+    }
+  }
+
   Future<void> _submit() async {
-    if (!_canSubmit || widget.submitting) return;
+    if (!_canSubmit ||
+        widget.submitting ||
+        _isRecording) {
+      return;
+    }
 
     await widget.onSubmit(
       description: _descriptionCtrl.text.trim(),
       journeyImpact: _selectedImpact!,
+      image: _selectedImage,
+      audio: _recordedAudio,
     );
   }
 
   @override
   void dispose() {
     _descriptionCtrl.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -254,45 +420,89 @@ class _DriverIncidentDetailsFormState
 
         const SizedBox(height: 28),
 
-        // ── Photo placeholder ────────────────────────────────────────────
+        // ── Photo attachment ─────────────────────────────────────────────
         if (_showsPhotoPlaceholder) ...[
-          CustomPaint(
-            foregroundPainter: _DashedRoundedBorderPainter(
-              color: _photoBorder,
-              radius: 10,
-            ),
-            child: Container(
-              height: 92,
-              decoration: BoxDecoration(
-                color: _photoBackground,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      IconsaxPlusLinear.gallery_add,
-                      color: _photoContent,
-                      size: 25,
+          if (_selectedImage == null)
+            GestureDetector(
+              onTap:
+                  widget.submitting ? null : _choosePhotoSource,
+              child: CustomPaint(
+                foregroundPainter: _DashedRoundedBorderPainter(
+                  color: _photoBorder,
+                  radius: 10,
+                ),
+                child: Container(
+                  height: 92,
+                  decoration: BoxDecoration(
+                    color: _photoBackground,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          IconsaxPlusLinear.gallery_add,
+                          color: _photoContent,
+                          size: 25,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Add photo',
+                          style: TextStyle(
+                            color: _photoContent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Add photo',
-                      style: TextStyle(
-                        color: _photoContent,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: 160,
+                    width: double.infinity,
+                    child: Image.file(
+                      _selectedImage!,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap:
+                            widget.submitting ? null : _removePhoto,
+                        customBorder: const CircleBorder(),
+                        child: const SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+
           const SizedBox(height: 14),
         ],
-
         // ── Description field ────────────────────────────────────────────
         Container(
           constraints: const BoxConstraints(
@@ -336,43 +546,92 @@ class _DriverIncidentDetailsFormState
           ),
         ),
 
-        // ── Voice placeholder ────────────────────────────────────────────
+        // ── Voice note attachment ────────────────────────────────────────
         if (_showsVoicePlaceholder) ...[
           const SizedBox(height: 14),
-          Container(
-            height: 62,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: fieldBackground,
+
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.submitting
+                  ? null
+                  : _recordedAudio != null
+                      ? null
+                      : _toggleRecording,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: borderColor,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Record audio',
-                    style: TextStyle(
-                      color: onSurface.withValues(alpha: 0.62),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
+              child: Container(
+                height: 62,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: fieldBackground,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _isRecording
+                        ? _blue
+                        : borderColor,
+                    width: _isRecording ? 1.5 : 1,
                   ),
                 ),
-                const Icon(
-                  IconsaxPlusLinear.microphone_2,
-                  color: _blue,
-                  size: 22,
+                child: Row(
+                  children: [
+                    Icon(
+                      _isRecording
+                          ? IconsaxPlusLinear.stop
+                          : _recordedAudio != null
+                              ? IconsaxPlusLinear.tick_circle
+                              : IconsaxPlusLinear.microphone_2,
+                      color: _blue,
+                      size: 22,
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        _isRecording
+                            ? 'Recording... Tap to stop'
+                            : _recordedAudio != null
+                                ? 'Voice note recorded'
+                                : 'Record audio',
+                        style: TextStyle(
+                          color: _recordedAudio != null ||
+                                  _isRecording
+                              ? onSurface
+                              : onSurface.withValues(alpha: 0.62),
+                          fontSize: 13,
+                          fontWeight: _recordedAudio != null ||
+                                  _isRecording
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+
+                    if (_recordedAudio != null)
+                      Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          onTap: widget.submitting
+                              ? null
+                              : _removeAudio,
+                          customBorder: const CircleBorder(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(7),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: _blue,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
-
-        const SizedBox(height: 24),
 
         // ── Journey impact ────────────────────────────────────────────────
         Text(
@@ -426,7 +685,11 @@ class _DriverIncidentDetailsFormState
           height: 52,
           child: ElevatedButton(
             onPressed:
-              (_canSubmit && !widget.submitting) ? _submit : null,
+              (_canSubmit &&
+                      !widget.submitting &&
+                      !_isRecording)
+                  ? _submit
+                  : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: _blue,
               foregroundColor: Colors.white,

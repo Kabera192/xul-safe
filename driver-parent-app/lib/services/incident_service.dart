@@ -1,11 +1,12 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../core/config/api_config.dart';
 import '../core/network/authenticated_http_client.dart';
 import '../features/driver/models/driver_incident_model.dart';
 import '../features/parent/models/parent_incident_model.dart';
+import '../features/parent/models/incident_attachment_model.dart';
 
 class IncidentService {
   static Future<DriverIncidentModel> createIncident({
@@ -54,6 +55,57 @@ class IncidentService {
     );
   }
 
+  static Future<void> addAttachment({
+    required int incidentId,
+    required File file,
+    required String type,
+  }) async {
+    final normalizedType = type.trim().toUpperCase();
+
+    if (normalizedType != 'IMAGE' &&
+        normalizedType != 'AUDIO') {
+      throw Exception(
+        'Unsupported incident attachment type',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/incidents/$incidentId/attachments',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.MultipartRequest(
+        'POST',
+        uri,
+      );
+
+      request.fields['type'] = normalizedType;
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          file.path,
+        ),
+      );
+
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200 ||
+        res.statusCode == 201) {
+      return;
+    }
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to upload incident attachment',
+      ),
+    );
+  }
+  
   static Future<List<DriverIncidentModel>> getMyIncidents() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/incidents/me',
@@ -120,6 +172,72 @@ class IncidentService {
       _extractErrorMessage(
         decoded,
         'Failed to load parent incidents',
+      ),
+    );
+  }
+  
+  static Future<List<IncidentAttachmentModel>> getAttachments(
+    int incidentId,
+  ) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/incidents/$incidentId/attachments',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = _extractData(decoded);
+
+      if (data is! List) {
+        throw Exception('Unexpected incident attachments response');
+      }
+
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(IncidentAttachmentModel.fromJson)
+          .toList();
+    }
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load incident attachments',
+      ),
+    );
+  }
+
+  static Future<List<int>> getAttachmentBytes({
+    required int incidentId,
+    required int attachmentId,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/incidents/'
+      '$incidentId/attachments/$attachmentId',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+
+      return request;
+    });
+
+    if (res.statusCode == 200) {
+      return res.bodyBytes;
+    }
+
+    final decoded = _decodeBody(res.body);
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to load incident attachment',
       ),
     );
   }

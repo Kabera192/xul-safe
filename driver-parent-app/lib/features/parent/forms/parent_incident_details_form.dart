@@ -1,5 +1,8 @@
 import 'dart:typed_data';
+import 'dart:io';
 
+import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
@@ -10,12 +13,16 @@ import '../models/parent_incident_model.dart';
 class ParentIncidentDetailsForm extends StatelessWidget {
   final ParentIncidentModel incident;
   final List<ChildModel> affectedChildren;
+  final Uint8List? imageBytes;
+  final Uint8List? audioBytes;
   final VoidCallback onClose;
 
   const ParentIncidentDetailsForm({
     super.key,
     required this.incident,
     required this.affectedChildren,
+    required this.imageBytes,
+    required this.audioBytes,
     required this.onClose,
   });
 
@@ -103,6 +110,49 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
         const SizedBox(height: 26),
 
+        // ── Incident photo ───────────────────────────────────────────────
+        if (imageBytes != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.memory(
+              imageBytes!,
+              width: double.infinity,
+              height: 180,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 120,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: cardBackground,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: borderColor,
+                    ),
+                  ),
+                  child: Text(
+                    'Photo unavailable',
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.6),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 20),
+        ],
+        // ── Voice note ───────────────────────────────────────────────────
+        if (audioBytes != null) ...[
+          _IncidentVoiceNote(
+            audioBytes: audioBytes!,
+          ),
+
+          const SizedBox(height: 20),
+        ],
         // ── Affected children ────────────────────────────────────────────
         if (affectedChildren.isNotEmpty) ...[
           Text(
@@ -241,6 +291,250 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
         const SizedBox(height: 8),
       ],
+    );
+  }
+}
+
+class _IncidentVoiceNote extends StatefulWidget {
+  final Uint8List audioBytes;
+
+  const _IncidentVoiceNote({
+    required this.audioBytes,
+  });
+
+  @override
+  State<_IncidentVoiceNote> createState() =>
+      _IncidentVoiceNoteState();
+}
+
+class _IncidentVoiceNoteState
+    extends State<_IncidentVoiceNote> {
+  static const _blue = Color(0xFF0D4896);
+
+  final AudioPlayer _player = AudioPlayer();
+
+  File? _audioFile;
+  bool _preparing = true;
+  bool _failed = false;
+
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _player.positionStream.listen((position) {
+      if (!mounted) return;
+
+      setState(() {
+        _position = position;
+      });
+    });
+
+    _player.durationStream.listen((duration) {
+      if (!mounted || duration == null) return;
+
+      setState(() {
+        _duration = duration;
+      });
+    });
+
+    _player.playerStateStream.listen((state) {
+      if (!mounted) return;
+
+      if (state.processingState == ProcessingState.completed) {
+        _player.seek(Duration.zero);
+        _player.pause();
+      }
+
+      setState(() {});
+    });
+
+    _prepare();
+  }
+
+  Future<void> _prepare() async {
+    try {
+      final directory = await getTemporaryDirectory();
+
+      final file = File(
+        '${directory.path}/incident_voice_'
+        '${DateTime.now().microsecondsSinceEpoch}.m4a',
+      );
+
+      await file.writeAsBytes(
+        widget.audioBytes,
+        flush: true,
+      );
+
+      await _player.setFilePath(file.path);
+
+      if (!mounted) return;
+
+      setState(() {
+        _audioFile = file;
+        _preparing = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _preparing = false;
+        _failed = true;
+      });
+    }
+  }
+
+  Future<void> _togglePlayback() async {
+    if (_preparing || _failed) return;
+
+    if (_player.playing) {
+      await _player.pause();
+    } else {
+      await _player.play();
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes =
+        duration.inMinutes.remainder(60).toString();
+
+    final seconds =
+        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+
+    return '$minutes:$seconds';
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+
+    final file = _audioFile;
+
+    if (file != null) {
+      file.delete().catchError((_) => file);
+    }
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final onSurface =
+        Theme.of(context).colorScheme.onSurface;
+
+    final background =
+        isDark ? const Color(0xFF1A2530) : Colors.white;
+
+    final borderColor =
+        isDark
+            ? const Color(0xFF2A3A50)
+            : const Color(0xFFDCE6F5);
+
+    if (_failed) {
+      return Container(
+        height: 62,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: borderColor),
+        ),
+        child: Text(
+          'Voice note unavailable',
+          style: TextStyle(
+            color: onSurface.withValues(alpha: 0.6),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
+    final maxMilliseconds =
+        _duration.inMilliseconds > 0
+            ? _duration.inMilliseconds.toDouble()
+            : 1.0;
+
+    final positionMilliseconds =
+        _position.inMilliseconds
+            .clamp(0, maxMilliseconds.toInt())
+            .toDouble();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              onPressed:
+                  _preparing ? null : _togglePlayback,
+              icon: _preparing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      _player.playing
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: _blue,
+                      size: 28,
+                    ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: Slider(
+              value: positionMilliseconds,
+              min: 0,
+              max: maxMilliseconds,
+              onChanged:
+                  _preparing || _duration == Duration.zero
+                      ? null
+                      : (value) {
+                          _player.seek(
+                            Duration(
+                              milliseconds: value.round(),
+                            ),
+                          );
+                        },
+            ),
+          ),
+
+          const SizedBox(width: 6),
+
+          Text(
+            '${_formatDuration(_position)} / '
+            '${_formatDuration(_duration)}',
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.65),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
