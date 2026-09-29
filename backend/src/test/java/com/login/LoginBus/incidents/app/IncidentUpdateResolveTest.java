@@ -55,7 +55,9 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
         accountsService,
         studentsService,
         transportService,
-        notificationsService
+        notificationsService,
+        attachmentRepository,
+        attachmentStorage
 );
 
         when(accountsService.getUserById(1L))
