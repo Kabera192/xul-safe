@@ -42,10 +42,6 @@ class DriverIncidentDetailsForm extends StatefulWidget {
 class _DriverIncidentDetailsFormState
     extends State<DriverIncidentDetailsForm> {
   static const _blue = Color(0xFF0D4896);
-  static const _photoBackground = Color(0xFFF1F5FA);
-  static const _photoBorder = Color(0xFFD9E1FF);
-  static const _photoContent = Color(0xFF1358B6);
-  static const _closeBackground = Color(0xFFEBF1FE);
 
   final TextEditingController _descriptionCtrl = TextEditingController();
 
@@ -198,6 +194,13 @@ class _DriverIncidentDetailsFormState
         isDark ? const Color(0xFF1A2530) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
+    final closeBackground =
+        isDark ? const Color(0xFF1A2A3E) : const Color(0xFFEBF1FE);
+    final photoBackground =
+        isDark ? const Color(0xFF1A2530) : const Color(0xFFF1F5FA);
+    final photoBorder =
+        isDark ? const Color(0xFF2A3A50) : const Color(0xFFD9E1FF);
+    final photoContent = isDark ? const Color(0xFF93B5E8) : const Color(0xFF1358B6);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -206,7 +209,7 @@ class _DriverIncidentDetailsFormState
         Align(
           alignment: Alignment.centerRight,
           child: Material(
-            color: _closeBackground,
+            color: closeBackground,
             shape: const CircleBorder(),
             child: InkWell(
               onTap: widget.submitting ? null : widget.onClose,
@@ -258,29 +261,29 @@ class _DriverIncidentDetailsFormState
         if (_showsPhotoPlaceholder) ...[
           CustomPaint(
             foregroundPainter: _DashedRoundedBorderPainter(
-              color: _photoBorder,
+              color: photoBorder,
               radius: 10,
             ),
             child: Container(
               height: 92,
               decoration: BoxDecoration(
-                color: _photoBackground,
+                color: photoBackground,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Center(
+              child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       IconsaxPlusLinear.gallery_add,
-                      color: _photoContent,
+                      color: photoContent,
                       size: 25,
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text(
                       'Add photo',
                       style: TextStyle(
-                        color: _photoContent,
+                        color: photoContent,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),

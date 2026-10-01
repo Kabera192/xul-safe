@@ -12,12 +12,13 @@ class DriverIncidentTypeForm extends StatelessWidget {
   });
 
   static const _blue = Color(0xFF0D4896);
-  static const _optionBackground = Color(0xFFF5F8FB);
-  static const _closeBackground = Color(0xFFEBF1FE);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
+    final closeBackground =
+        isDark ? const Color(0xFF1A2A3E) : const Color(0xFFEBF1FE);
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -27,7 +28,7 @@ class DriverIncidentTypeForm extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Material(
-              color: _closeBackground,
+              color: closeBackground,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: onClose,
@@ -126,11 +127,15 @@ class _IncidentTypeOption extends StatelessWidget {
   });
 
   static const _blue = Color(0xFF0D4896);
-  static const _background = Color(0xFFF5F8FB);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
+    final background =
+        isDark ? const Color(0xFF1A2530) : const Color(0xFFF5F8FB);
+    final borderColor =
+        isDark ? const Color(0xFF2A3A50) : Colors.transparent;
 
     return Material(
       color: Colors.transparent,
@@ -141,8 +146,9 @@ class _IncidentTypeOption extends StatelessWidget {
           height: 58,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: _background,
+            color: background,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor, width: 1),
           ),
           child: Row(
             children: [

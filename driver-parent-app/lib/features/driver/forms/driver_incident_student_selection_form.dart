@@ -31,8 +31,6 @@ class DriverIncidentStudentSelectionForm extends StatefulWidget {
 class _DriverIncidentStudentSelectionFormState
     extends State<DriverIncidentStudentSelectionForm> {
   static const _blue = Color(0xFF0D4896);
-  static const _stroke = Color(0xFFDCE6F5);
-  static const _closeBackground = Color(0xFFEBF1FE);
 
   final TextEditingController _searchCtrl = TextEditingController();
   final Set<String> _selectedIds = {};
@@ -142,6 +140,9 @@ class _DriverIncidentStudentSelectionFormState
     final onSurface =
         Theme.of(context).colorScheme.onSurface;
 
+    final closeBackground =
+        isDark ? const Color(0xFF1A2A3E) : const Color(0xFFEBF1FE);
+
     final children = _filteredChildren;
 
     return Padding(
@@ -153,7 +154,7 @@ class _DriverIncidentStudentSelectionFormState
           Align(
             alignment: Alignment.centerRight,
             child: Material(
-              color: _closeBackground,
+              color: closeBackground,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: widget.onClose,

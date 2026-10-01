@@ -21,7 +21,6 @@ class DriverResolveIncidentForm extends StatelessWidget {
 
   static const _blue = Color(0xFF0D4896);
   static const _green = Color(0xFF21C260);
-  static const _closeBackground = Color(0xFFEBF1FE);
 
   String get _incidentLabel {
     switch (incident.type.toUpperCase()) {
@@ -74,6 +73,9 @@ class DriverResolveIncidentForm extends StatelessWidget {
     final incidentBorder =
         isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
 
+    final closeBackground =
+        isDark ? const Color(0xFF1A2A3E) : const Color(0xFFEBF1FE);
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -83,7 +85,7 @@ class DriverResolveIncidentForm extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Material(
-              color: _closeBackground,
+              color: closeBackground,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: resolving ? null : onCancel,
