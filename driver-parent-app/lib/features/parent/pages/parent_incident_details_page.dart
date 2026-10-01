@@ -68,8 +68,6 @@ class _ParentIncidentDetailsPageState
       _loadingChildren = true;
     });
 
-    _refreshShownForm();
-
     try {
       final children =
           await ChildService.getMyChildrenModels();

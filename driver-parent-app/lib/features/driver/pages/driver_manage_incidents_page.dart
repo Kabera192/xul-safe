@@ -74,8 +74,6 @@ class _DriverManageIncidentsPageState
       _error = null;
     });
 
-    _refreshShownForm();
-
     try {
       final results = await Future.wait([
         IncidentService.getMyIncidents(),

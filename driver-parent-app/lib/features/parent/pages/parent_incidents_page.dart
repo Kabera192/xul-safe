@@ -63,8 +63,6 @@ class _ParentIncidentsPageState
       _error = null;
     });
 
-    _refreshShownForm();
-
     try {
       final incidents =
           await IncidentService.getParentIncidents();
