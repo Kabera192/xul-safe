@@ -32,7 +32,7 @@ class IncidentService {
       });
 
       return request;
-    });
+    }).timeout(const Duration(seconds: 10));
 
     final decoded = _decodeBody(res.body);
 
@@ -64,7 +64,7 @@ class IncidentService {
       request.headers['Content-Type'] = 'application/json';
 
       return request;
-    });
+    }).timeout(const Duration(seconds: 10));
 
     final decoded = _decodeBody(res.body);
 
@@ -99,7 +99,7 @@ class IncidentService {
       request.headers['Content-Type'] = 'application/json';
 
       return request;
-    });
+    }).timeout(const Duration(seconds: 10));
 
     final decoded = _decodeBody(res.body);
 
@@ -160,7 +160,7 @@ class IncidentService {
       request.body = jsonEncode(payload);
 
       return request;
-    });
+    }).timeout(const Duration(seconds: 10));
 
     final decoded = _decodeBody(res.body);
 
@@ -194,7 +194,7 @@ class IncidentService {
       request.headers['Content-Type'] = 'application/json';
 
       return request;
-    });
+    }).timeout(const Duration(seconds: 10));
 
     final decoded = _decodeBody(res.body);
 
