@@ -19,6 +19,12 @@ import com.login.LoginBus.students.domain.Child;
 import com.login.LoginBus.transport.app.TransportPublicService;
 import com.login.LoginBus.transport.domain.Bus;
 import com.login.LoginBus.transport.domain.BusTracking;
+import com.login.LoginBus.incidents.domain.IncidentAttachment;
+import com.login.LoginBus.incidents.domain.IncidentAttachmentType;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentJpaEntity;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentRepository;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentStorage;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,19 +46,25 @@ public class IncidentServiceImpl implements IncidentService {
     private final StudentsPublicService studentsService;
     private final TransportPublicService transportService;
     private final NotificationsPublicService notificationsService;
+    private final IncidentAttachmentRepository attachmentRepository;
+private final IncidentAttachmentStorage attachmentStorage;
 
     public IncidentServiceImpl(
             IncidentRepository incidentRepository,
             AccountsPublicService accountsService,
             StudentsPublicService studentsService,
             TransportPublicService transportService,
-            NotificationsPublicService notificationsService
+            NotificationsPublicService notificationsService,
+            IncidentAttachmentRepository attachmentRepository,
+        IncidentAttachmentStorage attachmentStorage
     ) {
         this.incidentRepository = incidentRepository;
         this.accountsService = accountsService;
         this.studentsService = studentsService;
         this.transportService = transportService;
         this.notificationsService = notificationsService;
+        this.attachmentRepository = attachmentRepository;
+    this.attachmentStorage = attachmentStorage;
     }
 
     @Override
@@ -386,6 +398,130 @@ public List<ParentIncidentResponse> getParentIncidents(Jwt jwt) {
 
         return incidentRepository.save(entity).toDomain();
     }
+
+    @Override
+@Transactional
+public IncidentAttachment addAttachment(
+        Long incidentId,
+        Jwt jwt,
+        MultipartFile file,
+        IncidentAttachmentType type
+) {
+    Long userId = getAuthenticatedUserId(jwt);
+    User user = requireAllowedIncidentUser(userId);
+
+    IncidentJpaEntity incident = incidentRepository.findById(incidentId)
+            .orElseThrow(() ->
+                    new IllegalArgumentException(
+                            "Incident not found with ID: " + incidentId
+                    )
+            );
+
+    /*
+     * Transport users may only attach evidence to incidents they created.
+     * Admins may manage any incident.
+     */
+    if (isTransportUser(user)) {
+        validateTransportUserCreatedIncident(
+                userId,
+                incident
+        );
+    }
+
+    if (incident.getStatus() == IncidentStatus.RESOLVED) {
+        throw new IllegalArgumentException(
+                "Attachments cannot be added to a resolved incident"
+        );
+    }
+
+    String storagePath =
+            attachmentStorage.store(file, type);
+
+    IncidentAttachment attachment =
+            new IncidentAttachment(
+                    null,
+                    incidentId,
+                    type,
+                    storagePath,
+                    System.currentTimeMillis()
+            );
+
+    try {
+        IncidentAttachmentJpaEntity saved =
+                attachmentRepository.save(
+                        IncidentAttachmentJpaEntity.fromDomain(
+                                attachment
+                        )
+                );
+
+        return saved.toDomain();
+
+    } catch (RuntimeException e) {
+        /*
+         * The file has already been written at this point.
+         * If database persistence fails, remove it so we do not leave
+         * orphaned files on disk.
+         */
+        try {
+            attachmentStorage.delete(storagePath);
+        } catch (RuntimeException cleanupException) {
+            e.addSuppressed(cleanupException);
+        }
+
+        throw e;
+    }
+}
+
+@Override
+@Transactional(readOnly = true)
+public List<IncidentAttachment> getAttachments(
+        Long incidentId,
+        Jwt jwt
+) {
+    IncidentJpaEntity incident = incidentRepository.findById(incidentId)
+            .orElseThrow(() ->
+                    new IllegalArgumentException(
+                            "Incident not found with ID: " + incidentId
+                    )
+            );
+
+    validateAttachmentAccess(jwt, incident);
+
+    return attachmentRepository
+            .findAllByIncidentIdOrderByCreatedAtAsc(incidentId)
+            .stream()
+            .map(IncidentAttachmentJpaEntity::toDomain)
+            .collect(Collectors.toList());
+}
+
+@Override
+@Transactional(readOnly = true)
+public IncidentAttachment getAttachment(
+        Long incidentId,
+        Long attachmentId,
+        Jwt jwt
+) {
+    IncidentJpaEntity incident = incidentRepository.findById(incidentId)
+            .orElseThrow(() ->
+                    new IllegalArgumentException(
+                            "Incident not found with ID: " + incidentId
+                    )
+            );
+
+    validateAttachmentAccess(jwt, incident);
+
+    return attachmentRepository
+            .findByIdAndIncidentId(
+                    attachmentId,
+                    incidentId
+            )
+            .map(IncidentAttachmentJpaEntity::toDomain)
+            .orElseThrow(() ->
+                    new IllegalArgumentException(
+                            "Attachment not found for incident"
+                    )
+            );
+}
 
     private ParentIncidentResponse toParentIncidentResponse(
         IncidentJpaEntity entity,
@@ -739,6 +875,122 @@ private void validateTransportUserCreatedIncident(
             );
         }
     }
+
+    private void validateAttachmentAccess(
+        Jwt jwt,
+        IncidentJpaEntity entity
+) {
+    Long userId = getAuthenticatedUserId(jwt);
+
+    User user = accountsService.getUserById(userId);
+
+    if (user == null) {
+        throw new IllegalArgumentException(
+                "Authenticated user not found"
+        );
+    }
+
+    /*
+     * Admins have full incident visibility.
+     */
+    if (user.getRole() == UserRole.ADMIN) {
+        return;
+    }
+
+    /*
+     * Transport users may see evidence when the incident is related to
+     * them under the same relationship rules used by getMyIncidents().
+     */
+    if (isTransportUser(user)) {
+        Bus assignedBus =
+                transportService.getAssignedBusForUser(userId);
+
+        Long assignedBusId =
+                assignedBus != null
+                        ? assignedBus.getId()
+                        : null;
+
+        Set<String> assignedChildIds =
+                assignedBusId == null
+                        ? new HashSet<>()
+                        : studentsService
+                                .getChildrenForBus(assignedBusId)
+                                .stream()
+                                .map(Child::getId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+        if (isIncidentRelatedToTransportUser(
+                entity,
+                userId,
+                assignedBusId,
+                assignedChildIds
+        )) {
+            return;
+        }
+
+        throw new IllegalArgumentException(
+                "You do not have access to this incident attachment"
+        );
+    }
+
+    /*
+     * Parents receive attachments only when:
+     *
+     * 1. One of their own children is explicitly affected, or
+     * 2. This is a general bus-level incident affecting their child's bus.
+     *
+     * A parent who only receives the sanitized operational incident does
+     * NOT receive its evidence.
+     */
+    if (user.getRole() == UserRole.PARENT) {
+        List<Child> parentChildren =
+                studentsService.getChildrenForParent(userId);
+
+        Set<String> parentChildIds =
+                parentChildren.stream()
+                        .map(Child::getId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+        Set<Long> parentBusIds =
+                parentChildren.stream()
+                        .map(Child::getBusId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+        Set<String> incidentChildIds =
+                entity.getAffectedChildIds() != null
+                        ? entity.getAffectedChildIds()
+                        : Set.of();
+
+        Set<Long> incidentBusIds =
+                entity.getAffectedBusIds() != null
+                        ? entity.getAffectedBusIds()
+                        : Set.of();
+
+        boolean directlyAffected =
+                incidentChildIds.stream()
+                        .anyMatch(parentChildIds::contains);
+
+        boolean generalBusIncident =
+                incidentChildIds.isEmpty()
+                        && incidentBusIds.stream()
+                                .anyMatch(parentBusIds::contains);
+
+        if (directlyAffected || generalBusIncident) {
+            return;
+        }
+
+        throw new IllegalArgumentException(
+                "You do not have access to this incident attachment"
+        );
+    }
+
+    throw new IllegalArgumentException(
+            "You do not have access to this incident attachment"
+    );
+}
 
     /**
      * Notification targeting:

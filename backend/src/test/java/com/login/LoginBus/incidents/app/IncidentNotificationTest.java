@@ -12,6 +12,8 @@ import com.login.LoginBus.notifications.app.NotificationsPublicService;
 import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.students.app.StudentsPublicService;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentRepository;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentStorage;
 import com.login.LoginBus.students.domain.Child;
 import com.login.LoginBus.transport.app.TransportPublicService;
 import com.login.LoginBus.transport.domain.Bus;
@@ -36,6 +38,8 @@ class IncidentNotificationTest {
     private StudentsPublicService studentsService;
     private TransportPublicService transportService;
     private NotificationsPublicService notificationsService;
+    private IncidentAttachmentRepository attachmentRepository;
+private IncidentAttachmentStorage attachmentStorage;
 
     private IncidentServiceImpl service;
 
@@ -46,14 +50,18 @@ class IncidentNotificationTest {
         studentsService = mock(StudentsPublicService.class);
         transportService = mock(TransportPublicService.class);
         notificationsService = mock(NotificationsPublicService.class);
+        attachmentRepository = mock(IncidentAttachmentRepository.class);
+attachmentStorage = mock(IncidentAttachmentStorage.class);
 
         service = new IncidentServiceImpl(
-                incidentRepository,
-                accountsService,
-                studentsService,
-                transportService,
-                notificationsService
-        );
+        incidentRepository,
+        accountsService,
+        studentsService,
+        transportService,
+        notificationsService,
+        attachmentRepository,
+        attachmentStorage
+);
 
         when(accountsService.getUserById(1L))
                 .thenReturn(user(1L, UserRole.ADMIN));

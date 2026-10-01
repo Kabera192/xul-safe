@@ -4,7 +4,10 @@ import com.login.LoginBus.incidents.api.dto.CreateIncidentRequest;
 import com.login.LoginBus.incidents.api.dto.ParentIncidentResponse;
 import com.login.LoginBus.incidents.api.dto.UpdateIncidentRequest;
 import com.login.LoginBus.incidents.domain.Incident;
+import com.login.LoginBus.incidents.domain.IncidentAttachment;
+import com.login.LoginBus.incidents.domain.IncidentAttachmentType;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -64,5 +67,63 @@ public interface IncidentService {
     Incident resolveIncident(
             Long incidentId,
             Jwt jwt
+    );
+
+    /**
+
+     * Store media evidence for an incident.
+
+     *
+
+     * The current mobile UI uses this for one image and one recorded
+
+     * voice note, while the backend model supports multiple attachments.
+
+     */
+
+    IncidentAttachment addAttachment(
+
+            Long incidentId,
+
+            Jwt jwt,
+
+            MultipartFile file,
+
+            IncidentAttachmentType type
+
+    );
+
+    /**
+
+     * Get attachment metadata after verifying that the authenticated
+
+     * user is allowed to access the full incident evidence.
+
+     */
+
+    List<IncidentAttachment> getAttachments(
+
+            Long incidentId,
+
+            Jwt jwt
+
+    );
+
+    /**
+
+     * Get one attachment after verifying both incident visibility and
+
+     * attachment ownership.
+
+     */
+
+    IncidentAttachment getAttachment(
+
+            Long incidentId,
+
+            Long attachmentId,
+
+            Jwt jwt
+
     );
 }

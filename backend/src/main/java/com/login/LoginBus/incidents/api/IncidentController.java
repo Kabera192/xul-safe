@@ -6,12 +6,19 @@ import com.login.LoginBus.incidents.api.dto.UpdateIncidentRequest;
 import com.login.LoginBus.incidents.api.dto.ParentIncidentResponse;
 import com.login.LoginBus.incidents.app.IncidentService;
 import com.login.LoginBus.incidents.domain.Incident;
+import com.login.LoginBus.incidents.domain.IncidentAttachment;
+import com.login.LoginBus.incidents.domain.IncidentAttachmentType;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentStorage;
+import com.login.LoginBus.incidents.api.dto.IncidentAttachmentResponse;
 import com.login.LoginBus.shared.api.ApiResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,11 +30,16 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class IncidentController {
 
-    private final IncidentService incidentService;
+private final IncidentService incidentService;
+private final IncidentAttachmentStorage attachmentStorage;
 
-    public IncidentController(IncidentService incidentService) {
-        this.incidentService = incidentService;
-    }
+public IncidentController(
+        IncidentService incidentService,
+        IncidentAttachmentStorage attachmentStorage
+) {
+    this.incidentService = incidentService;
+    this.attachmentStorage = attachmentStorage;
+}
 
     /**
      * Create a new incident.
@@ -166,4 +178,99 @@ public ResponseEntity<ApiResponse<List<ParentIncidentResponse>>> getParentIncide
                 )
         );
     }
+
+    /**
+     * Upload an image or voice-note attachment to an ACTIVE incident.
+     */
+    @PostMapping(
+            value = "/{incidentId}/attachments",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+public ResponseEntity<ApiResponse<IncidentAttachmentResponse>> addAttachment(
+                    @PathVariable Long incidentId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("type") IncidentAttachmentType type
+    ) {
+        IncidentAttachment attachment =
+                incidentService.addAttachment(
+                        incidentId,
+                        jwt,
+                        file,
+                        type
+                );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(
+        "Incident attachment uploaded successfully",
+        IncidentAttachmentResponse.fromDomain(attachment)
+));
+    }
+
+    /**
+     * Get attachment metadata for an incident.
+     */
+    @GetMapping("/{incidentId}/attachments")
+    public ResponseEntity<ApiResponse<List<IncidentAttachmentResponse>>> getAttachments(
+            @PathVariable Long incidentId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        List<IncidentAttachmentResponse> attachments =
+        incidentService.getAttachments(
+                        incidentId,
+                        jwt
+                )
+                .stream()
+                .map(IncidentAttachmentResponse::fromDomain)
+                .toList();
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Incident attachments retrieved successfully",
+                        attachments
+                )
+        );
+    }
+
+    /**
+     * Download/view one incident attachment.
+     */
+    @GetMapping("/{incidentId}/attachments/{attachmentId}")
+    public ResponseEntity<byte[]> getAttachment(
+            @PathVariable Long incidentId,
+            @PathVariable Long attachmentId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        /*
+         * Calling the service first is important because it verifies both
+         * that the attachment belongs to this incident and that the
+         * authenticated user is allowed to see it.
+         */
+        IncidentAttachment attachment =
+                incidentService.getAttachment(
+                        incidentId,
+                        attachmentId,
+                        jwt
+                );
+
+        byte[] data =
+                attachmentStorage.read(
+                        attachment.getStoragePath()
+                );
+
+        MediaType mediaType =
+                attachment.getType() == IncidentAttachmentType.IMAGE
+                        ? MediaType.IMAGE_JPEG
+                        : MediaType.parseMediaType("audio/mp4");
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline"
+                )
+                .contentType(mediaType)
+                .contentLength(data.length)
+                .body(data);
+    }    
+
 }

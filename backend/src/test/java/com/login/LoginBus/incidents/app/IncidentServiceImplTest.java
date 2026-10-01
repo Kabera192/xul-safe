@@ -7,6 +7,8 @@ import com.login.LoginBus.incidents.api.dto.CreateIncidentRequest;
 import com.login.LoginBus.incidents.domain.Incident;
 import com.login.LoginBus.incidents.domain.IncidentStatus;
 import com.login.LoginBus.incidents.domain.IncidentType;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentRepository;
+import com.login.LoginBus.incidents.infra.IncidentAttachmentStorage;
 import com.login.LoginBus.incidents.domain.JourneyImpact;
 import com.login.LoginBus.incidents.infra.IncidentJpaEntity;
 import com.login.LoginBus.incidents.infra.IncidentRepository;
@@ -36,6 +38,8 @@ class IncidentServiceImplTest {
     private StudentsPublicService studentsService;
     private TransportPublicService transportService;
     private NotificationsPublicService notificationsService;
+    private IncidentAttachmentRepository attachmentRepository;
+private IncidentAttachmentStorage attachmentStorage;
 
     private IncidentServiceImpl service;
 
@@ -46,14 +50,18 @@ class IncidentServiceImplTest {
         studentsService = mock(StudentsPublicService.class);
         transportService = mock(TransportPublicService.class);
         notificationsService = mock(NotificationsPublicService.class);
+        attachmentRepository = mock(IncidentAttachmentRepository.class);
+attachmentStorage = mock(IncidentAttachmentStorage.class);
 
         service = new IncidentServiceImpl(
-                incidentRepository,
-                accountsService,
-                studentsService,
-                transportService,
-                notificationsService
-        );
+        incidentRepository,
+        accountsService,
+        studentsService,
+        transportService,
+        notificationsService,
+        attachmentRepository,
+        attachmentStorage
+);
 
         when(accountsService.getUsersByRole(UserRole.ADMIN))
                 .thenReturn(List.of());
