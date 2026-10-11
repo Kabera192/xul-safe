@@ -64,8 +64,6 @@ class _DriverIncidentStudentSelectionPageState
       _error = null;
     });
 
-    _refreshShownForm();
-
     try {
       final raw = await ChildService.getMyBusChildren();
 
