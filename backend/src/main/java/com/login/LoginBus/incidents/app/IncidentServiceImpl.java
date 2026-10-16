@@ -626,37 +626,17 @@ public IncidentAttachment getAttachment(
 private String sanitizedOperationalDescription(
         Incident incident
 ) {
-    String cause = switch (incident.getType()) {
-        case CHILD_BEHAVIOR ->
-                "a student behavior incident";
-
-        case MEDICAL ->
-                "a medical incident";
-
-        case ACCIDENT ->
-                "an accident";
-
-        case VEHICLE_BREAKDOWN ->
-                "a mechanical issue";
-
-        case ROAD_OBSTRUCTION ->
-                "a road obstruction";
-
-        case DELAY ->
-                "a journey delay";
-
-        case OTHER ->
-                "an incident";
-    };
-
+    // Deliberately type-agnostic: this reaches parents whose child isn't
+    // involved in the incident, only affected by its knock-on delay. Naming
+    // the incident type here (e.g. "a medical incident" or "a student
+    // behavior incident") would leak specifics about another family's child
+    // to bystander parents who have no need to know them.
     return switch (incident.getJourneyImpact()) {
         case STOPPED ->
-                "The bus journey has been stopped due to "
-                        + cause + ".";
+                "The bus journey has been stopped due to an active incident.";
 
         case DELAYED ->
-                "The bus journey is delayed due to "
-                        + cause + ".";
+                "The bus journey is delayed due to an active incident.";
 
         case NONE ->
                 "An incident has been reported.";
