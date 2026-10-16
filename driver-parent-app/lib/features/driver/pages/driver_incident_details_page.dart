@@ -38,6 +38,11 @@ class _DriverIncidentDetailsPageState
   bool _submitting = false;
   String? _submitError;
 
+  /// Set only when the incident itself was created successfully but an
+  /// attachment failed to upload. See _submitIncident for why this is
+  /// never treated as a submission failure.
+  String? _attachmentWarning;
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +102,11 @@ class _DriverIncidentDetailsPageState
       final shouldAffectBus =
           !isChildSpecific || journeyImpact != 'NONE';
 
+      // The incident report is the critical part -- it's what gets the
+      // relevant people notified. Once this succeeds, nothing below may
+      // turn this submission into a reported failure: that would let the
+      // driver retry and file a duplicate report for something that
+      // already went through.
       final incident = await IncidentService.createIncident(
         type: widget.incidentType,
         description: description,
@@ -107,20 +117,33 @@ class _DriverIncidentDetailsPageState
             Set<String>.from(widget.affectedChildIds),
       );
 
+      // Each attachment is independent: a failed photo upload must not
+      // stop the voice note from being attempted, and either failing is
+      // a notice on the success screen, never a blocking error.
+      final failedAttachments = <String>[];
+
       if (image != null) {
-        await IncidentService.addAttachment(
-          incidentId: incident.id,
-          file: image,
-          type: 'IMAGE',
-        );
+        try {
+          await IncidentService.addAttachment(
+            incidentId: incident.id,
+            file: image,
+            type: 'IMAGE',
+          );
+        } catch (_) {
+          failedAttachments.add('photo');
+        }
       }
 
       if (audio != null) {
-        await IncidentService.addAttachment(
-          incidentId: incident.id,
-          file: audio,
-          type: 'AUDIO',
-        );
+        try {
+          await IncidentService.addAttachment(
+            incidentId: incident.id,
+            file: audio,
+            type: 'AUDIO',
+          );
+        } catch (_) {
+          failedAttachments.add('voice note');
+        }
       }
 
       if (!mounted) return;
@@ -128,6 +151,10 @@ class _DriverIncidentDetailsPageState
       setState(() {
         _submitting = false;
         _success = true;
+        _attachmentWarning = failedAttachments.isEmpty
+            ? null
+            : 'The incident was reported, but the ${failedAttachments.join(' and ')} '
+                'could not be attached. Please try adding ${failedAttachments.length > 1 ? 'them' : 'it'} again later.';
       });
 
       _showCurrentForm();
@@ -151,6 +178,7 @@ class _DriverIncidentDetailsPageState
         ? DriverIncidentSuccessForm(
             incidentType: widget.incidentType,
             onDone: _cancelIncidentFlow,
+            attachmentWarning: _attachmentWarning,
           )
         : DriverIncidentDetailsForm(
             incidentType: widget.incidentType,

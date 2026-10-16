@@ -5,10 +5,18 @@ class DriverIncidentSuccessForm extends StatelessWidget {
   final String incidentType;
   final VoidCallback onDone;
 
+  /// Set when the incident report itself succeeded but an attached
+  /// photo/voice note failed to upload. The report has already reached
+  /// the relevant people -- this is a secondary, non-blocking notice,
+  /// not a reason to show a failure screen or let the driver retry
+  /// (retrying would create a duplicate report).
+  final String? attachmentWarning;
+
   const DriverIncidentSuccessForm({
     super.key,
     required this.incidentType,
     required this.onDone,
+    this.attachmentWarning,
   });
 
   static const blue = Color(0xFF0D4896);
@@ -132,6 +140,48 @@ class DriverIncidentSuccessForm extends StatelessWidget {
               ),
             ),
           ),
+
+          if (attachmentWarning != null) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFFDE68A),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFB45309),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        attachmentWarning!,
+                        style: const TextStyle(
+                          color: Color(0xFF92400E),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 32),
 
