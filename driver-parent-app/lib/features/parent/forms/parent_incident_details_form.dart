@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../services/child_service.dart';
+import '../../../widgets/mobile_fullscreen_image_viewer.dart';
 import '../models/child_model.dart';
 import '../models/parent_incident_model.dart';
 
@@ -112,34 +113,44 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
         // ── Incident photo ───────────────────────────────────────────────
         if (imageBytes != null) ...[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.memory(
-              imageBytes!,
-              width: double.infinity,
-              height: 180,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 120,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: cardBackground,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: borderColor,
-                    ),
-                  ),
-                  child: Text(
-                    'Photo unavailable',
-                    style: TextStyle(
-                      color: onSurface.withValues(alpha: 0.6),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                );
-              },
+          GestureDetector(
+            onTap: () => MobileFullscreenImageViewer.show(
+              context,
+              imageBytes: imageBytes!,
+              heroTag: 'incident-image-${incident.id}',
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Hero(
+                tag: 'incident-image-${incident.id}',
+                child: Image.memory(
+                  imageBytes!,
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 120,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: cardBackground,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: borderColor,
+                        ),
+                      ),
+                      child: Text(
+                        'Photo unavailable',
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.6),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
 
