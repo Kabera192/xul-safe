@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../widgets/mobile_splash_gradient.dart';
@@ -62,6 +63,8 @@ class _DriverIncidentDetailsPageState
   Future<void> _submitIncident({
     required String description,
     required String journeyImpact,
+    File? image,
+    File? audio,
   }) async {
     if (_submitting) return;
 
@@ -94,7 +97,7 @@ class _DriverIncidentDetailsPageState
       final shouldAffectBus =
           !isChildSpecific || journeyImpact != 'NONE';
 
-      await IncidentService.createIncident(
+      final incident = await IncidentService.createIncident(
         type: widget.incidentType,
         description: description,
         journeyImpact: journeyImpact,
@@ -103,6 +106,22 @@ class _DriverIncidentDetailsPageState
         affectedChildIds:
             Set<String>.from(widget.affectedChildIds),
       );
+
+      if (image != null) {
+        await IncidentService.addAttachment(
+          incidentId: incident.id,
+          file: image,
+          type: 'IMAGE',
+        );
+      }
+
+      if (audio != null) {
+        await IncidentService.addAttachment(
+          incidentId: incident.id,
+          file: audio,
+          type: 'AUDIO',
+        );
+      }
 
       if (!mounted) return;
 

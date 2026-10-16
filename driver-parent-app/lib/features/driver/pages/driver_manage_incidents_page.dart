@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../core/session/session_storage.dart';
@@ -73,8 +74,6 @@ class _DriverManageIncidentsPageState
       _loading = true;
       _error = null;
     });
-
-    _refreshShownForm();
 
     try {
       final results = await Future.wait([
@@ -157,6 +156,8 @@ class _DriverManageIncidentsPageState
   Future<void> _saveEditedIncident({
     required String description,
     required String journeyImpact,
+    File? image,
+    File? audio,
   }) async {
     final incident = _incidentBeingEdited;
 
