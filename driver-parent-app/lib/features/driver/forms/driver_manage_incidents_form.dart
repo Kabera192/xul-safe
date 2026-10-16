@@ -32,7 +32,6 @@ class DriverManageIncidentsForm extends StatefulWidget {
 class _DriverManageIncidentsFormState
     extends State<DriverManageIncidentsForm> {
   static const _blue = Color(0xFF0D4896);
-  static const _closeBackground = Color(0xFFEBF1FE);
 
   final TextEditingController _searchCtrl = TextEditingController();
 
@@ -72,6 +71,8 @@ class _DriverManageIncidentsFormState
         isDark ? const Color(0xFF1A2530) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
+    final closeBackground =
+        isDark ? const Color(0xFF1A2A3E) : const Color(0xFFEBF1FE);
 
     final filtered = _filtered;
 
@@ -92,7 +93,7 @@ class _DriverManageIncidentsFormState
           Align(
             alignment: Alignment.centerRight,
             child: Material(
-              color: _closeBackground,
+              color: closeBackground,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: widget.onClose,
