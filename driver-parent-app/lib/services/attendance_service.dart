@@ -101,7 +101,7 @@ class AttendanceService {
   /// POST /api/v1/me/bus/attendance/notify-arrival?stopId=&session=
   /// Best-effort — never throws; called when bus enters a stop's proximity.
   static Future<void> notifyStopArrival({
-    required int stopId,
+    required String stopId,
     required String session,
   }) async {
     try {

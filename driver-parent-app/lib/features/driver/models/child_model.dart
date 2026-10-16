@@ -5,8 +5,8 @@ class ChildModel {
   final String fullName;
   final String? gender;
   final String? photoUrl;
-  final int? pickupStopId;
-  final int? dropoffStopId;
+  final String? pickupStopId;
+  final String? dropoffStopId;
 
   final String? pickupStopName;
   final String? dropoffStopName;
@@ -37,8 +37,8 @@ class ChildModel {
       fullName: (json['fullName'] ?? '').toString(),
       gender: json['gender']?.toString(),
       photoUrl: json['photoUrl']?.toString(),
-      pickupStopId: _toNullableInt(json['pickupStopId']),
-      dropoffStopId: _toNullableInt(json['dropoffStopId']),
+      pickupStopId: json['pickupStopId']?.toString(),
+      dropoffStopId: json['dropoffStopId']?.toString(),
       pickupStopName: json['pickupStopName']?.toString(),
       dropoffStopName: json['dropoffStopName']?.toString(),
       guardianPhoneNumber: json['guardianPhoneNumber']?.toString(),

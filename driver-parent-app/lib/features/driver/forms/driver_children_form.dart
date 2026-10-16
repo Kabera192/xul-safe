@@ -25,7 +25,7 @@ class DriverChildrenForm extends StatefulWidget {
 class _DriverChildrenFormState extends State<DriverChildrenForm> {
 
   final _searchCtrl = TextEditingController();
-  int? _selectedStopId; // null = All
+  String? _selectedStopId; // null = All
 
   @override
   void dispose() {
@@ -33,7 +33,7 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
     super.dispose();
   }
 
-  String _stopLabel(int? stopId) {
+  String _stopLabel(String? stopId) {
     if (stopId == null) return 'Not assigned';
 
     final index = widget.stops.indexWhere((s) => s.id == stopId);
@@ -182,8 +182,8 @@ class _SearchBox extends StatelessWidget {
 
 class _StopFilterRow extends StatelessWidget {
   final List<StopModel> stops;
-  final int? selectedStopId;
-  final ValueChanged<int?> onSelected;
+  final String? selectedStopId;
+  final ValueChanged<String?> onSelected;
 
   const _StopFilterRow({
     required this.stops,
