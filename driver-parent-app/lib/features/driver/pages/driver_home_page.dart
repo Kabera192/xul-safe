@@ -52,7 +52,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
   Timer? _gpsTimer;
 
   // Attendance popup state
-  final Set<int> _confirmedStopIds = {};
+  final Set<String> _confirmedStopIds = {};
   bool _popupShowing = false;
 
   // Incident quick-action menu

@@ -16,10 +16,10 @@ class DriverChildrenAttendanceForm extends StatefulWidget {
       onMarkAction;
 
   final List<StopModel> stops;
-  final Map<String, Set<int>> childStopMap;
+  final Map<String, Set<String>> childStopMap;
   final Map<String, String> childStopNameMap;
-  final int? selectedStopId;
-  final void Function(int?) onStopSelected;
+  final String? selectedStopId;
+  final void Function(String?) onStopSelected;
 
   const DriverChildrenAttendanceForm({
     super.key,
@@ -710,8 +710,8 @@ class _ActionToggle extends StatelessWidget {
 
 class _StopFilterRow extends StatelessWidget {
   final List<StopModel> stops;
-  final int? selectedStopId;
-  final void Function(int?) onSelected;
+  final String? selectedStopId;
+  final void Function(String?) onSelected;
 
   const _StopFilterRow({
     required this.stops,
