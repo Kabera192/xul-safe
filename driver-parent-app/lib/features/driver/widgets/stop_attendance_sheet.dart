@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../services/attendance_service.dart';
+import '../../../services/child_service.dart';
 import '../models/attendance_record_model.dart';
 import '../models/child_model.dart';
 import '../models/stop_model.dart';
@@ -52,6 +53,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   late String? _selectedStopId;
   final Map<String, _Mark> _marks = {};
   Map<String, AttendanceRecordModel> _existingRecords = {};
+  Set<String> _declaredAbsentIds = {};
   bool _loading = false;
   bool _loadingRecords = true;
   bool _success = false;
@@ -66,17 +68,35 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
 
   Future<void> _loadExistingAttendance() async {
     try {
-      final records = await AttendanceService.getSessionAttendance(
-        date: DateTime.now(),
-        session: widget.session,
-      );
+      final results = await Future.wait<dynamic>([
+        AttendanceService.getSessionAttendance(
+          date: DateTime.now(),
+          session: widget.session,
+        ),
+        ChildService.getAbsentChildren(
+          date: DateTime.now(),
+          journey: widget.session,
+        ).onError((_, __) => <Map<String, dynamic>>[]),
+      ]);
       if (!mounted) return;
+
+      final records = results[0] as List<AttendanceRecordModel>;
+      final declaredAbsent = results[1] as List<Map<String, dynamic>>;
+
       final map = <String, AttendanceRecordModel>{};
       for (final r in records) {
         map[r.childId] = r;
       }
+
+      final declaredAbsentIds = <String>{
+        for (final c in declaredAbsent)
+          if ((c['childId'] ?? c['id'])?.toString().trim().isNotEmpty == true)
+            (c['childId'] ?? c['id']).toString().trim(),
+      };
+
       // Pre-fill marks for children already confirmed
-      final action = widget.forceAction ??
+      final action =
+          widget.forceAction ??
           (widget.session == 'MORNING' ? 'BOARDED' : 'DROPPED_OFF');
       for (final child in widget.allChildren) {
         final rec = map[child.id];
@@ -86,12 +106,21 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
         if (rec.isAbsent) {
           _marks[child.id] = _Mark.absent;
         } else {
-          final alreadyDone = action == 'BOARDED' ? rec.boarded : rec.droppedOff;
+          final alreadyDone = action == 'BOARDED'
+              ? rec.boarded
+              : rec.droppedOff;
           if (alreadyDone) _marks[child.id] = _Mark.present;
         }
       }
+      // A parent-declared absence always locks the child as absent, overriding
+      // any stale boarded/dropped-off flag from a previous confirm.
+      for (final id in declaredAbsentIds) {
+        _marks[id] = _Mark.absent;
+      }
+
       setState(() {
         _existingRecords = map;
+        _declaredAbsentIds = declaredAbsentIds;
         _loadingRecords = false;
       });
     } catch (_) {
@@ -133,24 +162,28 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   void _togglePresent(String childId) {
+    if (_declaredAbsentIds.contains(childId)) return;
     setState(() {
-      _marks[childId] =
-          _marks[childId] == _Mark.present ? _Mark.none : _Mark.present;
+      _marks[childId] = _marks[childId] == _Mark.present
+          ? _Mark.none
+          : _Mark.present;
     });
   }
 
   void _toggleAbsent(String childId) {
+    if (_declaredAbsentIds.contains(childId)) return;
     setState(() {
-      _marks[childId] =
-          _marks[childId] == _Mark.absent ? _Mark.none : _Mark.absent;
+      _marks[childId] = _marks[childId] == _Mark.absent
+          ? _Mark.none
+          : _Mark.absent;
     });
   }
 
   Future<void> _confirm() async {
     setState(() => _loading = true);
 
-    final action = widget.forceAction ??
-        (_isMorning ? 'BOARDED' : 'DROPPED_OFF');
+    final action =
+        widget.forceAction ?? (_isMorning ? 'BOARDED' : 'DROPPED_OFF');
     final date = DateTime.now();
     int failures = 0;
 
@@ -205,7 +238,10 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
         ),
       );
     } else {
-      setState(() { _loading = false; _success = true; });
+      setState(() {
+        _loading = false;
+        _success = true;
+      });
     }
   }
 
@@ -238,6 +274,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
               filtered: _filtered,
               marks: _marks,
               existingRecords: _existingRecords,
+              declaredAbsentIds: _declaredAbsentIds,
               loadingRecords: _loadingRecords,
               loading: _loading,
               canConfirm: _canConfirm,
@@ -341,12 +378,12 @@ class _SuccessView extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: const Text(
                 'Got it',
-                style:
-                    TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -371,6 +408,7 @@ class _FormView extends StatelessWidget {
   final List<ChildModel> filtered;
   final Map<String, _Mark> marks;
   final Map<String, AttendanceRecordModel> existingRecords;
+  final Set<String> declaredAbsentIds;
   final bool loadingRecords;
   final bool loading;
   final bool canConfirm;
@@ -390,6 +428,7 @@ class _FormView extends StatelessWidget {
     required this.filtered,
     required this.marks,
     required this.existingRecords,
+    required this.declaredAbsentIds,
     required this.loadingRecords,
     required this.loading,
     required this.canConfirm,
@@ -406,10 +445,12 @@ class _FormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inputFill =
-        isDark ? const Color(0xFF1A2530) : const Color(0xFFF5F8FE);
-    final borderColor =
-        isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
+    final inputFill = isDark
+        ? const Color(0xFF1A2530)
+        : const Color(0xFFF5F8FE);
+    final borderColor = isDark
+        ? const Color(0xFF2A3A50)
+        : const Color(0xFFDCE6F5);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -436,8 +477,8 @@ class _FormView extends StatelessWidget {
                   widget.currentStop == null
                       ? "Who's on the bus?"
                       : (widget.currentStop!.locationName.isNotEmpty
-                          ? widget.currentStop!.locationName
-                          : 'Bus Stop'),
+                            ? widget.currentStop!.locationName
+                            : 'Bus Stop'),
                   style: TextStyle(
                     color: onSurface,
                     fontSize: 20,
@@ -480,8 +521,11 @@ class _FormView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(IconsaxPlusLinear.search_normal_1,
-                    color: onSurface.withValues(alpha: 0.4), size: 18),
+                Icon(
+                  IconsaxPlusLinear.search_normal_1,
+                  color: onSurface.withValues(alpha: 0.4),
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
@@ -489,8 +533,9 @@ class _FormView extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'Search a name',
                       hintStyle: TextStyle(
-                          color: onSurface.withValues(alpha: 0.4),
-                          fontSize: 13),
+                        color: onSurface.withValues(alpha: 0.4),
+                        fontSize: 13,
+                      ),
                       border: InputBorder.none,
                     ),
                     style: TextStyle(color: onSurface, fontSize: 13),
@@ -517,14 +562,14 @@ class _FormView extends StatelessWidget {
                   onTap: () => onSelectStop(null),
                   isDark: isDark,
                 ),
-                ...stopsWithChildren.map((s) => _Tab(
-                      label: s.locationName.isNotEmpty
-                          ? s.locationName
-                          : 'Stop',
-                      active: selectedStopId == s.id,
-                      onTap: () => onSelectStop(s.id),
-                      isDark: isDark,
-                    )),
+                ...stopsWithChildren.map(
+                  (s) => _Tab(
+                    label: s.locationName.isNotEmpty ? s.locationName : 'Stop',
+                    active: selectedStopId == s.id,
+                    onTap: () => onSelectStop(s.id),
+                    isDark: isDark,
+                  ),
+                ),
               ],
             ),
           ),
@@ -534,9 +579,10 @@ class _FormView extends StatelessWidget {
         // Child list — shrinks when the keyboard is open so nothing overflows
         ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: (MediaQuery.of(context).size.height * 0.38 -
-                    MediaQuery.of(context).viewInsets.bottom)
-                .clamp(80.0, double.infinity),
+            maxHeight:
+                (MediaQuery.of(context).size.height * 0.38 -
+                        MediaQuery.of(context).viewInsets.bottom)
+                    .clamp(80.0, double.infinity),
           ),
           child: loadingRecords
               ? const Padding(
@@ -544,43 +590,47 @@ class _FormView extends StatelessWidget {
                   child: Center(child: CircularProgressIndicator()),
                 )
               : filtered.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Text(
-                        'No children at this stop',
-                        style: TextStyle(
-                          color: onSurface.withValues(alpha: 0.45),
-                          fontSize: 14,
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 4),
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(color: borderColor, height: 1),
-                      itemBuilder: (_, i) {
-                        final child = filtered[i];
-                        final mark = marks[child.id] ?? _Mark.none;
-                        final existing = existingRecords[child.id];
-                        return _ChildRow(
-                          child: child,
-                          mark: mark,
-                          existingRecord: existing,
-                          session: widget.session,
-                          forceAction: widget.forceAction,
-                          onPresent: () => onTogglePresent(child.id),
-                          onAbsent: () => onToggleAbsent(child.id),
-                          onSurface: onSurface,
-                          green: _green,
-                          red: _red,
-                          grey: _grey,
-                          isDark: isDark,
-                        );
-                      },
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    'No children at this stop',
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.45),
+                      fontSize: 14,
                     ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
+                  shrinkWrap: true,
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) =>
+                      Divider(color: borderColor, height: 1),
+                  itemBuilder: (_, i) {
+                    final child = filtered[i];
+                    final mark = marks[child.id] ?? _Mark.none;
+                    final existing = existingRecords[child.id];
+                    final locked = declaredAbsentIds.contains(child.id);
+                    return _ChildRow(
+                      child: child,
+                      mark: mark,
+                      existingRecord: existing,
+                      locked: locked,
+                      session: widget.session,
+                      forceAction: widget.forceAction,
+                      onPresent: () => onTogglePresent(child.id),
+                      onAbsent: () => onToggleAbsent(child.id),
+                      onSurface: onSurface,
+                      green: _green,
+                      red: _red,
+                      grey: _grey,
+                      isDark: isDark,
+                    );
+                  },
+                ),
         ),
 
         const SizedBox(height: 12),
@@ -600,19 +650,24 @@ class _FormView extends StatelessWidget {
                 disabledForegroundColor: Colors.white54,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: loading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : Text(
                       widget.confirmLabel,
                       style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
             ),
           ),
@@ -660,7 +715,10 @@ class _Tab extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-              color: fg, fontSize: 12, fontWeight: FontWeight.w600),
+            color: fg,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -673,6 +731,7 @@ class _ChildRow extends StatelessWidget {
   final ChildModel child;
   final _Mark mark;
   final AttendanceRecordModel? existingRecord;
+  final bool locked;
   final String session;
   final String? forceAction;
   final VoidCallback onPresent;
@@ -687,6 +746,7 @@ class _ChildRow extends StatelessWidget {
     required this.child,
     required this.mark,
     required this.existingRecord,
+    required this.locked,
     required this.session,
     required this.forceAction,
     required this.onPresent,
@@ -713,7 +773,14 @@ class _ChildRow extends StatelessWidget {
     // so switching from Absent → ✓ immediately clears the stale pill.
     Widget? statusBadge;
     final rec = existingRecord;
-    if (rec != null && mark == _Mark.none) {
+    if (locked) {
+      statusBadge = _StatusBadge(
+        label: 'Absent',
+        color: _orange,
+        icon: Icons.lock_outline_rounded,
+        isDark: isDark,
+      );
+    } else if (rec != null && mark == _Mark.none) {
       if (rec.isAbsent) {
         statusBadge = _StatusBadge(
           label: 'Absent',
@@ -738,96 +805,105 @@ class _ChildRow extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          // Avatar
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: const Color(0xFFDCE6F5),
-            backgroundImage:
-                (child.photoUrl != null && child.photoUrl!.isNotEmpty)
-                    ? NetworkImage(child.photoUrl!)
-                    : null,
-            child: (child.photoUrl == null || child.photoUrl!.isEmpty)
-                ? Text(
-                    child.fullName.isNotEmpty
-                        ? child.fullName[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                      color: Color(0xFF0D4896),
-                      fontWeight: FontWeight.w700,
+    return Opacity(
+      opacity: locked ? 0.55 : 1.0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFFDCE6F5),
+              backgroundImage:
+                  (child.photoUrl != null && child.photoUrl!.isNotEmpty)
+                  ? NetworkImage(child.photoUrl!)
+                  : null,
+              child: (child.photoUrl == null || child.photoUrl!.isEmpty)
+                  ? Text(
+                      child.fullName.isNotEmpty
+                          ? child.fullName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Color(0xFF0D4896),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    )
+                  : null,
+            ),
+
+            const SizedBox(width: 12),
+
+            // Name + status badge
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    child.fullName,
+                    style: TextStyle(
+                      color: onSurface,
                       fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
-                  )
-                : null,
-          ),
+                  ),
+                  if (statusBadge != null) ...[
+                    const SizedBox(height: 4),
+                    statusBadge,
+                  ],
+                ],
+              ),
+            ),
 
-          const SizedBox(width: 12),
+            // Absent (X) button
+            GestureDetector(
+              onTap: locked ? null : onAbsent,
+              child: Container(
+                width: 34,
+                height: 34,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: isAbsent
+                      ? red.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: isAbsent ? red : grey, width: 1.5),
+                ),
+                child: Icon(
+                  Icons.close,
+                  color: isAbsent ? red : grey,
+                  size: 18,
+                ),
+              ),
+            ),
 
-          // Name + status badge
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  child.fullName,
-                  style: TextStyle(
-                    color: onSurface,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+            // Present (checkmark) button
+            GestureDetector(
+              onTap: locked ? null : onPresent,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: isPresent
+                      ? green.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isPresent ? green : grey,
+                    width: 1.5,
                   ),
                 ),
-                if (statusBadge != null) ...[
-                  const SizedBox(height: 4),
-                  statusBadge,
-                ],
-              ],
-            ),
-          ),
-
-          // Absent (X) button
-          GestureDetector(
-            onTap: onAbsent,
-            child: Container(
-              width: 34,
-              height: 34,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: isAbsent ? red.withValues(alpha: 0.12) : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isAbsent ? red : grey,
-                  width: 1.5,
-                ),
-              ),
-              child: Icon(Icons.close,
-                  color: isAbsent ? red : grey, size: 18),
-            ),
-          ),
-
-          // Present (checkmark) button
-          GestureDetector(
-            onTap: onPresent,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color:
-                    isPresent ? green.withValues(alpha: 0.12) : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
+                child: Icon(
+                  Icons.check,
                   color: isPresent ? green : grey,
-                  width: 1.5,
+                  size: 18,
                 ),
               ),
-              child: Icon(Icons.check,
-                  color: isPresent ? green : grey, size: 18),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
