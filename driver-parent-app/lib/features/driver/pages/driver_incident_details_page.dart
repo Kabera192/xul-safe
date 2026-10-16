@@ -145,7 +145,6 @@ class _DriverIncidentDetailsPageState
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.8;
 
     final Widget child = _success
         ? DriverIncidentSuccessForm(
@@ -167,7 +166,6 @@ class _DriverIncidentDetailsPageState
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: child,
       ),
     );
@@ -186,7 +184,6 @@ class _DriverIncidentDetailsPageState
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.8;
 
     return PopScope(
       canPop: false,
@@ -221,9 +218,7 @@ class _DriverIncidentDetailsPageState
 
                 MobileAnimatedFormHost(
                   controller: _formCtrl,
-                  height: formHeight,
                   duration: const Duration(milliseconds: 400),
-                  respectKeyboard: false,
                 ),
               ],
             ),

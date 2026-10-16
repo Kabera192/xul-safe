@@ -99,25 +99,7 @@ class _DriverEditStopPageState extends State<DriverEditStopPage> {
     _showCurrentForm();
   }
 
-  double _currentFormHeight() {
-    final h = MediaQuery.of(context).size.height;
-
-    switch (_view) {
-      case _EditStopView.edit:
-        return h * 0.75;
-      case _EditStopView.deleteConfirm:
-      case _EditStopView.assignStudents:
-        return h * 0.82;
-      case _EditStopView.editSuccess:
-      case _EditStopView.deleteSuccess:
-      case _EditStopView.assignSuccess:
-        return h * 0.65;
-    }
-  }
-
   void _showCurrentForm() {
-    final h = _currentFormHeight();
-
     final Widget child;
 
     switch (_view) {
@@ -216,7 +198,6 @@ class _DriverEditStopPageState extends State<DriverEditStopPage> {
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notif) => true,
           child: child,
@@ -233,9 +214,6 @@ class _DriverEditStopPageState extends State<DriverEditStopPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = _currentFormHeight();
-    final media = MediaQuery.of(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -277,14 +255,9 @@ class _DriverEditStopPageState extends State<DriverEditStopPage> {
                   ),
                 ),
               ),
-              MediaQuery(
-                data: media.copyWith(viewInsets: EdgeInsets.zero),
-                child: MobileAnimatedFormHost(
-                  controller: _formCtrl,
-                  height: formHeight,
-                  duration: const Duration(milliseconds: 400),
-                  respectKeyboard: false,
-                ),
+              MobileAnimatedFormHost(
+                controller: _formCtrl,
+                duration: const Duration(milliseconds: 400),
               ),
             ],
           ),

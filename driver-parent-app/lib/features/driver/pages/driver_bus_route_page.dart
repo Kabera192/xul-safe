@@ -124,11 +124,9 @@ final children = rawChildren
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.82;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notif) => true,
           child: DriverBusRouteForm(
@@ -153,7 +151,6 @@ final children = rawChildren
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.82;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -191,9 +188,7 @@ final children = rawChildren
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

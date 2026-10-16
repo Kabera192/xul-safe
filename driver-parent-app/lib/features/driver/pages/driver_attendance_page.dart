@@ -204,7 +204,6 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.70;
 
     final Widget child;
 
@@ -250,7 +249,7 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
       );
     }
 
-    _formCtrl.show(MobileFormShell(height: h, child: child));
+    _formCtrl.show(MobileFormShell(child: child));
   }
 
   Future<void> _handleToggle(
@@ -320,7 +319,6 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.70;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -357,9 +355,7 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

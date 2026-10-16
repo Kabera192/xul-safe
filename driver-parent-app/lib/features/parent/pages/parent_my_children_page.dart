@@ -51,11 +51,8 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
       await Future.delayed(const Duration(milliseconds: 1));
       if (!mounted || !widget.isActive) return;
 
-      final h = MediaQuery.of(context).size.height * 0.8;
-
       _formCtrl.show(
         MobileFormShell(
-          height: h,
           child: ParentMyChildrenForm(
             key: _formKey,
             onRequestRefresh: _refreshForm,
@@ -73,10 +70,8 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
   void _refreshForm() {
     if (!mounted) return;
     setState(() => _formKey = UniqueKey());
-    final h = MediaQuery.of(context).size.height * 0.8;
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: ParentMyChildrenForm(
           key: _formKey,
           onRequestRefresh: _refreshForm,
@@ -541,9 +536,6 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.8;
-    final media = MediaQuery.of(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -567,15 +559,9 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
                 ),
               ),
 
-              // ✅ ignores keyboard like notifications
-              MediaQuery(
-                data: media.copyWith(viewInsets: EdgeInsets.zero),
-                child: MobileAnimatedFormHost(
-                  controller: _formCtrl,
-                  height: formHeight,
-                  duration: const Duration(milliseconds: 400),
-                  respectKeyboard: false,
-                ),
+              MobileAnimatedFormHost(
+                controller: _formCtrl,
+                duration: const Duration(milliseconds: 400),
               ),
             ],
           ),

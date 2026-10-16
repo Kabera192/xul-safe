@@ -256,30 +256,7 @@ class _ParentProfilePageState extends State<ParentProfilePage> {
     }
   }
 
-  double _currentFormHeight() {
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    if (_editMode == null) {
-      return screenHeight * 0.6;
-    }
-
-    switch (_editMode!) {
-      case ParentProfileEditMode.fullName:
-        return screenHeight * 0.62;
-      case ParentProfileEditMode.email:
-        return screenHeight * 0.5;
-      case ParentProfileEditMode.phoneNumber:
-        return screenHeight * 0.5;
-      case ParentProfileEditMode.photo:
-        return screenHeight * 0.58;
-      case ParentProfileEditMode.password:
-        return screenHeight * 0.72;
-    }
-  }
-
   void _showCurrentForm() {
-    final h = _currentFormHeight();
-
     final Widget child;
     if (_editMode == ParentProfileEditMode.photo) {
       child = ParentProfilePhotoForm(
@@ -320,7 +297,6 @@ class _ParentProfilePageState extends State<ParentProfilePage> {
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: child,
       ),
     );
@@ -334,8 +310,6 @@ class _ParentProfilePageState extends State<ParentProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = _currentFormHeight();
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: GradientBackground(
@@ -354,7 +328,6 @@ class _ParentProfilePageState extends State<ParentProfilePage> {
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
               ),
             ],

@@ -107,11 +107,9 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.8;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: ParentNotificationsForm(
           notifications: _notifications,
           loading: _loading,
@@ -130,9 +128,6 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.8;
-    final media = MediaQuery.of(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -155,14 +150,9 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
                   ),
                 ),
               ),
-              MediaQuery(
-                data: media.copyWith(viewInsets: EdgeInsets.zero),
-                child: MobileAnimatedFormHost(
-                  controller: _formCtrl,
-                  height: formHeight,
-                  duration: const Duration(milliseconds: 400),
-                  respectKeyboard: false,
-                ),
+              MobileAnimatedFormHost(
+                controller: _formCtrl,
+                duration: const Duration(milliseconds: 400),
               ),
             ],
           ),

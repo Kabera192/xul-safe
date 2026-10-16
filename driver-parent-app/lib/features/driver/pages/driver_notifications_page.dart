@@ -13,7 +13,6 @@ class DriverNotificationsPage extends StatefulWidget {
   final bool isActive;
   final VoidCallback? onUnreadChanged;
   
-
   const DriverNotificationsPage({
     super.key,
     required this.isActive,
@@ -136,11 +135,9 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.8;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: DriverNotificationsForm(
           notifications: _notifications,
           loading: _loading,
@@ -159,7 +156,6 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.8;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -185,9 +181,7 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),
