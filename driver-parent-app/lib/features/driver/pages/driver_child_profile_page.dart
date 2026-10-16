@@ -98,11 +98,9 @@ class _DriverChildProfilePageState extends State<DriverChildProfilePage> {
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.62;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: DriverChildProfileForm(
           child: _child,
           loading: _loading,
@@ -120,7 +118,6 @@ class _DriverChildProfilePageState extends State<DriverChildProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.62;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -148,9 +145,7 @@ class _DriverChildProfilePageState extends State<DriverChildProfilePage> {
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

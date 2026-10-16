@@ -42,7 +42,6 @@ class _DriverCreateStopPageState extends State<DriverCreateStopPage> {
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.75;
 
     final Widget child = _success
         ? DriverCreateStopSuccessForm(
@@ -77,7 +76,6 @@ class _DriverCreateStopPageState extends State<DriverCreateStopPage> {
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notif) => true,
           child: child,
@@ -94,9 +92,6 @@ class _DriverCreateStopPageState extends State<DriverCreateStopPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.75;
-    final media = MediaQuery.of(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -131,14 +126,9 @@ class _DriverCreateStopPageState extends State<DriverCreateStopPage> {
                   ),
                 ),
               ),
-              MediaQuery(
-                data: media.copyWith(viewInsets: EdgeInsets.zero),
-                child: MobileAnimatedFormHost(
-                  controller: _formCtrl,
-                  height: formHeight,
-                  duration: const Duration(milliseconds: 400),
-                  respectKeyboard: false,
-                ),
+              MobileAnimatedFormHost(
+                controller: _formCtrl,
+                duration: const Duration(milliseconds: 400),
               ),
             ],
           ),

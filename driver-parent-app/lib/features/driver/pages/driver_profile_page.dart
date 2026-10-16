@@ -259,28 +259,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     }
   }
 
-  double _currentFormHeight() {
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    if (_editMode == null) {
-      return screenHeight * 0.55;
-    }
-
-    switch (_editMode!) {
-      case DriverProfileEditMode.fullName:
-        return screenHeight * 0.62;
-      case DriverProfileEditMode.email:
-        return screenHeight * 0.5;
-      case DriverProfileEditMode.phoneNumber:
-        return screenHeight * 0.5;
-      case DriverProfileEditMode.photo:
-        return screenHeight * 0.58;
-    }
-  }
-
   void _showCurrentForm() {
-    final h = _currentFormHeight();
-
     final Widget child;
 
     if (_editMode == DriverProfileEditMode.photo) {
@@ -335,7 +314,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: child,
       ),
     );
@@ -349,8 +327,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = _currentFormHeight();
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -368,7 +344,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
               ),
             ],
