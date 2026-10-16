@@ -148,11 +148,11 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   Future<void> _loadChildren() async {
     try {
-      final raw = await ChildService.getMyChildren();
+      final children = await ChildService.getMyChildren();
       if (!mounted) return;
       setState(() {
-        if (raw.isNotEmpty) {
-          _activeChildId = raw.first['id']?.toString();
+        if (children.isNotEmpty) {
+          _activeChildId = children.first.id;
         }
       });
     } catch (_) {}
