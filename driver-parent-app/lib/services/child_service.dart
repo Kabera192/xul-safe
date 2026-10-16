@@ -8,6 +8,7 @@ import 'package:http_parser/http_parser.dart';
 import '../core/config/api_config.dart';
 import '../core/network/authenticated_http_client.dart';
 import '../core/session/session_storage.dart';
+import '../features/parent/models/absence_model.dart';
 import '../features/parent/models/child_model.dart';
 
 class ChildService {
@@ -168,7 +169,7 @@ class ChildService {
 
   /// GET /api/v1/children?parent_id={userId}
   /// Returns the list of children belonging to the logged-in parent.
-  static Future<List<Map<String, dynamic>>> getMyChildren() async {
+  static Future<List<ChildModel>> getMyChildren() async {
     final userId = await SessionStorage.getUserId();
 
     if (userId == null) {
@@ -192,7 +193,10 @@ class ChildService {
       final data = decoded is Map ? decoded['data'] : decoded;
 
       if (data is List) {
-        return data.whereType<Map<String, dynamic>>().toList();
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(ChildModel.fromApiResponse)
+            .toList();
       }
 
       return [];
@@ -206,21 +210,9 @@ class ChildService {
     );
   }
 
-  /// Returns the logged-in parent's children as typed models.
-  ///
-  /// New parent features should prefer this over the legacy raw-map
-  /// getMyChildren() method.
-  static Future<List<ChildModel>> getMyChildrenModels() async {
-    final children = await getMyChildren();
-
-    return children
-        .map(ChildModel.fromApiResponse)
-        .toList();
-  }
-
   /// POST /api/v1/children
   /// Creates a new child linked to the logged-in parent.
-  static Future<Map<String, dynamic>> addChild({
+  static Future<ChildModel> addChild({
     required String fullName,
     String? birthDate,
     String? gender,
@@ -270,7 +262,7 @@ class ChildService {
           : decoded;
 
       if (data is Map<String, dynamic>) {
-        return data;
+        return ChildModel.fromApiResponse(data);
       }
 
       throw Exception('Unexpected response');
@@ -394,7 +386,7 @@ class ChildService {
   // ── Absence sub-resource ──────────────────────────────────────────────────
 
   /// GET /api/v1/children/{childId}/absences
-  static Future<List<Map<String, dynamic>>> getChildAbsences(
+  static Future<List<AbsenceModel>> getChildAbsences(
     String childId,
   ) async {
     final uri = Uri.parse(
@@ -414,7 +406,10 @@ class ChildService {
       final data = decoded is Map ? decoded['data'] : decoded;
 
       if (data is List) {
-        return data.whereType<Map<String, dynamic>>().toList();
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(AbsenceModel.fromApiResponse)
+            .toList();
       }
 
       return [];
@@ -430,7 +425,7 @@ class ChildService {
 
   /// POST /api/v1/children/{childId}/absences
   /// absenceType: "MORNING" | "EVENING" | "MULTIPLE_DAYS"
-  static Future<Map<String, dynamic>> createAbsence({
+  static Future<AbsenceModel> createAbsence({
     required String childId,
     required String absenceType,
     required String startDate,
@@ -463,10 +458,10 @@ class ChildService {
           : decoded;
 
       if (data is Map<String, dynamic>) {
-        return data;
+        return AbsenceModel.fromApiResponse(data);
       }
 
-      return {};
+      throw Exception('Unexpected response');
     }
 
     throw Exception(
@@ -478,7 +473,7 @@ class ChildService {
   }
 
   /// PUT /api/v1/children/{childId}/absences/{absenceId}
-  static Future<Map<String, dynamic>> updateAbsence({
+  static Future<AbsenceModel> updateAbsence({
     required String childId,
     required int absenceId,
     required String absenceType,
@@ -511,10 +506,10 @@ class ChildService {
           : decoded;
 
       if (data is Map<String, dynamic>) {
-        return data;
+        return AbsenceModel.fromApiResponse(data);
       }
 
-      return {};
+      throw Exception('Unexpected response');
     }
 
     throw Exception(
