@@ -80,7 +80,7 @@ class _ParentIncidentDetailsPageState
 
     try {
       final children =
-          await ChildService.getMyChildrenModels();
+          await ChildService.getMyChildren();
 
       if (!mounted) return;
 
