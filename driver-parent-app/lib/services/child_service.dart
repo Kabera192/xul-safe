@@ -111,7 +111,7 @@ class ChildService {
   }
 
   static Future<void> assignChildrenToStop({
-    required int stopId,
+    required String stopId,
     required List<String> childIds,
   }) async {
     final uri = Uri.parse(

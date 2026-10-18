@@ -46,10 +46,10 @@ class _DriverChildrenAttendancePageState
   final Set<String> _togglingKeys = {};
 
   List<StopModel> _stops = [];
-  Map<String, Set<int>> _childStopMap = {};
+  Map<String, Set<String>> _childStopMap = {};
   Map<String, String> _childStopNameMap = {};
   int _totalChildCount = 0;
-  int? _selectedStopId;
+  String? _selectedStopId;
 
   @override
   void didUpdateWidget(covariant DriverChildrenAttendancePage oldWidget) {
@@ -106,22 +106,16 @@ class _DriverChildrenAttendancePageState
           .where((s) => s.locationName.isNotEmpty)
           .toList();
 
-      final childStopMap = <String, Set<int>>{};
+      final childStopMap = <String, Set<String>>{};
       final childStopNameMap = <String, String>{};
       for (final c in rawChildren) {
         final childId = (c['id'] ?? '').toString();
         if (childId.isEmpty || childId == '0') continue;
-        final ids = <int>{};
+        final ids = <String>{};
         final pickup = c['pickupStopId'];
         final dropoff = c['dropoffStopId'];
-        if (pickup != null) {
-          final v = int.tryParse(pickup.toString()) ?? 0;
-          if (v > 0) ids.add(v);
-        }
-        if (dropoff != null) {
-          final v = int.tryParse(dropoff.toString()) ?? 0;
-          if (v > 0) ids.add(v);
-        }
+        if (pickup != null) ids.add(pickup.toString());
+        if (dropoff != null) ids.add(dropoff.toString());
         if (ids.isNotEmpty) childStopMap[childId] = ids;
         final stopName = (c['pickupStopName'] ?? c['dropoffStopName'])?.toString();
         if (stopName != null && stopName.isNotEmpty) {
@@ -292,7 +286,7 @@ class _DriverChildrenAttendancePageState
     }
   }
 
-  void _onStopSelected(int? stopId) {
+  void _onStopSelected(String? stopId) {
     setState(() => _selectedStopId = stopId);
     _refreshShownForm();
   }

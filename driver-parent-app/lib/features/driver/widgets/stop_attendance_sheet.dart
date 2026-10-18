@@ -49,7 +49,7 @@ class StopAttendanceSheet extends StatefulWidget {
 
 class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   final _searchCtrl = TextEditingController();
-  late int? _selectedStopId;
+  late String? _selectedStopId;
   final Map<String, _Mark> _marks = {};
   Map<String, AttendanceRecordModel> _existingRecords = {};
   bool _loading = false;
@@ -109,11 +109,11 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
 
   bool get _isMorning => widget.session == 'MORNING';
 
-  int? _stopIdFor(ChildModel c) =>
+  String? _stopIdFor(ChildModel c) =>
       _isMorning ? c.pickupStopId : c.dropoffStopId;
 
   List<StopModel> get _stopsWithChildren {
-    final ids = widget.allChildren.map(_stopIdFor).whereType<int>().toSet();
+    final ids = widget.allChildren.map(_stopIdFor).whereType<String>().toSet();
     return widget.allStops.where((s) => ids.contains(s.id)).toList();
   }
 
@@ -366,7 +366,7 @@ class _FormView extends StatelessWidget {
   final Color onSurface;
   final StopAttendanceSheet widget;
   final TextEditingController searchCtrl;
-  final int? selectedStopId;
+  final String? selectedStopId;
   final List<StopModel> stopsWithChildren;
   final List<ChildModel> filtered;
   final Map<String, _Mark> marks;
@@ -374,7 +374,7 @@ class _FormView extends StatelessWidget {
   final bool loadingRecords;
   final bool loading;
   final bool canConfirm;
-  final void Function(int?) onSelectStop;
+  final void Function(String?) onSelectStop;
   final void Function(String) onTogglePresent;
   final void Function(String) onToggleAbsent;
   final VoidCallback onConfirm;

@@ -1,5 +1,5 @@
 class StopModel {
-  final int id;
+  final String id;
   final double locationLat;
   final double locationLong;
   final String locationName;
@@ -17,7 +17,7 @@ class StopModel {
 
   factory StopModel.fromApiResponse(Map<String, dynamic> json) {
     return StopModel(
-      id: _toInt(json['id']),
+      id: (json['id'] ?? '').toString(),
       locationLat: _toDouble(json['locationLat']),
       locationLong: _toDouble(json['locationLong']),
       locationName: (json['locationName'] ?? '').toString(),

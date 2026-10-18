@@ -4,7 +4,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import '../models/child_model.dart';
 
 class DriverAssignStudentsForm extends StatefulWidget {
-  final int stopId;
+  final String stopId;
   final List<ChildModel> children;
   final Future<void> Function(List<String> childIds) onComplete;
   final VoidCallback onCancel;
