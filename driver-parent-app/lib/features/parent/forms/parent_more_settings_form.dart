@@ -2,6 +2,7 @@
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../services/emergency_contact_service.dart';
+import '../../../widgets/language_picker_sheet.dart';
 
 class ParentMoreSettingsForm extends StatefulWidget {
   const ParentMoreSettingsForm({super.key});
@@ -176,7 +177,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           // SECTION 4 — Language & support
           const _SectionTitle('Language & support'),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.global, text: 'Language', onTap: null),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.global, text: 'Language', onTap: () => showLanguagePicker(context)),
           const SizedBox(height: 8),
           _WhiteOptionTile(icon: IconsaxPlusLinear.message_question, text: 'Contact support', onTap: null),
           const SizedBox(height: 8),

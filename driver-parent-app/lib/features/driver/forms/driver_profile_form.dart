@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/config/theme_service.dart';
+import '../../../core/l10n/locale_service.dart';
+import '../../../widgets/language_picker_sheet.dart';
 import '../models/driver_profile_edit_mode.dart';
 import '../models/driver_profile_model.dart';
 import '../../../main.dart';
@@ -140,6 +142,12 @@ class DriverProfileForm extends StatelessWidget {
                 ),
                 Divider(height: 1, color: stroke),
                 _DriverActionRow(
+                  text: 'Language',
+                  rightWidget: const _LangDot(),
+                  onTap: () => showLanguagePicker(context),
+                ),
+                Divider(height: 1, color: stroke),
+                _DriverActionRow(
                   text: 'Sign out',
                   rightIcon: IconsaxPlusLinear.logout,
                   onTap: () => _signOut(context),
@@ -233,6 +241,31 @@ class _ThemeDot extends StatelessWidget {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _LangDot extends StatelessWidget {
+  const _LangDot();
+
+  static const _names = {'en': 'English', 'fr': 'Français', 'rw': 'Kinyarwanda'};
+
+  @override
+  Widget build(BuildContext context) {
+    const blue = Color(0xFF0D4896);
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LocaleService.notifier,
+      builder: (context, locale, _) {
+        final name = _names[locale.languageCode] ?? 'English';
+        return Text(
+          name,
+          style: const TextStyle(
+            color: blue,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         );
       },
     );
