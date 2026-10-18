@@ -97,8 +97,6 @@ class _ParentIncidentsPageState
   }
 
   void _showCurrentForm() {
-    final h =
-        MediaQuery.of(context).size.height * 0.82;
 
     final child = ParentIncidentsForm(
       incidents: _incidents,
@@ -123,7 +121,6 @@ class _ParentIncidentsPageState
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: child,
       ),
     );
@@ -137,8 +134,6 @@ class _ParentIncidentsPageState
 
   @override
   Widget build(BuildContext context) {
-    final formHeight =
-        MediaQuery.of(context).size.height * 0.82;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -166,10 +161,8 @@ class _ParentIncidentsPageState
 
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration:
                     const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

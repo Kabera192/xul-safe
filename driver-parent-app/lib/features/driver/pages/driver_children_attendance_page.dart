@@ -220,11 +220,9 @@ class _DriverChildrenAttendancePageState
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.78;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: DriverChildrenAttendanceForm(
           loading: _loading,
           error: _error,
@@ -313,7 +311,6 @@ class _DriverChildrenAttendancePageState
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.78;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -352,9 +349,7 @@ class _DriverChildrenAttendancePageState
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

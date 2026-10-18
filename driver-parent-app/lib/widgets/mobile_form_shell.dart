@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 
+import 'keyboard_aware_scroller.dart';
+
+/// Sheet-style form container that sizes itself to [child]'s actual content,
+/// instead of a fixed height the page has to guess. Content shorter than
+/// [maxHeightFraction] of the screen fits exactly; content taller than that
+/// scrolls internally instead of growing further.
 class MobileFormShell extends StatefulWidget {
-  final double height;          // height decided by the page
-  final Widget child;           // content decided by the page
-  final EdgeInsets padding;     // default matches your auth forms
+  final Widget child;
+  final EdgeInsets padding;
   final Widget? floatingActionButton;
-  
+  final double maxHeightFraction;
+  final double minHeight;
+
   const MobileFormShell({
     super.key,
-    required this.height,
     required this.child,
     this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-     this.floatingActionButton,
+    this.floatingActionButton,
+    this.maxHeightFraction = 0.86,
+    this.minHeight = 160,
   });
 
   @override
@@ -21,11 +29,13 @@ class MobileFormShell extends StatefulWidget {
 class _MobileFormShellState extends State<MobileFormShell> {
   final _scrollCtrl = ScrollController();
   bool _canScrollDown = false;
+  late final KeyboardAwareScroller _keyboardScroller;
 
   @override
   void initState() {
     super.initState();
     _scrollCtrl.addListener(_updateScrollHint);
+    _keyboardScroller = KeyboardAwareScroller(_scrollCtrl);
 
     // wait one frame so scroll metrics exist
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollHint());
@@ -46,18 +56,34 @@ class _MobileFormShellState extends State<MobileFormShell> {
   @override
   void dispose() {
     _scrollCtrl.removeListener(_updateScrollHint);
+    _keyboardScroller.dispose();
     _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant MobileFormShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Content swapped in place (same shell instance, new child) — the
+    // scroll-down hint needs re-measuring against the new content height.
+    if (oldWidget.child != widget.child) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollHint());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF0D4896);
     final surface = Theme.of(context).colorScheme.surface;
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final maxHeight =
+        MediaQuery.of(context).size.height * widget.maxHeightFraction;
 
-    return SizedBox(
-      height: widget.height,
-      width: double.infinity,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: widget.minHeight,
+        maxHeight: maxHeight,
+      ),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
@@ -82,10 +108,9 @@ class _MobileFormShellState extends State<MobileFormShell> {
             ),
           ),
 
-          // ===== main form panel =====
+          // ===== main form panel — sized to content, capped above =====
           Container(
             width: double.infinity,
-            height: double.infinity,
             padding: widget.padding,
             decoration: BoxDecoration(
               color: surface,
@@ -99,16 +124,26 @@ class _MobileFormShellState extends State<MobileFormShell> {
             child: Stack(
               children: [
                 // ===== scrollable content =====
-                SingleChildScrollView(
-                  controller: _scrollCtrl,
-                  physics: const BouncingScrollPhysics(),
+                // The bottom padding shrinks this viewport by the keyboard
+                // inset so focused fields can actually scroll into view
+                // above the keyboard instead of behind it. ListView (unlike
+                // SingleChildScrollView, whose viewport always fills its
+                // parent's bound) genuinely shrink-wraps to content height,
+                // up to the ConstrainedBox cap above, scrolling beyond that.
+                Padding(
+                  padding: EdgeInsets.only(bottom: keyboardInset),
+                  child: ListView(
+                    controller: _scrollCtrl,
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
 
-                  // Extra bottom padding ONLY if FAB exists
-                  padding: widget.floatingActionButton != null
-                      ? const EdgeInsets.only(bottom: 90)
-                      : EdgeInsets.zero,
+                    // Extra bottom padding ONLY if FAB exists
+                    padding: widget.floatingActionButton != null
+                        ? const EdgeInsets.only(bottom: 90)
+                        : EdgeInsets.zero,
 
-                  child: widget.child,
+                    children: [widget.child],
+                  ),
                 ),
 
                 // ===== floating button (optional) =====

@@ -3,20 +3,14 @@ import 'mobile_form_controller.dart';
 
 class MobileAnimatedFormHost extends StatefulWidget {
   final MobileFormController controller;
-  final double height;
   final Duration duration;
   final double bottomSafeGap;
-
-  // ✅ NEW: allow some pages to ignore keyboard inset
-  final bool respectKeyboard;
 
   const MobileAnimatedFormHost({
     super.key,
     required this.controller,
-    required this.height,
     this.duration = const Duration(milliseconds: 350),
     this.bottomSafeGap = 0,
-    this.respectKeyboard = true, // ✅ default keeps old behavior
   });
 
   @override
@@ -110,30 +104,17 @@ class _MobileAnimatedFormHostState extends State<MobileAnimatedFormHost>
       return const SizedBox.shrink();
     }
 
-    final media = MediaQuery.of(context);
-    final keyboard = widget.respectKeyboard
-        ? media.viewInsets.bottom
-        : 0.0;
-    final screenH = media.size.height;
-
-    // How much vertical space is left when keyboard is up
-    final availableH = screenH - keyboard - widget.bottomSafeGap;
-
-    // If requested height is bigger than available, shrink it
-    final effectiveH = widget.height > availableH
-        ? availableH
-        : widget.height;
-
+    // The sheet is anchored to the actual screen bottom and sizes itself to
+    // its own content (MobileFormShell caps that against the screen height
+    // and scrolls internally if needed), so this host no longer needs to
+    // know or constrain a height itself.
     return Positioned(
       left: 0,
       right: 0,
-      bottom: keyboard + widget.bottomSafeGap,
+      bottom: widget.bottomSafeGap,
       child: SlideTransition(
         position: _slide,
-        child: SizedBox(
-          height: effectiveH,
-          child: widget.controller.child!,
-        ),
+        child: widget.controller.child!,
       ),
     );
   }

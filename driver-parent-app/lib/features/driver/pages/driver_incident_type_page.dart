@@ -46,12 +46,9 @@ class _DriverIncidentTypePageState
   }
 
   void _showCurrentForm() {
-    final h =
-        MediaQuery.of(context).size.height * 0.78;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: DriverIncidentTypeForm(
           onClose: () {
             Navigator.pop(context);
@@ -92,8 +89,6 @@ class _DriverIncidentTypePageState
 
   @override
   Widget build(BuildContext context) {
-    final formHeight =
-        MediaQuery.of(context).size.height * 0.78;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -121,10 +116,8 @@ class _DriverIncidentTypePageState
 
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration:
                     const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

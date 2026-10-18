@@ -113,11 +113,9 @@ class _DriverChildrenPageState extends State<DriverChildrenPage> {
   }
 
   void _showCurrentForm() {
-    final h = MediaQuery.of(context).size.height * 0.8;
 
     _formCtrl.show(
       MobileFormShell(
-        height: h,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notif) => true,
           child: DriverChildrenForm(
@@ -139,7 +137,6 @@ class _DriverChildrenPageState extends State<DriverChildrenPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.8;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -165,9 +162,7 @@ class _DriverChildrenPageState extends State<DriverChildrenPage> {
               ),
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
-                respectKeyboard: false,
               ),
             ],
           ),

@@ -47,11 +47,8 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
       await Future.delayed(const Duration(milliseconds: 1));
       if (!mounted || !widget.isActive) return;
 
-      final h = MediaQuery.of(context).size.height * 0.80;
-
       _formCtrl.show(
         MobileFormShell(
-          height: h,
           child: const ParentMoreSettingsForm(),
         ),
       );
@@ -66,7 +63,6 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formHeight = MediaQuery.of(context).size.height * 0.80;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -93,7 +89,6 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
 
               MobileAnimatedFormHost(
                 controller: _formCtrl,
-                height: formHeight,
                 duration: const Duration(milliseconds: 400),
               ),
             ],
