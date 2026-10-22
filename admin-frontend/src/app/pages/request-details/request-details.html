@@ -14,18 +14,12 @@
   <div class="details-grid" *ngIf="!isLoading && !errorMessage">
     <div class="card location-card">
       <h3>User location</h3>
-      <div class="map-preview">
-        <div class="map-canvas" #mapContainer [class.map-hidden]="!hasLocation || !!mapError"></div>
-        <iframe
-          class="map-fallback"
-          *ngIf="hasLocation && mapError"
-          [src]="mapFallbackUrl"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          title="User location map">
-        </iframe>
-        <div class="map-empty" *ngIf="!hasLocation">Location not available</div>
-      </div>
+      <ng-container *ngIf="hasLocation; else noLocation">
+        <app-map-picker [lat]="pickedLat" [lng]="pickedLng"></app-map-picker>
+      </ng-container>
+      <ng-template #noLocation>
+        <div class="map-empty">Location not available</div>
+      </ng-template>
       <div class="contact-row">
         <span>Latitude</span>
         <strong>{{ request?.latitude ?? 'N/A' }}</strong>
@@ -34,7 +28,14 @@
         <span>Longitude</span>
         <strong>{{ request?.longitude ?? 'N/A' }}</strong>
       </div>
-      <button class="btn-primary" type="button">Save bus stop</button>
+
+      <label class="field">
+        Approve under route *
+        <select [(ngModel)]="selectedRouteId" name="selectedRouteId">
+          <option [ngValue]="null" disabled>Select a route</option>
+          <option *ngFor="let r of routes" [ngValue]="r.id">{{ r.name }}</option>
+        </select>
+      </label>
     </div>
 
     <div class="card message-card">
