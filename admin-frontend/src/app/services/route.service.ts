@@ -72,10 +72,18 @@ export class RouteService {
     );
   }
 
-  updateRouteRequestStatus(requestId: number, status: RouteRequestStatus): Observable<RouteRequest> {
+  /**
+   * `routeId` is required by the backend when `status` is 'APPROVED' — it
+   * creates the bus stop under that route and assigns it to the child.
+   */
+  updateRouteRequestStatus(
+    requestId: number,
+    status: RouteRequestStatus,
+    routeId?: number
+  ): Observable<RouteRequest> {
     return this.http.put<ApiResponse<RouteRequest>>(
       `${this.basePath}/requests/${requestId}/status`,
-      { status }
+      routeId != null ? { status, routeId } : { status }
     ).pipe(
       map(response => response.data)
     );
