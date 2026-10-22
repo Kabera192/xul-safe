@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { ApiResponse, User } from '../models';
+import { ApiResponse, ParentSummary, User } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +12,13 @@ export class UserService {
 
   getProfile(userId: number): Observable<User> {
     return this.http.get<ApiResponse<User>>(`${this.basePath}/${userId}`).pipe(
+      map(response => response.data)
+    );
+  }
+
+  /** Every registered parent — not scoped to any particular route/bus. */
+  getAllParents(): Observable<ParentSummary[]> {
+    return this.http.get<ApiResponse<ParentSummary[]>>(`${this.basePath}/parents`).pipe(
       map(response => response.data)
     );
   }
