@@ -5,6 +5,9 @@ import { RouterLink } from '@angular/router';
 import { StudentService } from '../../services/student.service';
 import { ChildDetail } from '../../models';
 import { catchError, finalize, of, timeout } from 'rxjs';
+import { applySort, initialSortState, SortState, sortIndicator, toggleSort } from '../../shared/table-sort';
+
+type StudentSortColumn = 'name' | 'bus' | 'stop' | 'location';
 
 interface StudentViewModel {
   id: string;
@@ -12,7 +15,6 @@ interface StudentViewModel {
   name: string;
   bus: string;
   stop: string;
-  deviceId: string;
   location: string;
 }
 
@@ -39,6 +41,7 @@ export class Students implements OnInit {
   students: StudentViewModel[] = [];
   currentPage = 1;
   pageSize = 8;
+  sortState: SortState<StudentSortColumn> = initialSortState();
 
   ngOnInit(): void {
     this.loadStudents();
@@ -88,7 +91,6 @@ export class Students implements OnInit {
       name: child.fullName,
       bus: child.busPlateNumber || 'N/A',
       stop: child.busStopName || 'N/A',
-      deviceId: child.busDeviceId || 'N/A',
       location: child.busStopLocation || 'N/A'
     };
   }
@@ -111,12 +113,14 @@ export class Students implements OnInit {
     this.studentService.delete(this.selectedStudentId).subscribe({
       next: () => {
         this.closeDeleteConfirm();
+        this.cdr.detectChanges();
         this.loadStudents();
       },
       error: (error) => {
         console.error('Failed to delete student:', error);
         this.errorMessage = 'Failed to delete student. Please try again.';
         this.closeDeleteConfirm();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -128,7 +132,6 @@ export class Students implements OnInit {
         student.name.toLowerCase().includes(term) ||
         student.bus.toLowerCase().includes(term) ||
         student.stop.toLowerCase().includes(term) ||
-        student.deviceId.toLowerCase().includes(term) ||
         student.location.toLowerCase().includes(term)
       );
       const matchesBus = !this.selectedBus || student.bus === this.selectedBus;
@@ -136,9 +139,21 @@ export class Students implements OnInit {
     });
   }
 
+  get sortedStudents(): StudentViewModel[] {
+    return applySort(this.filteredStudents, this.sortState, (row, column) => row[column]);
+  }
+
+  sort(column: StudentSortColumn): void {
+    this.sortState = toggleSort(this.sortState, column);
+  }
+
+  sortArrow(column: StudentSortColumn): string {
+    return sortIndicator(this.sortState, column);
+  }
+
   get pagedStudents(): StudentViewModel[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredStudents.slice(start, start + this.pageSize);
+    return this.sortedStudents.slice(start, start + this.pageSize);
   }
 
   get totalPages(): number {
