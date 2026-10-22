@@ -15,8 +15,6 @@ export interface Conductor {
   photoUrl?: string | null;
   gender?: string | null;
   age?: number | null;
-  driverId?: string | null;
-  licenceNumber?: string | null;
   licenceType?: string | null;
   licenceExpiry?: string | null;
   experience?: string | null;
