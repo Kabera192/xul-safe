@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { JourneyService } from '../../services/journey.service';
 import { AttendanceMark } from '../../models';
 import { catchError, finalize, timeout, of } from 'rxjs';
+import { applySort, initialSortState, SortState, sortIndicator, toggleSort } from '../../shared/table-sort';
+
+type AttendanceSortColumn = 'name' | 'bus';
 
 type AttendanceRow = {
   no: string;
@@ -38,6 +41,7 @@ export class TripAttendance implements OnInit {
 
   currentWeekStart: Date = this.getMonday(new Date());
   rows: AttendanceRow[] = [];
+  sortState: SortState<AttendanceSortColumn> = initialSortState();
 
   ngOnInit(): void {
     this.loadAttendance();
@@ -147,15 +151,43 @@ export class TripAttendance implements OnInit {
     this.periodLabel = `${startLabel}–${endLabel}, ${end.getFullYear()}`;
   }
 
+  statusFilter: 'all' | 'absent' | 'pending' | 'present' = 'all';
+
   get filteredRows(): AttendanceRow[] {
-    if (!this.searchTerm.trim()) {
-      return this.rows;
+    const term = this.searchTerm.trim().toLowerCase();
+    return this.rows.filter(row => {
+      const matchesSearch = !term ||
+        row.name.toLowerCase().includes(term) ||
+        row.bus.toLowerCase().includes(term);
+      return matchesSearch && this.rowMatchesStatusFilter(row);
+    });
+  }
+
+  private rowMatchesStatusFilter(row: AttendanceRow): boolean {
+    if (this.statusFilter === 'all') {
+      return true;
     }
-    const term = this.searchTerm.toLowerCase();
-    return this.rows.filter(row =>
-      row.name.toLowerCase().includes(term) ||
-      row.bus.toLowerCase().includes(term)
-    );
+    const marks = [...row.mon, ...row.tue, ...row.wed, ...row.thu, ...row.fri];
+    if (this.statusFilter === 'absent') {
+      return marks.some(m => this.isAbsent(m));
+    }
+    if (this.statusFilter === 'pending') {
+      return marks.some(m => this.isPending(m));
+    }
+    // 'present' — fully present this week: at least one recorded mark, none absent or pending.
+    return marks.length > 0 && marks.every(m => this.isPresent(m));
+  }
+
+  get sortedRows(): AttendanceRow[] {
+    return applySort(this.filteredRows, this.sortState, (row, column) => row[column]);
+  }
+
+  sort(column: AttendanceSortColumn): void {
+    this.sortState = toggleSort(this.sortState, column);
+  }
+
+  sortArrow(column: AttendanceSortColumn): string {
+    return sortIndicator(this.sortState, column);
   }
 
   isPresent(mark: AttendanceMark): boolean {
@@ -181,7 +213,7 @@ export class TripAttendance implements OnInit {
   }
 
   downloadReport(): void {
-    this.printPdf(this.filteredRows, `Attendance — ${this.periodLabel}`);
+    this.printPdf(this.sortedRows, `Attendance — ${this.periodLabel}`);
   }
 
   downloadRowReport(row: AttendanceRow): void {
@@ -248,7 +280,7 @@ export class TripAttendance implements OnInit {
     tr:last-child td { border-bottom: none; }
     tr:nth-child(even) { background: #F9FAFB; }
     .no { color: #1A56DB; font-weight: 600; }
-    .legend { margin-top: 16px; display: flex; gap: 20px; font-size: 10px; color: #6B7280; align-items: center; }
+    .legend { margin: 10px 0 16px; display: flex; gap: 20px; font-size: 10px; color: #6B7280; align-items: center; }
     @media print {
       body { padding: 16px; }
       -webkit-print-color-adjust: exact;
@@ -259,6 +291,10 @@ export class TripAttendance implements OnInit {
 <body>
   <h1>${title}</h1>
   <p class="subtitle">Generated ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+  <div class="legend">
+    <span style="display:inline-block;background:#D1FAE5;color:#065F46;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;">✓ Present</span>
+    <span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;">✗ Absent</span>
+  </div>
   <table>
     <thead>
       <tr>
@@ -270,10 +306,6 @@ export class TripAttendance implements OnInit {
     </thead>
     <tbody>${tableRows}</tbody>
   </table>
-  <div class="legend">
-    <span style="display:inline-block;background:#D1FAE5;color:#065F46;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;">✓ Present</span>
-    <span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-weight:700;font-size:10px;padding:2px 8px;border-radius:4px;">✗ Absent</span>
-  </div>
 </body>
 </html>`;
 
