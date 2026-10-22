@@ -6,7 +6,8 @@ import { StudentService } from '../../services/student.service';
 import { BusService } from '../../services/bus.service';
 import { RouteService } from '../../services/route.service';
 import { BusStopService } from '../../services/bus-stop.service';
-import { Child, ChildDetail, Bus, Route, BusStop } from '../../models';
+import { UserService } from '../../services/user.service';
+import { Child, ChildDetail, Bus, Route, BusStop, ParentSummary } from '../../models';
 import { Subscription, catchError, finalize, forkJoin, of, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -22,6 +23,7 @@ export class StudentEditPage implements OnInit, OnDestroy {
   private busService = inject(BusService);
   private routeService = inject(RouteService);
   private busStopService = inject(BusStopService);
+  private userService = inject(UserService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
@@ -39,14 +41,20 @@ export class StudentEditPage implements OnInit, OnDestroy {
   isSaving = false;
   isLoading = false;
   errorMessage = '';
+  noticeMessage = '';
+  private dropdownsLoaded = false;
+  private studentApplied = false;
 
   // Dropdown options
   buses: Bus[] = [];
   routes: Route[] = [];
   busStops: BusStop[] = [];
+  parents: ParentSummary[] = [];
+  isLoadingParents = false;
 
   ngOnInit(): void {
     this.loadDropdownOptions();
+    this.loadAllParents();
     this.routeSub = this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       this.resetFormState();
@@ -70,22 +78,113 @@ export class StudentEditPage implements OnInit, OnDestroy {
     this.grade = '';
     this.selectedBusId = null;
     this.selectedBusStopId = null;
+    this.busStops = [];
     this.photoPreview = '';
     this.parentId = '';
+    this.parents = [];
     this.errorMessage = '';
+    this.noticeMessage = '';
+    this.studentApplied = false;
   }
 
   private loadDropdownOptions(): void {
     forkJoin({
       buses: this.busService.getAll().pipe(catchError(() => of([]))),
-      routes: this.routeService.getAll().pipe(catchError(() => of([]))),
-      busStops: this.busStopService.getAll().pipe(catchError(() => of([])))
-    }).subscribe(({ buses, routes, busStops }) => {
+      routes: this.routeService.getAll().pipe(catchError(() => of([])))
+    }).subscribe(({ buses, routes }) => {
       this.buses = buses;
       this.routes = routes;
-      this.busStops = busStops;
+      this.dropdownsLoaded = true;
+      this.afterCoreDataReady();
       this.cdr.detectChanges();
     });
+  }
+
+  /**
+   * A student can reference a bus that was since deleted elsewhere. The
+   * <select> then shows nothing selected (no matching <option>), but the
+   * stale ID was still sitting in the bound field and would otherwise be
+   * submitted as-is, producing a confusing "not found" error for a field
+   * that looks blank. Clear it so a visibly blank field behaves as blank.
+   *
+   * The dropdown options and the student itself load via independent async
+   * calls with no guaranteed order — wait until both have actually landed
+   * before checking, otherwise a list that just hasn't arrived yet looks
+   * identical to "this ID doesn't exist" and gets wrongly cleared.
+   */
+  private afterCoreDataReady(): void {
+    if (!this.dropdownsLoaded || !this.studentApplied) {
+      return;
+    }
+
+    const staleBus = this.selectedBusId !== null &&
+      !this.buses.some((b) => b.id === this.selectedBusId);
+
+    if (staleBus) {
+      this.selectedBusId = null;
+      this.selectedBusStopId = null;
+      this.noticeMessage = 'The previously assigned bus is no longer available. Please select one if needed.';
+    }
+
+    this.loadBusStopsForCurrentBus(true);
+  }
+
+  /**
+   * Bus stops are scoped to whichever route the selected bus takes — a stop
+   * on a different route isn't reachable by this bus, so it has no business
+   * showing up as a pickable option here (matches student-create.ts).
+   */
+  private loadBusStopsForCurrentBus(preserveSelection: boolean): void {
+    if (!preserveSelection) {
+      this.selectedBusStopId = null;
+    }
+    const bus = this.buses.find(b => b.id === this.selectedBusId);
+    const routeId = bus?.routeId;
+    if (!routeId) {
+      this.busStops = [];
+      if (preserveSelection) {
+        this.selectedBusStopId = null;
+      }
+      this.cdr.detectChanges();
+      return;
+    }
+    this.busStopService.getByRoute(routeId).pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('Failed to load bus stops:', error);
+        return of([] as BusStop[]);
+      })
+    ).subscribe((stops) => {
+      this.busStops = stops;
+      if (preserveSelection && this.selectedBusStopId !== null &&
+          !stops.some((s) => s.id === this.selectedBusStopId)) {
+        this.selectedBusStopId = null;
+        this.noticeMessage = 'The previously assigned bus stop is no longer available on this route. Please select one if needed.';
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  private loadAllParents(): void {
+    this.isLoadingParents = true;
+    this.userService.getAllParents().pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('Failed to load parents:', error);
+        return of([] as ParentSummary[]);
+      }),
+      finalize(() => {
+        this.isLoadingParents = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe((parents) => {
+      this.parents = parents;
+      this.cdr.detectChanges();
+    });
+  }
+
+  onBusChange(): void {
+    this.loadBusStopsForCurrentBus(false);
   }
 
   private loadStudent(studentId: string): void {
@@ -116,6 +215,8 @@ export class StudentEditPage implements OnInit, OnDestroy {
       this.photoPreview = this.normalizePhotoUrl(student.photoUrl);
       this.selectedBusId = student.busId ?? null;
       this.selectedBusStopId = student.busStopId ?? null;
+      this.studentApplied = true;
+      this.afterCoreDataReady();
       this.cdr.detectChanges();
     });
   }
@@ -141,6 +242,7 @@ export class StudentEditPage implements OnInit, OnDestroy {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoPreview = String(reader.result || '');
+      this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
   }
