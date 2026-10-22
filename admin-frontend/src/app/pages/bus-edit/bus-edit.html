@@ -18,6 +18,7 @@
 
     <div class="loading-message" *ngIf="isLoading">Loading bus data...</div>
     <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+    <div class="notice-message" *ngIf="noticeMessage && !errorMessage">{{ noticeMessage }}</div>
 
     <div class="form-grid" *ngIf="!isLoading">
       <label>
@@ -48,10 +49,6 @@
             {{ conductor.fullName }}
           </option>
         </select>
-      </label>
-      <label>
-        Bus device ID
-        <input type="text" [(ngModel)]="deviceId" />
       </label>
       <label>
         Route
