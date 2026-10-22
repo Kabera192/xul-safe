@@ -101,6 +101,35 @@
   font-size: 0.85rem;
 }
 
+.readonly-field {
+  background-color: #F9FAFB;
+  color: #6B7280;
+  cursor: not-allowed;
+}
+
+.assignment-hint {
+  margin: -0.5rem 0 0;
+  font-size: 0.78rem;
+  color: #9CA3AF;
+}
+
+.loading-message {
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.error-message {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

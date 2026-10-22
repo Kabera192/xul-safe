@@ -5,6 +5,9 @@
   </div>
 
   <div class="page-card form-card">
+    <div class="loading-message" *ngIf="isLoading">Loading driver data...</div>
+    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+
     <div class="photo-section">
       <div class="photo-preview" [class.filled]="photoPreview">
         <img *ngIf="photoPreview" [src]="photoPreview" alt="Driver photo preview" />
@@ -43,16 +46,8 @@
         </select>
       </label>
       <label>
-        Driver ID
-        <input type="text" [(ngModel)]="driverId" />
-      </label>
-      <label>
         Phone
         <input type="text" [(ngModel)]="phone" />
-      </label>
-      <label>
-        Licence number
-        <input type="text" [(ngModel)]="licenceNumber" />
       </label>
       <label>
         Licence type
@@ -68,16 +63,20 @@
       </label>
       <label>
         Assigned bus
-        <input type="text" [(ngModel)]="assignedBus" readonly />
+        <input type="text" class="readonly-field" [(ngModel)]="assignedBus" placeholder="No bus assigned yet" readonly />
       </label>
       <label>
         Assigned route
-        <input type="text" [(ngModel)]="assignedRoute" readonly />
+        <input type="text" class="readonly-field" [(ngModel)]="assignedRoute" placeholder="No route assigned yet" readonly />
       </label>
     </div>
 
+    <p class="assignment-hint">
+      Assigned bus and route are read-only here — they're set from the bus's own edit page, not this one.
+    </p>
+
     <div class="form-actions">
-      <button class="btn-ghost" type="button">Cancel</button>
+      <button class="btn-ghost" type="button" [disabled]="isSaving" routerLink="/drivers">Cancel</button>
       <button class="btn-primary" type="button" (click)="saveChanges()" [disabled]="isSaving">
         {{ isSaving ? 'Saving...' : 'Save changes' }}
       </button>
