@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { AbsenceService } from '../../services/absence.service';
 import { Absence, AbsenceStatus } from '../../models';
 import { catchError, finalize, timeout, of } from 'rxjs';
+import { applySort, SortState, sortIndicator, toggleSort } from '../../shared/table-sort';
+
+type AbsenceSortColumn = 'student' | 'absenceType' | 'startDate' | 'endDate' | 'status';
 
 @Component({
   selector: 'app-absences',
@@ -21,6 +24,9 @@ export class AbsencesPage implements OnInit {
   isLoading = false;
   errorMessage = '';
   absences: Absence[] = [];
+  // Most recent first by default — otherwise rows sit in arbitrary load
+  // order and old/new absences end up interleaved.
+  sortState: SortState<AbsenceSortColumn> = { column: 'startDate', direction: 'desc' };
 
   readonly statusOptions: { value: AbsenceStatus | 'ALL'; label: string }[] = [
     { value: 'ALL', label: 'All statuses' },
@@ -64,6 +70,21 @@ export class AbsencesPage implements OnInit {
         a.absenceType.toLowerCase().includes(term);
       return matchesStatus && matchesSearch;
     });
+  }
+
+  get sorted(): Absence[] {
+    return applySort(this.filtered, this.sortState, (row, column) => {
+      if (column === 'student') return row.childName ?? row.childId;
+      return row[column];
+    });
+  }
+
+  sort(column: AbsenceSortColumn): void {
+    this.sortState = toggleSort(this.sortState, column);
+  }
+
+  sortArrow(column: AbsenceSortColumn): string {
+    return sortIndicator(this.sortState, column);
   }
 
   get activeCount(): number {
