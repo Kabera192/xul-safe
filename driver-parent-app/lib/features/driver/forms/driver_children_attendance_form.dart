@@ -191,16 +191,29 @@ class _DriverChildrenAttendanceFormState
                 itemBuilder: (context, i) {
                   final child = children[i];
                   final isExpanded = _expandedChildId == child.childId;
-                  final isAbsentMorning =
+                  final parentDeclaredAbsentMorning =
                       widget.absentMorningIds.contains(child.childId);
-                  final isAbsentAfternoon =
+                  final parentDeclaredAbsentAfternoon =
                       widget.absentAfternoonIds.contains(child.childId);
+                  final driverMarkedAbsentMorning =
+                      child.morningRecord?.isAbsent ?? false;
+                  final driverMarkedAbsentAfternoon =
+                      child.afternoonRecord?.isAbsent ?? false;
 
                   return _ChildRow(
                     entry: child,
                     isExpanded: isExpanded,
-                    isAbsentMorning: isAbsentMorning,
-                    isAbsentAfternoon: isAbsentAfternoon,
+                    isAbsentMorning: parentDeclaredAbsentMorning ||
+                        driverMarkedAbsentMorning,
+                    isAbsentAfternoon: parentDeclaredAbsentAfternoon ||
+                        driverMarkedAbsentAfternoon,
+                    // Only a driver-initiated absence can be undone from
+                    // here — a parent-declared absence is locked on this
+                    // screen regardless.
+                    undoableAbsentMorning:
+                        !parentDeclaredAbsentMorning && driverMarkedAbsentMorning,
+                    undoableAbsentAfternoon:
+                        !parentDeclaredAbsentAfternoon && driverMarkedAbsentAfternoon,
                     togglingKeys: widget.togglingKeys,
                     onToggle: () {
                       setState(() {
@@ -247,6 +260,8 @@ class _ChildRow extends StatelessWidget {
   final bool isExpanded;
   final bool isAbsentMorning;
   final bool isAbsentAfternoon;
+  final bool undoableAbsentMorning;
+  final bool undoableAbsentAfternoon;
   final Set<String> togglingKeys;
   final VoidCallback onToggle;
   final void Function(AttendanceRecordModel, String, bool) onMarkAction;
@@ -256,6 +271,8 @@ class _ChildRow extends StatelessWidget {
     required this.isExpanded,
     required this.isAbsentMorning,
     required this.isAbsentAfternoon,
+    required this.undoableAbsentMorning,
+    required this.undoableAbsentAfternoon,
     required this.togglingKeys,
     required this.onToggle,
     required this.onMarkAction,
@@ -387,6 +404,8 @@ class _ChildRow extends StatelessWidget {
                 entry: entry,
                 isAbsentMorning: isAbsentMorning,
                 isAbsentAfternoon: isAbsentAfternoon,
+                undoableAbsentMorning: undoableAbsentMorning,
+                undoableAbsentAfternoon: undoableAbsentAfternoon,
                 togglingKeys: togglingKeys,
                 onMarkAction: onMarkAction,
               ),
@@ -404,6 +423,8 @@ class _AttendanceExpanded extends StatelessWidget {
   final _ChildEntry entry;
   final bool isAbsentMorning;
   final bool isAbsentAfternoon;
+  final bool undoableAbsentMorning;
+  final bool undoableAbsentAfternoon;
   final Set<String> togglingKeys;
   final void Function(AttendanceRecordModel, String, bool) onMarkAction;
 
@@ -411,6 +432,8 @@ class _AttendanceExpanded extends StatelessWidget {
     required this.entry,
     required this.isAbsentMorning,
     required this.isAbsentAfternoon,
+    required this.undoableAbsentMorning,
+    required this.undoableAbsentAfternoon,
     required this.togglingKeys,
     required this.onMarkAction,
   });
@@ -465,13 +488,12 @@ class _AttendanceExpanded extends StatelessWidget {
 
                   // Morning: only BOARDED step
                   if (isAbsentMorning)
-                    Text(
-                      'Absent — locked',
-                      style: TextStyle(
-                        color: orange.withValues(alpha: 0.8),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    _AbsentLockedLabel(
+                      undoable: undoableAbsentMorning,
+                      toggling: togglingKeys.contains('$id:MORNING:ABSENT'),
+                      onUndo: morningRec == null
+                          ? null
+                          : () => onMarkAction(morningRec, 'ABSENT', false),
                     )
                   else
                     _ActionToggle(
@@ -479,12 +501,14 @@ class _AttendanceExpanded extends StatelessWidget {
                       active: morningRec?.boarded ?? false,
                       toggling: togglingKeys.contains('$id:MORNING:BOARDED'),
                       disabled: morningRec == null,
-                      onConfirm: (morningRec == null || (morningRec.boarded))
+                      onToggleActive: morningRec == null
                           ? null
-                          : () => onMarkAction(morningRec, 'BOARDED', true),
-                      onUnconfirm: (morningRec == null || !(morningRec.boarded))
+                          : () => onMarkAction(
+                              morningRec, 'BOARDED', !morningRec.boarded),
+                      supportsAbsent: true,
+                      onMarkAbsent: (morningRec == null || morningRec.boarded)
                           ? null
-                          : () => onMarkAction(morningRec, 'BOARDED', false),
+                          : () => onMarkAction(morningRec, 'ABSENT', true),
                     ),
                 ],
               ),
@@ -528,13 +552,12 @@ class _AttendanceExpanded extends StatelessWidget {
 
                   // Afternoon: BOARDED + DROPPED_OFF
                   if (isAbsentAfternoon)
-                    Text(
-                      'Absent — locked',
-                      style: TextStyle(
-                        color: orange.withValues(alpha: 0.8),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    _AbsentLockedLabel(
+                      undoable: undoableAbsentAfternoon,
+                      toggling: togglingKeys.contains('$id:AFTERNOON:ABSENT'),
+                      onUndo: afternoonRec == null
+                          ? null
+                          : () => onMarkAction(afternoonRec, 'ABSENT', false),
                     )
                   else ...[
                     _ActionToggle(
@@ -542,12 +565,14 @@ class _AttendanceExpanded extends StatelessWidget {
                       active: afternoonRec?.boarded ?? false,
                       toggling: togglingKeys.contains('$id:AFTERNOON:BOARDED'),
                       disabled: afternoonRec == null,
-                      onConfirm: (afternoonRec == null || afternoonRec.boarded)
+                      onToggleActive: afternoonRec == null
                           ? null
-                          : () => onMarkAction(afternoonRec, 'BOARDED', true),
-                      onUnconfirm: (afternoonRec == null || !afternoonRec.boarded)
+                          : () => onMarkAction(
+                              afternoonRec, 'BOARDED', !afternoonRec.boarded),
+                      supportsAbsent: true,
+                      onMarkAbsent: (afternoonRec == null || afternoonRec.boarded)
                           ? null
-                          : () => onMarkAction(afternoonRec, 'BOARDED', false),
+                          : () => onMarkAction(afternoonRec, 'ABSENT', true),
                     ),
                     const SizedBox(height: 8),
                     _ActionToggle(
@@ -555,12 +580,13 @@ class _AttendanceExpanded extends StatelessWidget {
                       active: afternoonRec?.droppedOff ?? false,
                       toggling: togglingKeys.contains('$id:AFTERNOON:DROPPED_OFF'),
                       disabled: afternoonRec == null,
-                      onConfirm: (afternoonRec == null || afternoonRec.droppedOff)
+                      onToggleActive: afternoonRec == null
                           ? null
-                          : () => onMarkAction(afternoonRec, 'DROPPED_OFF', true),
-                      onUnconfirm: (afternoonRec == null || !afternoonRec.droppedOff)
-                          ? null
-                          : () => onMarkAction(afternoonRec, 'DROPPED_OFF', false),
+                          : () => onMarkAction(afternoonRec, 'DROPPED_OFF',
+                              !afternoonRec.droppedOff),
+                      // No absence concept at the drop-off step.
+                      supportsAbsent: false,
+                      onMarkAbsent: null,
                     ),
                   ],
                 ],
@@ -573,23 +599,79 @@ class _AttendanceExpanded extends StatelessWidget {
   }
 }
 
-// ── Action toggle — label + ✓ button + ✗ button ──────────────────────────────
+// ── Absent (locked) label — with undo, only when driver-marked ───────────────
+
+class _AbsentLockedLabel extends StatelessWidget {
+  final bool undoable;
+  final bool toggling;
+  final VoidCallback? onUndo;
+
+  const _AbsentLockedLabel({
+    required this.undoable,
+    required this.toggling,
+    required this.onUndo,
+  });
+
+  static const orange = Color(0xFFE67E22);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'Absent — locked',
+          style: TextStyle(
+            color: orange.withValues(alpha: 0.8),
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        if (undoable) ...[
+          const SizedBox(width: 8),
+          if (toggling)
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(strokeWidth: 1.5, color: orange),
+            )
+          else
+            GestureDetector(
+              onTap: onUndo,
+              child: const Text(
+                'Undo',
+                style: TextStyle(
+                  color: orange,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Action toggle — label + ✓ (toggle) button + ✗ (mark absent) button ───────
 
 class _ActionToggle extends StatelessWidget {
   final String label;
   final bool active;
   final bool toggling;
   final bool disabled;
-  final VoidCallback? onConfirm;   // called to set active = true
-  final VoidCallback? onUnconfirm; // called to set active = false
+  final VoidCallback? onToggleActive; // tap ✓ to flip active true <-> false
+  final bool supportsAbsent; // whether this row has a ✗ (mark-absent) at all
+  final VoidCallback? onMarkAbsent;   // tap ✗ — null while disabled/active
 
   const _ActionToggle({
     required this.label,
     required this.active,
     required this.toggling,
     required this.disabled,
-    required this.onConfirm,
-    required this.onUnconfirm,
+    required this.onToggleActive,
+    required this.supportsAbsent,
+    required this.onMarkAbsent,
   });
 
   static const green = Color(0xFF21C260);
@@ -617,7 +699,7 @@ class _ActionToggle extends StatelessWidget {
         ),
         const SizedBox(width: 6),
 
-        // ✓ Tick button
+        // ✓ Tick button — tap to toggle on/off
         if (toggling)
           SizedBox(
             width: 30,
@@ -632,7 +714,7 @@ class _ActionToggle extends StatelessWidget {
           )
         else ...[
           GestureDetector(
-            onTap: disabled || active ? null : onConfirm,
+            onTap: disabled ? null : onToggleActive,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               width: 30,
@@ -664,42 +746,40 @@ class _ActionToggle extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 6),
 
-          // ✗ X button
-          GestureDetector(
-            onTap: disabled || !active ? null : onUnconfirm,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: disabled
-                    ? (isDark ? const Color(0xFF1E2830) : const Color(0xFFF4F4F4))
-                    : !active
-                        ? red
-                        : (isDark ? const Color(0xFF1E2830) : Colors.white),
-                shape: BoxShape.circle,
-                border: Border.all(
+          // ✗ Mark-absent button — only shown where absence applies
+          // (disabled once boarded==true, since that's a contradiction;
+          // tapping ✓ again un-boards instead of needing ✗ here).
+          if (supportsAbsent) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: disabled || onMarkAbsent == null ? null : onMarkAbsent,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
                   color: disabled
-                      ? Colors.transparent
-                      : !active
-                          ? red
-                          : red.withValues(alpha: 0.45),
-                  width: 1.5,
+                      ? (isDark ? const Color(0xFF1E2830) : const Color(0xFFF4F4F4))
+                      : (isDark ? const Color(0xFF1E2830) : Colors.white),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: disabled || onMarkAbsent == null
+                        ? Colors.transparent
+                        : red.withValues(alpha: 0.45),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 15,
+                  color: disabled || onMarkAbsent == null
+                      ? onSurface.withValues(alpha: 0.18)
+                      : red.withValues(alpha: 0.55),
                 ),
               ),
-              child: Icon(
-                Icons.close_rounded,
-                size: 15,
-                color: disabled
-                    ? onSurface.withValues(alpha: 0.18)
-                    : !active
-                        ? Colors.white
-                        : red.withValues(alpha: 0.55),
-              ),
             ),
-          ),
+          ],
         ],
       ],
     );
