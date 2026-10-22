@@ -92,7 +92,6 @@ public class ChildController {
 
         for (Child child : children) {
             String busPlateNumber = null;
-            String busDeviceId = null;
             Long conductorId = null;
             String conductorName = null;
             String busStopName = null;
@@ -103,7 +102,6 @@ public class ChildController {
                 Bus bus = transportService.getBusById(child.getBusId());
                 if (bus != null) {
                     busPlateNumber = bus.getPlateNumber();
-                    busDeviceId = bus.getDeviceId();
                     conductorId = bus.getConductorId();
                     if (conductorId != null) {
                         Conductor conductor = accountsService.getConductorById(conductorId);
@@ -124,7 +122,7 @@ public class ChildController {
             }
 
             enrichedChildren.add(ChildDetailDto.fromChild(
-                child, busPlateNumber, busDeviceId, conductorId, conductorName, busStopName, busStopLocation
+                child, busPlateNumber, conductorId, conductorName, busStopName, busStopLocation
             ));
         }
 
@@ -152,7 +150,6 @@ public class ChildController {
         }
 
         String busPlateNumber = null;
-        String busDeviceId = null;
         Long conductorId = null;
         String conductorName = null;
         String busStopName = null;
@@ -163,7 +160,6 @@ public class ChildController {
             Bus bus = transportService.getBusById(child.getBusId());
             if (bus != null) {
                 busPlateNumber = bus.getPlateNumber();
-                busDeviceId = bus.getDeviceId();
                 conductorId = bus.getConductorId();
                 if (conductorId != null) {
                     Conductor conductor = accountsService.getConductorById(conductorId);
@@ -184,7 +180,7 @@ public class ChildController {
         }
 
         ChildDetailDto enrichedChild = ChildDetailDto.fromChild(
-            child, busPlateNumber, busDeviceId, conductorId, conductorName, busStopName, busStopLocation
+            child, busPlateNumber, conductorId, conductorName, busStopName, busStopLocation
         );
 
         return ResponseEntity.ok(new ApiResponse<>(

@@ -35,10 +35,6 @@ public class BusJpaEntity {
     @JsonProperty("conductorId")
     private Long conductorId;
 
-    @Column(name = "device_id")
-    @JsonProperty("deviceId")
-    private String deviceId;
-
     @Column(name = "route_id")
     @JsonProperty("routeId")
     private Long routeId;
@@ -77,7 +73,6 @@ public class BusJpaEntity {
             this.capacity,
             this.status,
             this.conductorId,
-            this.deviceId,
             this.routeId,
             this.photoUrl,
             this.createdAt
@@ -98,7 +93,6 @@ public class BusJpaEntity {
         entity.setCapacity(bus.getCapacity());
         entity.setStatus(bus.getStatus());
         entity.setConductorId(bus.getConductorId());
-        entity.setDeviceId(bus.getDeviceId());
         entity.setRouteId(bus.getRouteId());
         entity.setPhotoUrl(bus.getPhotoUrl());
         entity.createdAt = bus.getCreatedAt();
@@ -152,14 +146,6 @@ public class BusJpaEntity {
 
     public void setConductorId(Long conductorId) {
         this.conductorId = conductorId;
-    }
-
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
     }
 
     public Long getRouteId() {

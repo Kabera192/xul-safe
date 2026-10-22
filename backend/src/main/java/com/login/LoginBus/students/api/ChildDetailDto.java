@@ -18,7 +18,6 @@ public class ChildDetailDto {
     private Long parentId;
     private Long busId;
     private String busPlateNumber;
-    private String busDeviceId;
     private Long conductorId;
     private String conductorName;
     private String busStopId;
@@ -32,7 +31,7 @@ public class ChildDetailDto {
     /**
      * Create DTO from domain entity with related entity names.
      */
-    public static ChildDetailDto fromChild(Child child, String busPlateNumber, String busDeviceId,
+    public static ChildDetailDto fromChild(Child child, String busPlateNumber,
                                            Long conductorId, String conductorName,
                                            String busStopName, String busStopLocation) {
         ChildDetailDto dto = new ChildDetailDto();
@@ -45,7 +44,6 @@ public class ChildDetailDto {
         dto.parentId = child.getParentId();
         dto.busId = child.getBusId();
         dto.busPlateNumber = busPlateNumber;
-        dto.busDeviceId = busDeviceId;
         dto.conductorId = conductorId;
         dto.conductorName = conductorName;
         dto.busStopId = child.getBusStopId();
@@ -126,14 +124,6 @@ public class ChildDetailDto {
 
     public void setBusPlateNumber(String busPlateNumber) {
         this.busPlateNumber = busPlateNumber;
-    }
-
-    public String getBusDeviceId() {
-        return busDeviceId;
-    }
-
-    public void setBusDeviceId(String busDeviceId) {
-        this.busDeviceId = busDeviceId;
     }
 
     public Long getConductorId() {

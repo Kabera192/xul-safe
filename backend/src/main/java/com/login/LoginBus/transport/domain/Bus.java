@@ -12,7 +12,6 @@ public class Bus {
     private Integer capacity;
     private BusStatus status;
     private Long conductorId;
-    private String deviceId;
     private Long routeId;
     private String photoUrl;
     private Long createdAt;
@@ -23,14 +22,13 @@ public class Bus {
 
     // Full constructor
     public Bus(Long id, String plateNumber, String model, Integer capacity, BusStatus status,
-               Long conductorId, String deviceId, Long routeId, String photoUrl, Long createdAt) {
+               Long conductorId, Long routeId, String photoUrl, Long createdAt) {
         this.id = id;
         this.plateNumber = plateNumber;
         this.model = model;
         this.capacity = capacity;
         this.status = status;
         this.conductorId = conductorId;
-        this.deviceId = deviceId;
         this.routeId = routeId;
         this.photoUrl = photoUrl;
         this.createdAt = createdAt;
@@ -92,14 +90,6 @@ public class Bus {
 
     public void setConductorId(Long conductorId) {
         this.conductorId = conductorId;
-    }
-
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
     }
 
     public Long getRouteId() {
