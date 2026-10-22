@@ -11,3 +11,4 @@ export * from './route.model';
 export * from './bus.model';
 export * from './conductor.model';
 export * from './driver.model';
+export * from './incident.model';
