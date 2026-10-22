@@ -4,8 +4,58 @@ import 'package:http/http.dart' as http;
 
 import '../core/config/api_config.dart';
 import '../core/network/authenticated_http_client.dart';
+import '../core/session/session_storage.dart';
 
 class TransportService {
+  /// POST /api/v1/routes/requests
+  ///
+  /// Submits a parent's custom bus stop request for the given child.
+  /// Pending admin approval — the backend does not create a bus stop here.
+  static Future<void> createRouteRequest({
+    required String childId,
+    required double latitude,
+    required double longitude,
+    String? address,
+    String? description,
+  }) async {
+    final parentId = await SessionStorage.getUserId();
+
+    if (parentId == null) {
+      throw Exception('Not logged in');
+    }
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/routes/requests');
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
+
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'parentId': parentId,
+        'childId': childId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address ?? '',
+        'description': description ?? '',
+      });
+
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return;
+    }
+
+    throw Exception(
+      _extractErrorMessage(
+        decoded,
+        'Failed to submit bus stop request',
+      ),
+    );
+  }
+
   static Future<Map<String, dynamic>> getMyBus() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/me/bus',
