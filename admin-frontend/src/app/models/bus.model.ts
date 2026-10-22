@@ -7,7 +7,6 @@ export interface Bus {
   capacity?: number;
   status?: BusStatus;
   conductorId?: number | null;
-  deviceId?: string | null;
   routeId?: number | null;
   photoUrl?: string | null;
   createdAt?: number;
