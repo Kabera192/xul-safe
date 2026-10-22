@@ -1,5 +1,5 @@
 export type TripType = 'MORNING_PICKUP' | 'AFTERNOON_DROPOFF';
-export type BusTrackingStatus = 'NOT_STARTED' | 'GOING_TO_SCHOOL' | 'AT_SCHOOL' | 'DROPPING_OFF_CHILDREN' | 'COMPLETED';
+export type BusTrackingStatus = 'NOT_IN_ROUTE' | 'PICKING_UP_CHILDREN' | 'GOING_TO_SCHOOL' | 'AT_SCHOOL' | 'DROPPING_OFF_CHILDREN';
 
 export interface BusTracking {
   id?: string;
