@@ -23,28 +23,38 @@
     <div class="table-state" *ngIf="isLoading">Loading requests...</div>
     <div class="table-state error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</div>
 
-    <div class="table-head">
-      <div>No</div>
-      <div>Parent ID</div>
-      <div>Child name</div>
-      <div>Date</div>
-      <div>Address</div>
-      <div>Description</div>
-      <div>Status</div>
-      <div class="action-col">Action</div>
-    </div>
-
-    <div class="table-row" *ngFor="let request of filteredBusStopRequests">
-      <div class="muted">{{ request.no }}</div>
-      <div>{{ request.parentId }}</div>
-      <div class="truncate" [title]="request.childName">{{ request.childName }}</div>
-      <div>{{ request.date }}</div>
-      <div>{{ request.address }}</div>
-      <div>{{ request.description }}</div>
-      <div>{{ request.status }}</div>
-      <div class="actions">
-        <a class="view-btn" [routerLink]="['/requests', request.id]">View details</a>
-      </div>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>No</th>
+          <th class="sortable" (click)="sort('parentName')">Parent name{{ sortArrow('parentName') }}</th>
+          <th class="sortable" (click)="sort('childName')">Child name{{ sortArrow('childName') }}</th>
+          <th class="sortable" (click)="sort('date')">Date{{ sortArrow('date') }}</th>
+          <th class="sortable" (click)="sort('address')">Address{{ sortArrow('address') }}</th>
+          <th class="sortable" (click)="sort('description')">Description{{ sortArrow('description') }}</th>
+          <th class="sortable" (click)="sort('status')">Status{{ sortArrow('status') }}</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let request of sortedBusStopRequests">
+          <td class="num">{{ request.no }}</td>
+          <td>{{ request.parentName }}</td>
+          <td class="truncate" [title]="request.childName">{{ request.childName }}</td>
+          <td>{{ request.date }}</td>
+          <td>{{ request.address }}</td>
+          <td>{{ request.description }}</td>
+          <td>{{ request.status }}</td>
+          <td>
+            <div class="actions">
+              <a class="view-btn" [routerLink]="['/requests', request.id]">View details</a>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="sortedBusStopRequests.length === 0">
+          <td colspan="8" class="empty-cell">No requests found.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
