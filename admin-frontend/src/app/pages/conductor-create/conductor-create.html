@@ -16,30 +16,19 @@
       </label>
     </div>
 
-    <p class="section-hint">Account credentials — used to log into the mobile app.</p>
+    <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
     <div class="form-grid">
       <label>
-        First name
-        <input type="text" [(ngModel)]="firstName" />
-      </label>
-      <label>
-        Last name
-        <input type="text" [(ngModel)]="lastName" />
-      </label>
-      <label>
-        Email <span class="required">*</span>
+        Email
         <input type="email" [(ngModel)]="email" />
       </label>
       <label>
-        Password <span class="required">*</span>
+        Password
         <input type="password" [(ngModel)]="password" autocomplete="new-password" />
       </label>
-    </div>
-
-    <p class="section-hint">Profile information.</p>
-    <div class="form-grid">
       <label>
-        Full name <span class="required">*</span>
+        Full name
         <input type="text" [(ngModel)]="fullName" />
       </label>
       <label>
@@ -50,7 +39,7 @@
         </select>
       </label>
       <label>
-        Phone <span class="required">*</span>
+        Phone
         <input type="text" [(ngModel)]="phone" />
       </label>
       <label>
@@ -63,14 +52,6 @@
           <option value="">Select status</option>
           <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
         </select>
-      </label>
-      <label>
-        Driver ID
-        <input type="text" [(ngModel)]="driverId" />
-      </label>
-      <label>
-        Licence number
-        <input type="text" [(ngModel)]="licenceNumber" />
       </label>
       <label>
         Licence type
@@ -86,10 +67,8 @@
       </label>
     </div>
 
-    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
-
     <div class="form-actions">
-      <a class="btn-ghost" routerLink="/drivers">Cancel</a>
+      <button class="btn-ghost" type="button" [disabled]="isSaving" routerLink="/drivers">Cancel</button>
       <button class="btn-primary" type="button" (click)="createConductor()" [disabled]="isSaving">
         {{ isSaving ? 'Creating...' : 'Create driver' }}
       </button>
