@@ -3,6 +3,7 @@ package com.login.LoginBus.transport.infra;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,4 +18,6 @@ public interface BusRepository extends JpaRepository<BusJpaEntity, Long> {
     Optional<BusJpaEntity> findByDriverId(Long driverId);
 
     Optional<BusJpaEntity> findByConductorId(Long conductorId);
+
+    List<BusJpaEntity> findByRouteId(Long routeId);
 }
