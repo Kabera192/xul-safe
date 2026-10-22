@@ -16,8 +16,6 @@ public class Conductor {
     private String email;
     private String gender;
     private Integer age;
-    private String driverId;
-    private String licenceNumber;
     private String licenceType;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate licenceExpiry;
@@ -31,8 +29,8 @@ public class Conductor {
 
     // Full constructor
     public Conductor(Long id, String fullName, String phoneNumber, String photoUrl,
-                     String email, String gender, Integer age, String driverId,
-                     String licenceNumber, String licenceType, LocalDate licenceExpiry,
+                     String email, String gender, Integer age,
+                     String licenceType, LocalDate licenceExpiry,
                      String experience, ConductorStatus status, Long createdAt) {
         this.id = id;
         this.fullName = fullName;
@@ -41,8 +39,6 @@ public class Conductor {
         this.email = email;
         this.gender = gender;
         this.age = age;
-        this.driverId = driverId;
-        this.licenceNumber = licenceNumber;
         this.licenceType = licenceType;
         this.licenceExpiry = licenceExpiry;
         this.experience = experience;
@@ -114,22 +110,6 @@ public class Conductor {
 
     public void setAge(Integer age) {
         this.age = age;
-    }
-
-    public String getDriverId() {
-        return driverId;
-    }
-
-    public void setDriverId(String driverId) {
-        this.driverId = driverId;
-    }
-
-    public String getLicenceNumber() {
-        return licenceNumber;
-    }
-
-    public void setLicenceNumber(String licenceNumber) {
-        this.licenceNumber = licenceNumber;
     }
 
     public String getLicenceType() {

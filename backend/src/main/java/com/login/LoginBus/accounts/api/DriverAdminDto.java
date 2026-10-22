@@ -40,12 +40,6 @@ public class DriverAdminDto {
     private String gender;
     private Integer age;
 
-    @JsonProperty("driverId")
-    private String driverId;
-
-    @JsonProperty("licenceNumber")
-    private String licenceNumber;
-
     @JsonProperty("licenceType")
     private String licenceType;
 
@@ -95,12 +89,6 @@ public class DriverAdminDto {
 
     public Integer getAge() { return age; }
     public void setAge(Integer age) { this.age = age; }
-
-    public String getDriverId() { return driverId; }
-    public void setDriverId(String driverId) { this.driverId = driverId; }
-
-    public String getLicenceNumber() { return licenceNumber; }
-    public void setLicenceNumber(String licenceNumber) { this.licenceNumber = licenceNumber; }
 
     public String getLicenceType() { return licenceType; }
     public void setLicenceType(String licenceType) { this.licenceType = licenceType; }

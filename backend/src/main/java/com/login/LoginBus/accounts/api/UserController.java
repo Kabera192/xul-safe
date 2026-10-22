@@ -3,9 +3,13 @@ package com.login.LoginBus.accounts.api;
 import com.login.LoginBus.accounts.app.AccountsService;
 import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.shared.api.ApiResponse;
+import com.login.LoginBus.transport.api.dto.ParentSummaryResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for user profile operations.
@@ -18,6 +22,24 @@ public class UserController {
 
     @Autowired
     private AccountsService accountsService;
+
+    /**
+     * Get all registered parent accounts — used by admin dropdowns that
+     * assign a child to a parent (e.g. student create/edit), independent of
+     * whether that parent already has another child on a given route.
+     * GET /api/v1/users/parents
+     */
+    @GetMapping("/parents")
+    public ResponseEntity<ApiResponse<List<ParentSummaryResponse>>> getAllParents() {
+        List<ParentSummaryResponse> parents = accountsService.getAllParents().stream()
+                .map(user -> new ParentSummaryResponse(user.getId(), user.getFullName(), user.getPhoneNumber(), user.getEmail()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Parents retrieved successfully",
+            parents
+        ));
+    }
 
     /**
      * Get user profile by ID.

@@ -63,6 +63,15 @@ public interface AccountsService {
      */
     boolean emailExists(String email);
 
+    /**
+     * Get all users with the PARENT role, for admin dropdowns that need to
+     * assign a child to any registered parent — not just ones who already
+     * have another child on the same route.
+     *
+     * @return List of parent users
+     */
+    List<User> getAllParents();
+
     // ========== Conductor Operations ==========
 
     /**

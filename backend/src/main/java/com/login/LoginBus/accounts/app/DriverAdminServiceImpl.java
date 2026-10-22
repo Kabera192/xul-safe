@@ -85,8 +85,6 @@ public class DriverAdminServiceImpl implements DriverAdminService {
         conductor.setEmail(dto.getEmail().trim().toLowerCase());
         conductor.setGender(dto.getGender());
         conductor.setAge(dto.getAge());
-        conductor.setDriverId(dto.getDriverId());
-        conductor.setLicenceNumber(dto.getLicenceNumber());
         conductor.setLicenceType(dto.getLicenceType());
         conductor.setLicenceExpiry(dto.getLicenceExpiry());
         conductor.setExperience(dto.getExperience());
@@ -108,8 +106,6 @@ public class DriverAdminServiceImpl implements DriverAdminService {
         if (dto.getFullName() != null) conductor.setFullName(dto.getFullName());
         if (dto.getGender() != null) conductor.setGender(dto.getGender());
         if (dto.getAge() != null) conductor.setAge(dto.getAge());
-        if (dto.getDriverId() != null) conductor.setDriverId(dto.getDriverId());
-        if (dto.getLicenceNumber() != null) conductor.setLicenceNumber(dto.getLicenceNumber());
         if (dto.getLicenceType() != null) conductor.setLicenceType(dto.getLicenceType());
         if (dto.getLicenceExpiry() != null) conductor.setLicenceExpiry(dto.getLicenceExpiry());
         if (dto.getExperience() != null) conductor.setExperience(dto.getExperience());
@@ -180,8 +176,6 @@ public class DriverAdminServiceImpl implements DriverAdminService {
         dto.setEmail(conductor.getEmail());
         dto.setGender(conductor.getGender());
         dto.setAge(conductor.getAge());
-        dto.setDriverId(conductor.getDriverId());
-        dto.setLicenceNumber(conductor.getLicenceNumber());
         dto.setLicenceType(conductor.getLicenceType());
         dto.setLicenceExpiry(conductor.getLicenceExpiry());
         dto.setExperience(conductor.getExperience());

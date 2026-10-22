@@ -39,14 +39,6 @@ public class ConductorJpaEntity {
     @Column
     private Integer age;
 
-    @Column(name = "driver_id")
-    @JsonProperty("driverId")
-    private String driverId;
-
-    @Column(name = "licence_number")
-    @JsonProperty("licenceNumber")
-    private String licenceNumber;
-
     @Column(name = "licence_type")
     @JsonProperty("licenceType")
     private String licenceType;
@@ -93,8 +85,6 @@ public class ConductorJpaEntity {
             this.email,
             this.gender,
             this.age,
-            this.driverId,
-            this.licenceNumber,
             this.licenceType,
             this.licenceExpiry,
             this.experience,
@@ -118,8 +108,6 @@ public class ConductorJpaEntity {
         entity.setEmail(conductor.getEmail());
         entity.setGender(conductor.getGender());
         entity.setAge(conductor.getAge());
-        entity.setDriverId(conductor.getDriverId());
-        entity.setLicenceNumber(conductor.getLicenceNumber());
         entity.setLicenceType(conductor.getLicenceType());
         entity.setLicenceExpiry(conductor.getLicenceExpiry());
         entity.setExperience(conductor.getExperience());
@@ -183,22 +171,6 @@ public class ConductorJpaEntity {
 
     public void setAge(Integer age) {
         this.age = age;
-    }
-
-    public String getDriverId() {
-        return driverId;
-    }
-
-    public void setDriverId(String driverId) {
-        this.driverId = driverId;
-    }
-
-    public String getLicenceNumber() {
-        return licenceNumber;
-    }
-
-    public void setLicenceNumber(String licenceNumber) {
-        this.licenceNumber = licenceNumber;
     }
 
     public String getLicenceType() {

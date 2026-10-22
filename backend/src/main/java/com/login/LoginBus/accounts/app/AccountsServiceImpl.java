@@ -120,6 +120,13 @@ public class AccountsServiceImpl implements AccountsService, AccountsPublicServi
         return userRepository.existsByEmail(email);
     }
 
+    @Override
+    public List<User> getAllParents() {
+        return userRepository.findByRole(UserRole.PARENT).stream()
+                .map(UserJpaEntity::toDomain)
+                .collect(Collectors.toList());
+    }
+
     // ========== Conductor Operations ==========
 
     @Override
@@ -197,12 +204,6 @@ public class AccountsServiceImpl implements AccountsService, AccountsPublicServi
         }
         if (conductor.getAge() != null) {
             existing.setAge(conductor.getAge());
-        }
-        if (conductor.getDriverId() != null) {
-            existing.setDriverId(conductor.getDriverId());
-        }
-        if (conductor.getLicenceNumber() != null) {
-            existing.setLicenceNumber(conductor.getLicenceNumber());
         }
         if (conductor.getLicenceType() != null) {
             existing.setLicenceType(conductor.getLicenceType());
