@@ -1,0 +1,14 @@
+<div class="map-picker">
+  <div #mapContainer class="map-container" [class.hidden]="!!mapError"></div>
+
+  <iframe
+    *ngIf="mapError && fallbackUrl"
+    class="map-fallback"
+    [src]="fallbackUrl"
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+  ></iframe>
+
+  <p class="map-hint" *ngIf="editable && !mapError">Click the map to set the location</p>
+  <p class="map-empty" *ngIf="!hasCoordinates && !mapError && !editable">No location set yet.</p>
+</div>

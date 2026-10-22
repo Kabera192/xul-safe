@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BusStopService } from '../../services/bus-stop.service';
@@ -6,7 +6,10 @@ import { RouteService } from '../../services/route.service';
 import { BusService } from '../../services/bus.service';
 import { StudentService } from '../../services/student.service';
 import { Bus, BusStop, Child, ChildDetail, Route } from '../../models';
-import { catchError, of, finalize, timeout, forkJoin } from 'rxjs';
+import { catchError, of, finalize, timeout, forkJoin, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { applySort, initialSortState, SortState, sortIndicator, toggleSort } from '../../shared/table-sort';
+import { MapPickerComponent } from '../../shared/map-picker/map-picker.component';
+import { GeocodingService, PlaceSuggestion } from '../../shared/geocoding.service';
 
 interface StopViewModel {
   id: string;
@@ -15,18 +18,21 @@ interface StopViewModel {
   order?: number;
 }
 
+type StopSortColumn = 'name' | 'location';
+
 @Component({
   selector: 'app-routes-stops',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MapPickerComponent],
   templateUrl: './routes-stops.html',
   styleUrl: './routes-stops.scss',
 })
-export class RoutesStops implements OnInit {
+export class RoutesStops implements OnInit, OnDestroy {
   private busStopService = inject(BusStopService);
   private routeService = inject(RouteService);
   private busService = inject(BusService);
   private studentService = inject(StudentService);
+  private geocodingService = inject(GeocodingService);
   private cdr = inject(ChangeDetectorRef);
 
   searchTerm = '';
@@ -35,6 +41,12 @@ export class RoutesStops implements OnInit {
   routeStart = '';
   routeEnd = '';
   routeDescription = '';
+  routeStartSuggestions: PlaceSuggestion[] = [];
+  routeEndSuggestions: PlaceSuggestion[] = [];
+  isSearchingRouteStart = false;
+  isSearchingRouteEnd = false;
+  private routeStartSearch$ = new Subject<string>();
+  private routeEndSearch$ = new Subject<string>();
   isLoading = false;
   isLoadingStops = false;
   isSaving = false;
@@ -45,6 +57,7 @@ export class RoutesStops implements OnInit {
 
   routes: Route[] = [];
   stops: StopViewModel[] = [];
+  stopSortState: SortState<StopSortColumn> = initialSortState();
 
   // Bus stop modal state
   showStopModal = false;
@@ -55,6 +68,12 @@ export class RoutesStops implements OnInit {
   stopLongitude: number | null = null;
   stopOrder: number | null = null;
   isSavingStop = false;
+  stopSearchTerm = '';
+  stopSuggestions: PlaceSuggestion[] = [];
+  isSearchingStop = false;
+  isCapturingLocation = false;
+  locateError = '';
+  private stopSearch$ = new Subject<string>();
 
   // Assign students modal state
   showAssignStudentsModal = false;
@@ -67,6 +86,78 @@ export class RoutesStops implements OnInit {
 
   ngOnInit(): void {
     this.loadRoutes();
+    this.setupLocationSearch();
+  }
+
+  ngOnDestroy(): void {
+    this.routeStartSearch$.complete();
+    this.routeEndSearch$.complete();
+    this.stopSearch$.complete();
+    this.clearLocateTimeout();
+  }
+
+  private setupLocationSearch(): void {
+    this.routeStartSearch$.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((query) => this.geocodingService.searchPlaces(query))
+    ).subscribe((suggestions) => {
+      this.routeStartSuggestions = suggestions;
+      this.isSearchingRouteStart = false;
+      this.cdr.detectChanges();
+    });
+
+    this.routeEndSearch$.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((query) => this.geocodingService.searchPlaces(query))
+    ).subscribe((suggestions) => {
+      this.routeEndSuggestions = suggestions;
+      this.isSearchingRouteEnd = false;
+      this.cdr.detectChanges();
+    });
+
+    this.stopSearch$.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((query) => this.geocodingService.searchPlaces(query))
+    ).subscribe((suggestions) => {
+      this.stopSuggestions = suggestions;
+      this.isSearchingStop = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  onRouteStartQueryChange(value: string): void {
+    const trimmed = value.trim();
+    if (trimmed.length < 3) {
+      this.routeStartSuggestions = [];
+      this.isSearchingRouteStart = false;
+      return;
+    }
+    this.isSearchingRouteStart = true;
+    this.routeStartSearch$.next(trimmed);
+  }
+
+  onRouteEndQueryChange(value: string): void {
+    const trimmed = value.trim();
+    if (trimmed.length < 3) {
+      this.routeEndSuggestions = [];
+      this.isSearchingRouteEnd = false;
+      return;
+    }
+    this.isSearchingRouteEnd = true;
+    this.routeEndSearch$.next(trimmed);
+  }
+
+  selectRouteStartSuggestion(suggestion: PlaceSuggestion): void {
+    this.routeStart = suggestion.name;
+    this.routeStartSuggestions = [];
+  }
+
+  selectRouteEndSuggestion(suggestion: PlaceSuggestion): void {
+    this.routeEnd = suggestion.name;
+    this.routeEndSuggestions = [];
   }
 
   loadRoutes(): void {
@@ -166,6 +257,10 @@ export class RoutesStops implements OnInit {
     this.routeStart = '';
     this.routeEnd = '';
     this.routeDescription = '';
+    this.routeStartSuggestions = [];
+    this.routeEndSuggestions = [];
+    this.isSearchingRouteStart = false;
+    this.isSearchingRouteEnd = false;
   }
 
   get isEditMode(): boolean {
@@ -312,11 +407,97 @@ export class RoutesStops implements OnInit {
   }
 
   private resetStopForm(): void {
+    this.clearLocateTimeout();
     this.stopName = '';
     this.stopAddress = '';
     this.stopLatitude = null;
     this.stopLongitude = null;
     this.stopOrder = null;
+    this.stopSearchTerm = '';
+    this.stopSuggestions = [];
+    this.isSearchingStop = false;
+    this.isCapturingLocation = false;
+    this.locateError = '';
+  }
+
+  onStopSearchQueryChange(value: string): void {
+    const trimmed = value.trim();
+    if (trimmed.length < 3) {
+      this.stopSuggestions = [];
+      this.isSearchingStop = false;
+      return;
+    }
+    this.isSearchingStop = true;
+    this.stopSearch$.next(trimmed);
+  }
+
+  selectStopSuggestion(suggestion: PlaceSuggestion): void {
+    this.stopSearchTerm = suggestion.name;
+    this.stopAddress = suggestion.name;
+    this.stopLatitude = suggestion.lat;
+    this.stopLongitude = suggestion.lng;
+    this.stopSuggestions = [];
+  }
+
+  private locateTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  useMyLocationForStop(): void {
+    if (!navigator.geolocation) {
+      this.locateError = 'Location is not supported by this browser.';
+      return;
+    }
+
+    this.isCapturingLocation = true;
+    this.locateError = '';
+
+    // Some browsers (notably Chrome on Windows with the OS-level Location
+    // setting off) can hang indefinitely and never call either callback,
+    // ignoring the `timeout` option below. This fallback guarantees the
+    // button always recovers instead of being stuck on "Capturing…".
+    this.locateTimeoutId = setTimeout(() => {
+      this.locateTimeoutId = null;
+      this.isCapturingLocation = false;
+      this.locateError = 'Could not get your location. Check that location access is allowed for this browser and your device, then try again.';
+      this.cdr.detectChanges();
+    }, 12000);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.clearLocateTimeout();
+        this.isCapturingLocation = false;
+        this.onStopPositionPicked({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        this.cdr.detectChanges();
+      },
+      () => {
+        this.clearLocateTimeout();
+        this.isCapturingLocation = false;
+        this.locateError = 'Could not capture current location.';
+        this.cdr.detectChanges();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  private clearLocateTimeout(): void {
+    if (this.locateTimeoutId !== null) {
+      clearTimeout(this.locateTimeoutId);
+      this.locateTimeoutId = null;
+    }
+  }
+
+  onStopPositionPicked(position: { lat: number; lng: number }): void {
+    this.stopLatitude = position.lat;
+    this.stopLongitude = position.lng;
+
+    this.geocodingService.reverseGeocode(position.lat, position.lng).subscribe((address) => {
+      if (address) {
+        this.stopAddress = address;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   get isStopEditMode(): boolean {
@@ -337,6 +518,18 @@ export class RoutesStops implements OnInit {
   get stopFormValid(): boolean {
     // Latitude/longitude are optional — only the stop name is required.
     return !!this.stopName.trim();
+  }
+
+  get sortedStops(): StopViewModel[] {
+    return applySort(this.stops, this.stopSortState, (row, column) => row[column]);
+  }
+
+  sortStops(column: StopSortColumn): void {
+    this.stopSortState = toggleSort(this.stopSortState, column);
+  }
+
+  stopSortArrow(column: StopSortColumn): string {
+    return sortIndicator(this.stopSortState, column);
   }
 
   saveStop(): void {
