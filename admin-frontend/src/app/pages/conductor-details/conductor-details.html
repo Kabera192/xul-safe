@@ -26,10 +26,6 @@
         <strong>{{ conductor.gender }}</strong>
       </div>
       <div class="info-row">
-        <span>Driver ID</span>
-        <strong>{{ conductor.driverId }}</strong>
-      </div>
-      <div class="info-row">
         <span>Age</span>
         <strong>{{ conductor.age }}</strong>
       </div>
@@ -41,17 +37,13 @@
         <span>Email</span>
         <strong>{{ conductor.email }}</strong>
       </div>
-      <a class="primary-btn" [routerLink]="['/conductors', conductor.id, 'edit']">Update profile</a>
+      <a class="primary-btn" [routerLink]="['/drivers', conductor.id, 'edit']">Update profile</a>
       <button class="ghost-btn" type="button">Delete conductor</button>
     </div>
 
     <div class="card assignment-card">
       <div class="section">
         <div class="card-title">Licence &amp; Certification</div>
-        <div class="info-row">
-          <span>Licence Number</span>
-          <strong>{{ conductor.licenceNumber }}</strong>
-        </div>
         <div class="info-row">
           <span>Licence type</span>
           <strong>{{ conductor.licenceType }}</strong>
@@ -91,43 +83,6 @@
           <div>
             <div class="value">View all driver journeys</div>
             <div class="label">45 journeys this month</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card performance-card">
-      <div class="section">
-        <div class="card-title">Performance</div>
-        <div class="metric" *ngFor="let item of performance" [class.danger]="item.danger">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-        </div>
-      </div>
-
-      <div class="section attendance-card">
-        <div class="attendance-header">
-          <div class="card-title">Attendance</div>
-          <button class="month-pill" type="button">July 2025</button>
-        </div>
-        <div class="calendar">
-          <div class="calendar-row header">
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-            <span>Sun</span>
-          </div>
-          <div class="calendar-row" *ngFor="let row of [0,1,2,3]">
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day muted"></span>
-            <span class="day muted"></span>
           </div>
         </div>
       </div>
