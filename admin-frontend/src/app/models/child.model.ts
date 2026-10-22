@@ -27,7 +27,6 @@ export interface ChildDetail {
   parentId?: number;
   busId?: number;
   busPlateNumber?: string;
-  busDeviceId?: string;
   conductorId?: number;
   conductorName?: string;
   busStopId?: string;
