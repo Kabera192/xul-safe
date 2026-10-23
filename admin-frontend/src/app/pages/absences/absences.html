@@ -72,15 +72,15 @@
       <thead>
         <tr>
           <th>#</th>
-          <th>Student</th>
-          <th>Type</th>
-          <th>Start date</th>
-          <th>End date</th>
-          <th>Status</th>
+          <th class="sortable" (click)="sort('student')">Student{{ sortArrow('student') }}</th>
+          <th class="sortable" (click)="sort('absenceType')">Type{{ sortArrow('absenceType') }}</th>
+          <th class="sortable" (click)="sort('startDate')">Start date{{ sortArrow('startDate') }}</th>
+          <th class="sortable" (click)="sort('endDate')">End date{{ sortArrow('endDate') }}</th>
+          <th class="sortable" (click)="sort('status')">Status{{ sortArrow('status') }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let absence of filtered; let i = index">
+        <tr *ngFor="let absence of sorted; let i = index">
           <td class="num">{{ i + 1 }}</td>
           <td class="student-cell">
             <div class="avatar">{{ (absence.childName || absence.childId).charAt(0).toUpperCase() }}</div>

@@ -201,6 +201,11 @@ table {
       text-transform: uppercase;
       letter-spacing: 0.04em;
       border-bottom: 1px solid #E5E7EB;
+
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+      }
     }
   }
 
