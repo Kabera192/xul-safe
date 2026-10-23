@@ -242,11 +242,16 @@ class _DriverChildrenAttendancePageState
     if (_togglingKeys.contains(key)) return;
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    final optimistic = action == 'BOARDED'
-        ? record.copyWith(
-            boarded: newValue, boardedAt: newValue ? now : null)
-        : record.copyWith(
-            droppedOff: newValue, droppedOffAt: newValue ? now : null);
+    final optimistic = switch (action) {
+      'BOARDED' => record.copyWith(
+          boarded: newValue, boardedAt: newValue ? now : null),
+      'ABSENT' => record.copyWith(
+          isAbsent: newValue,
+          boarded: newValue ? false : record.boarded,
+          droppedOff: newValue ? false : record.droppedOff),
+      _ => record.copyWith(
+          droppedOff: newValue, droppedOffAt: newValue ? now : null),
+    };
 
     setState(() {
       _togglingKeys.add(key);
@@ -264,8 +269,12 @@ class _DriverChildrenAttendancePageState
       );
 
       if (!mounted) return;
-      setState(
-          () => _applyRecord(updated.copyWith(isAbsent: record.isAbsent)));
+      // ABSENT is driver-initiated, so the backend's isAbsent is the truth.
+      // BOARDED/DROPPED_OFF don't touch absence on this screen — that flag
+      // is otherwise driven by the parent-declared absence list merged in
+      // _loadAttendance, so preserve whatever this record already had.
+      setState(() => _applyRecord(
+          action == 'ABSENT' ? updated : updated.copyWith(isAbsent: record.isAbsent)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _applyRecord(record));
