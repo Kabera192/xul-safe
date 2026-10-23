@@ -3,6 +3,8 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../services/emergency_contact_service.dart';
 import '../../../widgets/language_picker_sheet.dart';
+import '../pages/parent_request_stop_page.dart';
+import '../../../widgets/language_picker_sheet.dart';
 
 class ParentMoreSettingsForm extends StatefulWidget {
   const ParentMoreSettingsForm({super.key});
@@ -163,7 +165,13 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           const SizedBox(height: 8),
           Center(child: Text('No routes/stops', style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 14.5, fontWeight: FontWeight.w500))),
           const SizedBox(height: 10),
-          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: 'Request a custom bus stop', onTap: null),
+          _SoftActionButton(
+            icon: IconsaxPlusLinear.add_circle,
+            text: 'Request a custom bus stop',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ParentRequestStopPage()),
+            ),
+          ),
 
           const SizedBox(height: 22),
 
