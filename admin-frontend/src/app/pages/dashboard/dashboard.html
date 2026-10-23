@@ -99,6 +99,7 @@
               <th>Date</th>
               <th>Bus</th>
               <th>Route</th>
+              <th>Total students</th>
               <th>Present</th>
               <th>Absent</th>
               <th>Trip status</th>
@@ -109,6 +110,7 @@
               <td>{{ row.date }}</td>
               <td>{{ row.bus }}</td>
               <td>{{ row.route }}</td>
+              <td>{{ row.totalStudents }}</td>
               <td>{{ row.present != null ? (row.present + ' students') : 'N/A' }}</td>
               <td>{{ row.absent != null ? (row.absent + ' students') : 'N/A' }}</td>
               <td>
@@ -118,7 +120,7 @@
               </td>
             </tr>
             <tr *ngIf="!statsLoading && busAttendance.length === 0">
-              <td colspan="6" class="empty-cell">No attendance data available.</td>
+              <td colspan="7" class="empty-cell">No attendance data available.</td>
             </tr>
           </tbody>
         </table>
