@@ -4,9 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { StudentService } from '../../services/student.service';
 import { EmergencyContactService } from '../../services/emergency-contact.service';
-import { ChildDetail, EmergencyContact } from '../../models';
+import { JourneyService } from '../../services/journey.service';
+import { AttendanceMark, ChildDetail, EmergencyContact, WeeklyAttendance } from '../../models';
 import { environment } from '../../../environments/environment';
-import { catchError, finalize, of, timeout } from 'rxjs';
+import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
+
+type DayStatus = 'present' | 'absent' | 'pending' | 'weekend';
 
 interface EditableContact extends EmergencyContact {
   isEditing: boolean;
@@ -26,6 +29,7 @@ export class StudentDetailsPage implements OnInit {
   private route = inject(ActivatedRoute);
   private studentService = inject(StudentService);
   private emergencyContactService = inject(EmergencyContactService);
+  private journeyService = inject(JourneyService);
   private cdr = inject(ChangeDetectorRef);
 
   student: ChildDetail | null = null;
@@ -34,6 +38,10 @@ export class StudentDetailsPage implements OnInit {
 
   emergencyContacts: EditableContact[] = [];
   parentEmail = '';
+
+  attendanceMonthLabel = '';
+  attendanceWeeks: DayStatus[][] = [];
+  isLoadingAttendance = false;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -68,8 +76,87 @@ export class StudentDetailsPage implements OnInit {
       if (student?.parentId) {
         this.loadEmergencyContacts(student.parentId);
       }
+      if (student?.id) {
+        this.loadAttendance(student.id);
+      }
       this.cdr.detectChanges();
     });
+  }
+
+  /**
+   * Builds a real Mon–Sun grid for the current month by reusing the same
+   * per-week fleet attendance endpoint the trip-attendance page uses, one
+   * call per Monday-starting week that touches this month, then pulling out
+   * just this child's row from each. Weekends aren't tracked (no school bus
+   * runs then) so they're always rendered as neutral/muted.
+   */
+  private loadAttendance(childId: string): void {
+    this.isLoadingAttendance = true;
+    const now = new Date();
+    this.attendanceMonthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const mondays = this.mondaysInMonth(now);
+    const requests = mondays.map((monday) =>
+      this.journeyService.getWeeklyAttendance(this.formatDate(monday)).pipe(
+        catchError(() => of([] as WeeklyAttendance[]))
+      )
+    );
+
+    (requests.length ? forkJoin(requests) : of([] as WeeklyAttendance[][])).pipe(
+      timeout(10000),
+      catchError(() => of(mondays.map(() => [] as WeeklyAttendance[]))),
+      finalize(() => {
+        this.isLoadingAttendance = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe((weeksData) => {
+      this.attendanceWeeks = mondays.map((_, i) => {
+        const childWeek = (weeksData[i] || []).find((w) => w.childId === childId);
+        const weekdays: DayStatus[] = (['mon', 'tue', 'wed', 'thu', 'fri'] as const).map((day) =>
+          this.combineMarks(childWeek?.[day] ?? [])
+        );
+        return [...weekdays, 'weekend', 'weekend'];
+      });
+      this.cdr.detectChanges();
+    });
+  }
+
+  private combineMarks(marks: AttendanceMark[]): DayStatus {
+    if (marks.length === 0 || marks.includes('pending')) {
+      return 'pending';
+    }
+    return marks.includes('present') ? 'present' : 'absent';
+  }
+
+  private mondaysInMonth(reference: Date): Date[] {
+    const year = reference.getFullYear();
+    const month = reference.getMonth();
+    const lastOfMonth = new Date(year, month + 1, 0);
+    const mondays: Date[] = [];
+    let monday = this.getMonday(new Date(year, month, 1));
+    while (monday.getTime() <= lastOfMonth.getTime()) {
+      mondays.push(new Date(monday));
+      monday = new Date(monday);
+      monday.setDate(monday.getDate() + 7);
+    }
+    return mondays;
+  }
+
+  private getMonday(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+    return d;
+  }
+
+  /** Plain "yyyy-MM-dd" from local calendar fields — avoids the UTC day-shift toISOString() would cause. */
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   get displayName(): string {

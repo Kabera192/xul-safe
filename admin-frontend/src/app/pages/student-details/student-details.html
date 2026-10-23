@@ -46,7 +46,6 @@
             <div class="value">{{ student?.conductorName || 'N/A' }}</div>
           </div>
         </div>
-        <div class="bus-image"></div>
       </div>
       <div class="route-card">
         <span class="label">Bus stop</span>
@@ -105,9 +104,10 @@
       <div class="attendance-card">
         <div class="attendance-header">
           <h4>Attendance</h4>
-          <button class="month-pill" type="button">July 2025</button>
+          <span class="month-pill">{{ attendanceMonthLabel }}</span>
         </div>
-        <div class="calendar">
+        <div class="loading" *ngIf="isLoadingAttendance">Loading attendance...</div>
+        <div class="calendar" *ngIf="!isLoadingAttendance">
           <div class="calendar-row header">
             <span>Mon</span>
             <span>Tue</span>
@@ -117,15 +117,16 @@
             <span>Sat</span>
             <span>Sun</span>
           </div>
-          <div class="calendar-row" *ngFor="let row of [0,1,2,3]">
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day present"></span>
-            <span class="day absent"></span>
-            <span class="day muted"></span>
+          <div class="calendar-row" *ngFor="let week of attendanceWeeks">
+            <span
+              class="day"
+              *ngFor="let status of week"
+              [class.present]="status === 'present'"
+              [class.absent]="status === 'absent'"
+              [class.muted]="status === 'pending' || status === 'weekend'"
+            ></span>
           </div>
+          <div class="no-contacts" *ngIf="attendanceWeeks.length === 0">No attendance data available.</div>
         </div>
       </div>
     </div>
