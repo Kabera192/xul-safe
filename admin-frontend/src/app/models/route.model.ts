@@ -47,3 +47,11 @@ export interface SelectBusStopRequest {
   childId: string;
   busStopId: string;
 }
+
+/** Returned by GET /routes/{routeId}/parents. */
+export interface ParentSummary {
+  id: number;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+}

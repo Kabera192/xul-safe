@@ -1,14 +1,15 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { StudentService } from '../../services/student.service';
 import { Router } from '@angular/router';
 import { catchError, finalize, of, timeout } from 'rxjs';
-import { Bus, BusStop, Child, Route } from '../../models';
+import { Bus, BusStop, Child, ParentSummary, Route } from '../../models';
 import { BusService } from '../../services/bus.service';
 import { RouteService } from '../../services/route.service';
 import { BusStopService } from '../../services/bus-stop.service';
+import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-student-create',
@@ -23,6 +24,8 @@ export class StudentCreatePage implements OnInit {
   private busService = inject(BusService);
   private routeService = inject(RouteService);
   private busStopService = inject(BusStopService);
+  private userService = inject(UserService);
+  private cdr = inject(ChangeDetectorRef);
 
   fullName = '';
   gender = '';
@@ -37,10 +40,13 @@ export class StudentCreatePage implements OnInit {
   buses: Bus[] = [];
   routes: Route[] = [];
   busStops: BusStop[] = [];
+  parents: ParentSummary[] = [];
+  isLoadingParents = false;
 
   ngOnInit(): void {
     this.loadBuses();
     this.loadRoutes();
+    this.loadAllParents();
   }
 
   /**
@@ -65,6 +71,7 @@ export class StudentCreatePage implements OnInit {
       })
     ).subscribe((buses) => {
       this.buses = buses;
+      this.cdr.detectChanges();
     });
   }
 
@@ -77,6 +84,25 @@ export class StudentCreatePage implements OnInit {
       })
     ).subscribe((routes) => {
       this.routes = routes;
+      this.cdr.detectChanges();
+    });
+  }
+
+  private loadAllParents(): void {
+    this.isLoadingParents = true;
+    this.userService.getAllParents().pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('Failed to load parents:', error);
+        return of([] as ParentSummary[]);
+      }),
+      finalize(() => {
+        this.isLoadingParents = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe((parents) => {
+      this.parents = parents;
+      this.cdr.detectChanges();
     });
   }
 
@@ -96,6 +122,7 @@ export class StudentCreatePage implements OnInit {
       })
     ).subscribe((stops) => {
       this.busStops = stops;
+      this.cdr.detectChanges();
     });
   }
 
@@ -108,6 +135,7 @@ export class StudentCreatePage implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoPreview = String(reader.result || '');
+      this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
   }
@@ -132,6 +160,7 @@ export class StudentCreatePage implements OnInit {
       }),
       finalize(() => {
         this.isSaving = false;
+        this.cdr.detectChanges();
       })
     ).subscribe((child) => {
       if (child?.id) {
