@@ -31,8 +31,13 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
   bool _showAll = true;
   final _searchCtrl = TextEditingController();
 
-  // Emergency-type notification type identifiers
-  static const _emergencyTypes = {'EMERGENCY', 'ALERT'};
+  // Incidents (crashes, medical events, breakdowns, etc.) are the
+  // "emergencies" bucket — the backend tags every one of these with the
+  // INCIDENT_REPORTED category, regardless of severity, so that's the
+  // field to filter on. Notification.type (INFO/WARNING/URGENT) only
+  // reflects journey impact and is never set to a dedicated emergency
+  // value, so filtering on it (as this used to) never matched anything.
+  static const _emergencyCategories = {'INCIDENT_REPORTED'};
 
   @override
   void dispose() {
@@ -42,11 +47,13 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
 
   List<NotificationModel> get _filtered {
     final query = _searchCtrl.text.trim().toLowerCase();
-    final list = _showAll
-        ? widget.notifications
-        : widget.notifications
-            .where((n) => _emergencyTypes.contains(n.type.toUpperCase()))
-            .toList();
+    // Incidents are exclusively an Emergencies-tab concern — "All
+    // notifications" means all the non-emergency ones, not literally all.
+    final list = widget.notifications
+        .where((n) =>
+            _emergencyCategories.contains(n.category.toUpperCase()) !=
+            _showAll)
+        .toList();
     if (query.isEmpty) return list;
     return list
         .where((n) =>
