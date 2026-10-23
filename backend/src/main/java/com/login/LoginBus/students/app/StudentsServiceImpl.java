@@ -75,6 +75,8 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     @Override
     @Transactional
     public Child createChild(Child child) {
+        validateSingleBusPerParent(child.getParentId(), child.getBusId(), null);
+
         // Set creation timestamp
         if (child.getCreatedAt() == null) {
             child.setCreatedAt(System.currentTimeMillis());
@@ -89,6 +91,29 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         ChildJpaEntity saved = childRepository.save(entity);
 
         return saved.toDomain();
+    }
+
+    /**
+     * A parent's children must all ride the same bus — rejects an
+     * assignment that would put a sibling on a different one.
+     */
+    private void validateSingleBusPerParent(Long parentId, Long busId, String excludeChildId) {
+        if (parentId == null || busId == null) {
+            return;
+        }
+        List<ChildJpaEntity> siblings = childRepository.findByParentId(parentId);
+        for (ChildJpaEntity sibling : siblings) {
+            if (excludeChildId != null && excludeChildId.equals(sibling.getId())) {
+                continue;
+            }
+            Long siblingBusId = sibling.getBusId();
+            if (siblingBusId != null && !siblingBusId.equals(busId)) {
+                throw new IllegalArgumentException(
+                    "Cannot assign this bus: " + sibling.getFullName()
+                        + " (another child of this parent) is already assigned to a different bus."
+                );
+            }
+        }
     }
 
     @Override
@@ -123,6 +148,7 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         }
         // Update bus and bus stop assignment. Route lives only on the bus —
         // a child has no independent route of their own.
+        validateSingleBusPerParent(existing.getParentId(), child.getBusId(), childId);
         existing.setBusId(child.getBusId());
         existing.setBusStopId(child.getBusStopId());
 
