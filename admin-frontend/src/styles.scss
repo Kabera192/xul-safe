@@ -112,3 +112,641 @@ button {
   margin: 0 auto;
   padding: 0 1rem;
 }
+
+// ============================================================
+// Dark theme — toggled via the theme button in the header
+// (ThemeService adds/removes `dark-theme` on <html>).
+//
+// Most page stylesheets hardcode hex colors rather than the
+// CSS variables above, so a variable swap alone wouldn't reach
+// them. Instead this targets the class-name vocabulary shared
+// by nearly every page (page-card, tables, forms, buttons,
+// status banners, modals, tabs) — one place instead of editing
+// 30+ page stylesheets. Highly bespoke one-off visuals on a
+// specific page (e.g. a chart, an embedded map) aren't covered.
+// ============================================================
+html.dark-theme {
+  color-scheme: dark;
+
+  body {
+    background-color: #0F172A !important;
+    color: #CBD5E1 !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #F1F5F9 !important;
+  }
+
+  a {
+    color: #60A5FA;
+  }
+
+  // ── Layout chrome ──────────────────────────────────────────
+  .layout-container,
+  .page-content {
+    background-color: #0F172A !important;
+  }
+
+  .header {
+    background-color: #1E293B !important;
+    border-bottom-color: #334155 !important;
+  }
+
+  .menu-toggle,
+  .notification-btn,
+  .theme-toggle-btn {
+    color: #94A3B8 !important;
+
+    &:hover {
+      color: #E2E8F0 !important;
+      background-color: #273449 !important;
+    }
+  }
+
+  .search-box {
+    background-color: #273449 !important;
+
+    svg { color: #94A3B8 !important; }
+
+    input {
+      color: #E2E8F0 !important;
+
+      &::placeholder { color: #64748B !important; }
+    }
+  }
+
+  .notification-dropdown {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+  }
+
+  .notification-dropdown-header {
+    border-bottom-color: #334155 !important;
+
+    h3 { color: #F1F5F9 !important; }
+  }
+
+  .notification-loading,
+  .notification-empty,
+  .notification-row-message {
+    color: #94A3B8 !important;
+  }
+
+  .notification-row {
+    border-bottom-color: #273449 !important;
+
+    &:hover { background-color: #273449 !important; }
+  }
+
+  .notification-row-title {
+    color: #F1F5F9 !important;
+  }
+
+  .notification-row-time {
+    color: #64748B !important;
+  }
+
+  .user-avatar.image {
+    border-color: #334155 !important;
+    background-color: #1E293B !important;
+  }
+
+  .user-name {
+    color: #F1F5F9 !important;
+  }
+
+  .user-role {
+    color: #94A3B8 !important;
+  }
+
+  // ── Cards / surfaces ───────────────────────────────────────
+  .page-card,
+  .card,
+  .form-card,
+  .header-card,
+  .modal-card,
+  .side-overlay .detail-panel,
+  .assign-modal {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+  }
+
+  .modal-backdrop,
+  .overlay-backdrop {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .icon-close {
+    color: #94A3B8 !important;
+
+    &:hover { color: #E2E8F0 !important; }
+  }
+
+  // ── Forms ───────────────────────────────────────────────────
+  .form-grid label,
+  label {
+    color: #94A3B8;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea,
+  input,
+  select,
+  textarea {
+    background-color: #0F172A !important;
+    border-color: #334155 !important;
+    color: #E2E8F0 !important;
+
+    &::placeholder { color: #64748B !important; }
+
+    &:focus {
+      border-color: #3B82F6 !important;
+    }
+
+    &:disabled,
+    &.readonly-field {
+      background-color: #1E293B !important;
+      color: #64748B !important;
+    }
+  }
+
+  .location-input svg {
+    color: #60A5FA !important;
+  }
+
+  .suggestion-list {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+  }
+
+  .suggestion-item {
+    background-color: #1E293B !important;
+    color: #E2E8F0 !important;
+    border-bottom-color: #273449 !important;
+
+    &:hover { background-color: #273449 !important; }
+  }
+
+  .assignment-hint,
+  .section-hint,
+  .searching-hint {
+    color: #64748B !important;
+  }
+
+  .section-label {
+    color: #64748B !important;
+  }
+
+  // ── Buttons ─────────────────────────────────────────────────
+  .btn-ghost,
+  .btn-secondary {
+    background-color: #273449 !important;
+    color: #E2E8F0 !important;
+
+    &:hover { background-color: #334155 !important; }
+  }
+
+  .icon-btn {
+    background-color: #273449 !important;
+    color: #60A5FA !important;
+
+    &:hover { background-color: #334155 !important; }
+
+    &.danger {
+      background-color: rgba(239, 68, 68, 0.15) !important;
+      color: #F87171 !important;
+
+      &:hover { background-color: rgba(239, 68, 68, 0.25) !important; }
+    }
+
+    &.success {
+      background-color: rgba(16, 185, 129, 0.15) !important;
+      color: #34D399 !important;
+
+      &:hover { background-color: rgba(16, 185, 129, 0.25) !important; }
+    }
+  }
+
+  .back-btn {
+    background-color: #273449 !important;
+    color: #60A5FA !important;
+  }
+
+  .page-btn {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+    color: #E2E8F0 !important;
+
+    &:hover:not(:disabled) { background-color: #273449 !important; }
+  }
+
+  // ── Tables ──────────────────────────────────────────────────
+  table {
+    thead {
+      background-color: #273449 !important;
+
+      th {
+        color: #94A3B8 !important;
+        border-bottom-color: #334155 !important;
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom-color: #273449 !important;
+
+        &:hover { background-color: #273449 !important; }
+      }
+
+      td {
+        color: #CBD5E1 !important;
+      }
+
+      .num { color: #64748B !important; }
+      .empty-cell { color: #64748B !important; }
+    }
+  }
+
+  .table-head,
+  .table-row {
+    border-color: #273449 !important;
+  }
+
+  .table-footer {
+    color: #94A3B8 !important;
+  }
+
+  // ── Status / message banners ───────────────────────────────
+  .error-message {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #F87171 !important;
+  }
+
+  .notice-message {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+    color: #FBBF24 !important;
+  }
+
+  .loading-message,
+  .table-state {
+    background-color: #1E293B !important;
+    color: #94A3B8 !important;
+  }
+
+  .table-state.error {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #F87171 !important;
+  }
+
+  .empty-state {
+    color: #64748B !important;
+  }
+
+  .notification.success {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    color: #34D399 !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+  }
+
+  .notification.error {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #F87171 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+  }
+
+  .status-pill,
+  .type-tag,
+  .badge {
+    background-color: #273449 !important;
+    color: #E2E8F0 !important;
+  }
+
+  // ── Tabs ────────────────────────────────────────────────────
+  .tabs {
+    border-bottom-color: #334155 !important;
+  }
+
+  .tab {
+    background-color: #273449 !important;
+    border-color: #334155 !important;
+    color: #94A3B8 !important;
+
+    &:hover { background-color: #334155 !important; }
+
+    &.active {
+      background-color: #3B82F6 !important;
+      border-color: #3B82F6 !important;
+      color: #ffffff !important;
+    }
+  }
+
+  .search {
+    background-color: #273449 !important;
+
+    svg { color: #94A3B8 !important; }
+
+    input {
+      color: #E2E8F0 !important;
+
+      &::placeholder { color: #64748B !important; }
+    }
+  }
+
+  // ── Misc shared bits ────────────────────────────────────────
+  .photo-preview {
+    background-color: #273449 !important;
+    border-color: #334155 !important;
+    color: #64748B !important;
+  }
+
+  .route-name,
+  .notification-row-title {
+    color: #F1F5F9 !important;
+  }
+
+  .route-endpoints,
+  .muted {
+    color: #94A3B8 !important;
+  }
+
+  // ── Page-specific surfaces not covered by the shared classes
+  //    above — gathered by scanning every page stylesheet for
+  //    light background declarations, since each page also
+  //    invents a few of its own one-off card/row/badge classes.
+  // ────────────────────────────────────────────────────────────
+
+  // Generic light surfaces (cards, rows, buttons, inputs) reused
+  // under different class names per page.
+  .summary-card,
+  .filters-card,
+  .card.table-card,
+  .error-card,
+  .ghost-btn,
+  .readonly-field,
+  .assign-card,
+  .history-card,
+  .metric,
+  .conductor-card,
+  .bus-card,
+  .route-card,
+  .contact-row,
+  .contact-input,
+  .btn-secondary,
+  .btn-outline,
+  .route-item,
+  .filter-btn,
+  .filter-select,
+  .nav-btn,
+  .date-pill,
+  .month-pill,
+  .day,
+  .no-contacts,
+  .message-box,
+  .popup-content,
+  .emergency-panel,
+  .detail-panel,
+  .attendance-card,
+  .day-row,
+  .login-container,
+  .login-right,
+  .forgot-container,
+  .forgot-right,
+  .newpass-container,
+  .newpass-right,
+  .otp-container,
+  .otp-right {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+    color: #E2E8F0 !important;
+  }
+
+  .route-item:hover,
+  .route-item.selected,
+  .stops-table tbody tr:hover,
+  .btn-secondary:hover,
+  .btn-filter:hover,
+  .bus-item:hover,
+  .notification-item:hover,
+  .nav-btn:hover {
+    background-color: #273449 !important;
+  }
+
+  .stops-table thead {
+    background-color: #273449 !important;
+
+    th { color: #94A3B8 !important; border-bottom-color: #334155 !important; }
+  }
+
+  .btn-filter {
+    background-color: #273449 !important;
+    color: #E2E8F0 !important;
+    border-color: #334155 !important;
+  }
+
+  // Icon-bearing circular/square chips — background only, the
+  // icon itself keeps its own accent color via currentColor.
+  .photo,
+  .bus-icon,
+  .emergency-image,
+  .map-card .map-placeholder,
+  .map-card {
+    background-color: #273449 !important;
+    color: #64748B !important;
+  }
+
+  .avatar {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+    color: #60A5FA !important;
+  }
+
+  // Text inputs that aren't inside `.form-grid` / a generic
+  // `input` selector (type-attribute-scoped on the auth pages).
+  input[type="text"],
+  input[type="email"],
+  .password-input-wrapper input,
+  .field select {
+    background-color: #0F172A !important;
+    border-color: #334155 !important;
+    color: #E2E8F0 !important;
+  }
+
+  // Table header cell used directly (not wrapped in `thead`).
+  .data-table th {
+    background-color: #273449 !important;
+    color: #94A3B8 !important;
+    border-bottom-color: #334155 !important;
+  }
+
+  // ── Tinted badges / status chips — translucent-on-dark ─────
+  .type-badge,
+  .type-tag,
+  .status-badge,
+  .total-badge {
+    background-color: rgba(96, 165, 250, 0.15) !important;
+    color: #60A5FA !important;
+  }
+
+  .type-badge.morning,
+  .status-badge.active,
+  .status-badge.in-progress,
+  .type-tag.warning,
+  .type-tag.alert,
+  .dev-hint,
+  .assign-badge.reassign,
+  .panel-icon {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #FBBF24 !important;
+  }
+
+  .type-badge.afternoon {
+    background-color: rgba(167, 139, 250, 0.15) !important;
+    color: #A78BFA !important;
+  }
+
+  .type-badge.full-day,
+  .type-tag.incident,
+  .bus-status,
+  .notif-icon.incident,
+  .alert-icon,
+  .action-feedback.error,
+  .action-btn.delete,
+  .error-banner {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #F87171 !important;
+  }
+
+  .status-badge.completed,
+  .bus-status.active,
+  .action-feedback.success,
+  .action-btn.save,
+  .locate-btn {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #34D399 !important;
+  }
+
+  .action-btn.edit {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    color: #60A5FA !important;
+  }
+
+  .action-btn.edit:hover {
+    background-color: rgba(59, 130, 246, 0.25) !important;
+  }
+
+  .action-btn.cancel {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #FBBF24 !important;
+  }
+
+  .success-message {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    color: #34D399 !important;
+  }
+
+  // ── Misc one-offs ───────────────────────────────────────────
+  .view-btn,
+  .details-link {
+    background-color: #273449 !important;
+    color: #60A5FA !important;
+
+    &:hover { background-color: #334155 !important; }
+  }
+
+  .mark.pending,
+  .mark-dot.pending,
+  .legend-dot.pending {
+    background-color: #334155 !important;
+  }
+
+  .mark.absent::after,
+  .mark-dot.absent::after,
+  .day.absent::after {
+    background-color: #0F172A !important;
+  }
+
+  .assign-row,
+  .emergency-card,
+  .panel-message,
+  .audio-bar {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+    color: #E2E8F0 !important;
+  }
+
+  .btn-refresh,
+  .modal-title .icon.route-icon {
+    background-color: #273449 !important;
+    color: #60A5FA !important;
+    border-color: #334155 !important;
+  }
+
+  .close-btn:hover {
+    background-color: #273449 !important;
+  }
+
+  // Dashboard's 4 "today's trips" stat tiles.
+  .overview-card {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+  }
+
+  .overview-card.scheduled .overview-icon {
+    background-color: rgba(96, 165, 250, 0.15) !important;
+    color: #60A5FA !important;
+  }
+
+  .overview-card.in-progress .overview-icon {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #FBBF24 !important;
+  }
+
+  .overview-card.completed .overview-icon {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #34D399 !important;
+  }
+
+  .overview-card.students .overview-icon {
+    background-color: rgba(167, 139, 250, 0.15) !important;
+    color: #A78BFA !important;
+  }
+
+  // ── Dark "primary text" values ─────────────────────────────
+  // Backgrounds above were the first pass; this is the second —
+  // near-black text (#111827/#1F2937/#374151-family) is used as
+  // the default "value" color on dozens of differently-named
+  // classes throughout every page (gathered the same way: scan
+  // every page stylesheet for dark `color:` declarations). The
+  // heading/body-text catch-alls near the top of this block only
+  // reach <h1>-<h6> and inherited body text — anything with its
+  // own explicit color (a span, a strong, a styled div) needs to
+  // be named here directly, since a class selector beats
+  // inheritance regardless of how dark the ancestor's background is.
+  .value,
+  .card-title,
+  .info-row strong,
+  .contact-row strong,
+  .contact-phone,
+  .overview-value,
+  .notif-title,
+  .day-label,
+  .assign-name,
+  .data-table td,
+  .bus-info .bus-id {
+    color: #E2E8F0 !important;
+  }
+
+  .field {
+    color: #94A3B8 !important;
+  }
+
+  .page-title {
+    color: #F1F5F9 !important;
+  }
+
+  .otp-box {
+    background-color: #0F172A !important;
+    border-color: #334155 !important;
+    color: #E2E8F0 !important;
+  }
+}
