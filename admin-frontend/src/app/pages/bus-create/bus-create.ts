@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -21,12 +21,12 @@ export class BusCreatePage implements OnInit {
   private conductorService = inject(ConductorService);
   private routeService = inject(RouteService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   plateNumber = '';
   model = '';
   capacity = '';
   status = 'ACTIVE';
-  deviceId = '';
   selectedRouteId = '';
   selectedConductorId = '';
   conductors: Conductor[] = [];
@@ -49,6 +49,7 @@ export class BusCreatePage implements OnInit {
       })
     ).subscribe((conductors) => {
       this.conductors = conductors;
+      this.cdr.detectChanges();
     });
   }
 
@@ -61,6 +62,7 @@ export class BusCreatePage implements OnInit {
       })
     ).subscribe((routes) => {
       this.routes = routes;
+      this.cdr.detectChanges();
     });
   }
 
@@ -73,6 +75,7 @@ export class BusCreatePage implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoPreview = String(reader.result || '');
+      this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
   }
@@ -86,7 +89,6 @@ export class BusCreatePage implements OnInit {
       capacity: this.capacity ? Number(this.capacity) : undefined,
       status: this.status as Bus['status'],
       conductorId: this.selectedConductorId ? Number(this.selectedConductorId) : undefined,
-      deviceId: this.deviceId || undefined,
       routeId: this.selectedRouteId ? Number(this.selectedRouteId) : undefined,
       photoUrl: this.photoPreview || undefined
     };
@@ -98,6 +100,7 @@ export class BusCreatePage implements OnInit {
       }),
       finalize(() => {
         this.isSaving = false;
+        this.cdr.detectChanges();
       })
     ).subscribe((bus) => {
       if (bus?.id) {

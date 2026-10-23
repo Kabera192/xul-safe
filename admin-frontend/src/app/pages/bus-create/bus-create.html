@@ -49,10 +49,6 @@
         </select>
       </label>
       <label>
-        Bus device ID
-        <input type="text" [(ngModel)]="deviceId" />
-      </label>
-      <label>
         Route
         <select [(ngModel)]="selectedRouteId">
           <option value="">Unassigned</option>
@@ -64,7 +60,7 @@
     </div>
 
     <div class="form-actions">
-      <button class="btn-ghost" type="button" [disabled]="isSaving">Cancel</button>
+      <button class="btn-ghost" type="button" [disabled]="isSaving" routerLink="/school-buses">Cancel</button>
       <button class="btn-primary" type="button" [disabled]="isSaving" (click)="createBus()">
         {{ isSaving ? 'Creating...' : 'Create bus' }}
       </button>
