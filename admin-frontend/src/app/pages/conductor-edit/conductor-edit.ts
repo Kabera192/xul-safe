@@ -7,6 +7,7 @@ import { BusService } from '../../services/bus.service';
 import { RouteService } from '../../services/route.service';
 import { Bus, Conductor, Route } from '../../models';
 import { environment } from '../../../environments/environment';
+import { isValidEmail, isValidPhone } from '../../shared/validators';
 import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
 
 @Component({
@@ -30,9 +31,7 @@ export class ConductorEditPage implements OnInit {
   email = '';
   age = '';
   status: Conductor['status'] | '' = '';
-  driverId = '';
   phone = '';
-  licenceNumber = '';
   licenceType = '';
   licenceExpiry = '';
   experience = '';
@@ -128,9 +127,7 @@ export class ConductorEditPage implements OnInit {
       this.email = conductor.email ?? '';
       this.age = conductor.age != null ? String(conductor.age) : '';
       this.status = conductor.status ?? '';
-      this.driverId = conductor.driverId ?? (conductor.id != null ? `#DVR-${String(conductor.id).padStart(6, '0')}` : '');
       this.phone = conductor.phoneNumber ?? '';
-      this.licenceNumber = conductor.licenceNumber ?? '';
       this.licenceType = conductor.licenceType ?? '';
       this.licenceExpiry = conductor.licenceExpiry ?? '';
       this.experience = conductor.experience ?? '';
@@ -150,6 +147,7 @@ export class ConductorEditPage implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoPreview = String(reader.result || '');
+      this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
   }
@@ -158,6 +156,18 @@ export class ConductorEditPage implements OnInit {
     if (!this.conductorId) {
       return;
     }
+
+    if (this.email && !isValidEmail(this.email)) {
+      this.errorMessage = 'Please enter a valid email address.';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (this.phone && !isValidPhone(this.phone)) {
+      this.errorMessage = 'Please enter a valid phone number.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
     this.cdr.detectChanges();
@@ -168,9 +178,7 @@ export class ConductorEditPage implements OnInit {
       email: this.email || undefined,
       age: this.age ? Number(this.age) : undefined,
       status: (this.status || undefined) as Conductor['status'],
-      driverId: this.driverId || undefined,
       phoneNumber: this.phone,
-      licenceNumber: this.licenceNumber || undefined,
       licenceType: this.licenceType || undefined,
       licenceExpiry: this.licenceExpiry || undefined,
       experience: this.experience || undefined,
