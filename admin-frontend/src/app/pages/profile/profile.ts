@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,6 +18,7 @@ export class ProfilePage implements OnInit {
   private authService = inject(AuthService);
   private userService = inject(UserService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   currentUser: User | null = null;
   isSaving = false;
@@ -52,15 +53,18 @@ export class ProfilePage implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoPreview = String(reader.result || '');
+      this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
 
     this.authService.uploadProfilePhoto(this.currentUser.id, file).subscribe({
       next: (photoUrl) => {
         this.updateStoredUser({ photoUrl: this.normalizePhotoUrl(photoUrl) });
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.errorMessage = error.message || 'Failed to upload photo.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -83,10 +87,12 @@ export class ProfilePage implements OnInit {
         this.successMessage = 'Profile updated successfully.';
         this.isSaving = false;
         this.router.navigate(['/dashboard']);
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.errorMessage = error.message || 'Failed to update profile.';
         this.isSaving = false;
+        this.cdr.detectChanges();
       }
     });
   }
