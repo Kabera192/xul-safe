@@ -78,13 +78,13 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Stop Name</th>
-              <th>Location</th>
+              <th class="sortable" (click)="sortStops('name')">Stop Name{{ stopSortArrow('name') }}</th>
+              <th class="sortable" (click)="sortStops('location')">Location{{ stopSortArrow('location') }}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let stop of stops; let i = index">
+            <tr *ngFor="let stop of sortedStops; let i = index">
               <td>{{ stop.order || (i + 1) }}</td>
               <td>{{ stop.name }}</td>
               <td>{{ stop.location }}</td>
@@ -129,7 +129,7 @@
 <div class="modal-overlay" *ngIf="showRouteModal">
   <div class="modal-backdrop" (click)="closeRouteModal()"></div>
 
-  <div class="modal-card">
+  <div class="modal-card route-modal">
     <div class="modal-header">
       <div class="modal-title">
         <span class="icon route-icon">
@@ -143,29 +143,84 @@
       <button class="icon-close" type="button" (click)="closeRouteModal()">×</button>
     </div>
 
-    <label class="field">
-      Route name *
-      <input type="text" placeholder="Enter route name" [(ngModel)]="routeName" />
-    </label>
+    <p class="section-label">Route details</p>
+    <div class="form-grid">
+      <label class="field">
+        Route name *
+        <input type="text" placeholder="Enter route name" [(ngModel)]="routeName" />
+      </label>
 
-    <label class="field">
-      Description
-      <input type="text" placeholder="Enter route description (optional)" [(ngModel)]="routeDescription" />
-    </label>
+      <label class="field">
+        Description
+        <input type="text" placeholder="Enter route description (optional)" [(ngModel)]="routeDescription" />
+      </label>
+    </div>
 
-    <label class="field">
-      Start location
-      <input type="text" placeholder="Enter start location" [(ngModel)]="routeStart" />
-    </label>
+    <p class="section-label">Route endpoints</p>
+    <div class="form-grid">
+      <label class="field">
+        Start location
+        <div class="location-input">
+          <input
+            type="text"
+            placeholder="Search a start location"
+            autocomplete="off"
+            [(ngModel)]="routeStart"
+            (ngModelChange)="onRouteStartQueryChange($event)"
+          />
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <div class="searching-hint" *ngIf="isSearchingRouteStart">Searching location…</div>
+        <div class="suggestion-list" *ngIf="routeStartSuggestions.length > 0">
+          <button
+            class="suggestion-item"
+            type="button"
+            *ngFor="let suggestion of routeStartSuggestions"
+            (click)="selectRouteStartSuggestion(suggestion)"
+          >
+            {{ suggestion.name }}
+          </button>
+        </div>
+      </label>
 
-    <label class="field">
-      End location
-      <input type="text" placeholder="Enter end location" [(ngModel)]="routeEnd" />
-    </label>
+      <label class="field">
+        End location
+        <div class="location-input">
+          <input
+            type="text"
+            placeholder="Search an end location"
+            autocomplete="off"
+            [(ngModel)]="routeEnd"
+            (ngModelChange)="onRouteEndQueryChange($event)"
+          />
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <div class="searching-hint" *ngIf="isSearchingRouteEnd">Searching location…</div>
+        <div class="suggestion-list" *ngIf="routeEndSuggestions.length > 0">
+          <button
+            class="suggestion-item"
+            type="button"
+            *ngFor="let suggestion of routeEndSuggestions"
+            (click)="selectRouteEndSuggestion(suggestion)"
+          >
+            {{ suggestion.name }}
+          </button>
+        </div>
+      </label>
+    </div>
 
-    <button class="primary-btn" type="button" (click)="saveRoute()" [disabled]="isSaving || !routeName.trim()">
-      {{ submitButtonText }}
-    </button>
+    <div class="modal-actions">
+      <button class="btn-secondary" type="button" (click)="closeRouteModal()">Cancel</button>
+      <button class="btn-primary" type="button" (click)="saveRoute()" [disabled]="isSaving || !routeName.trim()">
+        {{ submitButtonText }}
+      </button>
+    </div>
   </div>
 </div>
 
@@ -173,7 +228,7 @@
 <div class="modal-overlay" *ngIf="showStopModal">
   <div class="modal-backdrop" (click)="closeStopModal()"></div>
 
-  <div class="modal-card">
+  <div class="modal-card stop-modal">
     <div class="modal-header">
       <div class="modal-title">
         <span class="icon route-icon">
@@ -193,19 +248,64 @@
       <input type="text" placeholder="Enter stop name" [(ngModel)]="stopName" />
     </label>
 
+    <p class="section-hint">Pick a location — search a place, use your current location, or tap the map.</p>
+
+    <label class="field">
+      <div class="location-input">
+        <input
+          type="text"
+          placeholder="Search a place name"
+          autocomplete="off"
+          [(ngModel)]="stopSearchTerm"
+          (ngModelChange)="onStopSearchQueryChange($event)"
+        />
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <div class="searching-hint" *ngIf="isSearchingStop">Searching location…</div>
+      <div class="suggestion-list" *ngIf="stopSuggestions.length > 0">
+        <button
+          class="suggestion-item"
+          type="button"
+          *ngFor="let suggestion of stopSuggestions"
+          (click)="selectStopSuggestion(suggestion)"
+        >
+          {{ suggestion.name }}
+        </button>
+      </div>
+    </label>
+
+    <button class="locate-btn" type="button" (click)="useMyLocationForStop()" [disabled]="isCapturingLocation">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 2v3"></path>
+        <path d="M12 19v3"></path>
+        <path d="M2 12h3"></path>
+        <path d="M19 12h3"></path>
+      </svg>
+      {{ isCapturingLocation ? 'Capturing…' : 'Use my current location' }}
+    </button>
+    <div class="locate-error" *ngIf="locateError">{{ locateError }}</div>
+
+    <app-map-picker
+      [lat]="stopLatitude"
+      [lng]="stopLongitude"
+      [editable]="true"
+      (positionPicked)="onStopPositionPicked($event)">
+    </app-map-picker>
+
+    <div class="location-status" [class.set]="stopLatitude !== null && stopLongitude !== null">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6 9 17l-5-5"></path>
+      </svg>
+      {{ (stopLatitude !== null && stopLongitude !== null) ? 'Location set' : 'No location picked yet — search, use current location, or tap the map' }}
+    </div>
+
     <label class="field">
       Address
       <input type="text" placeholder="Enter address (optional)" [(ngModel)]="stopAddress" />
-    </label>
-
-    <label class="field">
-      Latitude
-      <input type="number" placeholder="e.g. -1.9441 (optional)" [(ngModel)]="stopLatitude" step="any" />
-    </label>
-
-    <label class="field">
-      Longitude
-      <input type="number" placeholder="e.g. 30.0619 (optional)" [(ngModel)]="stopLongitude" step="any" />
     </label>
 
     <label class="field">
@@ -213,9 +313,12 @@
       <input type="number" placeholder="Order along the route (optional)" [(ngModel)]="stopOrder" min="1" />
     </label>
 
-    <button class="primary-btn" type="button" (click)="saveStop()" [disabled]="isSavingStop || !stopFormValid">
-      {{ stopSubmitButtonText }}
-    </button>
+    <div class="modal-actions">
+      <button class="btn-secondary" type="button" (click)="closeStopModal()">Cancel</button>
+      <button class="btn-primary" type="button" (click)="saveStop()" [disabled]="isSavingStop || !stopFormValid">
+        {{ stopSubmitButtonText }}
+      </button>
+    </div>
   </div>
 </div>
 
