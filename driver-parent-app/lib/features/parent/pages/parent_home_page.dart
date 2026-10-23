@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -8,10 +9,12 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/session/session_storage.dart';
+import '../../../core/utils/photo_url.dart';
 import '../../../services/child_service.dart';
 import '../../../services/tracking_service.dart';
 import '../../../services/transport_service.dart';
 import '../../../services/incident_service.dart';
+import '../models/child_model.dart';
 import 'parent_incidents_page.dart';
 import '../../../widgets/mobile_location_gate.dart';
 
@@ -40,6 +43,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   // Live tracking (polled every 10s)
   String? _activeChildId;
+  List<ChildModel> _children = [];
   Map<String, dynamic>? _tracking;
 
   // Dialog guard
@@ -101,6 +105,17 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return _assignedBus;
   }
 
+  // Only the children riding the bus this panel is tracking — a parent
+  // with children on different buses shouldn't see all of them here.
+  List<ChildModel> get _busChildren {
+    final rawBusId = _bus?['id'];
+    if (rawBusId == null) return const [];
+    final busId =
+        rawBusId is int ? rawBusId : int.tryParse(rawBusId.toString());
+    if (busId == null) return const [];
+    return _children.where((c) => c.busId == busId).toList();
+  }
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
   @override
@@ -151,6 +166,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
       final children = await ChildService.getMyChildren();
       if (!mounted) return;
       setState(() {
+        _children = children;
         if (children.isNotEmpty) {
           _activeChildId = children.first.id;
         }
@@ -392,6 +408,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                 conductor: _conductor,
                 bus: _bus,
                 journeyActive: _journeyActive,
+                children: _busChildren,
               ),
             ),
           ],
@@ -577,11 +594,13 @@ class _BottomPanel extends StatelessWidget {
   final Map<String, dynamic>? conductor;
   final Map<String, dynamic>? bus;
   final bool journeyActive;
+  final List<ChildModel> children;
 
   const _BottomPanel({
     required this.conductor,
     required this.bus,
     required this.journeyActive,
+    required this.children,
   });
 
   static const _blue = Color(0xFF0D4896);
@@ -596,7 +615,9 @@ class _BottomPanel extends StatelessWidget {
     final conductorName =
         conductor?['fullName']?.toString() ?? 'No conductor assigned';
     final conductorPhone = conductor?['phoneNumber']?.toString() ?? '—';
-    final conductorPhoto = conductor?['photoUrl']?.toString();
+    final conductorPhoto = resolvePhotoProvider(
+      conductor?['photoUrl']?.toString(),
+    );
     final plateNumber = bus?['plateNumber']?.toString();
 
     return Container(
@@ -626,6 +647,20 @@ class _BottomPanel extends StatelessWidget {
             ),
           ),
 
+          // Children row — whose bus this is
+          if (children.isNotEmpty) ...[
+            SizedBox(
+              height: 72,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: children.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, i) => _ChildChip(child: children[i]),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
           // Conductor card
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -641,11 +676,8 @@ class _BottomPanel extends StatelessWidget {
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: const Color(0xFFDCE6F5),
-                  backgroundImage: (conductorPhoto != null &&
-                          conductorPhoto.isNotEmpty)
-                      ? NetworkImage(conductorPhoto)
-                      : null,
-                  child: (conductorPhoto == null || conductorPhoto.isEmpty)
+                  backgroundImage: conductorPhoto,
+                  child: conductorPhoto == null
                       ? const Icon(IconsaxPlusLinear.user,
                           color: _blue, size: 22)
                       : null,
@@ -745,6 +777,74 @@ class _BottomPanel extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Child chip (name + photo) ─────────────────────────────────────────────────
+
+class _ChildChip extends StatefulWidget {
+  final ChildModel child;
+
+  const _ChildChip({required this.child});
+
+  @override
+  State<_ChildChip> createState() => _ChildChipState();
+}
+
+class _ChildChipState extends State<_ChildChip> {
+  static const _blue = Color(0xFF0D4896);
+
+  Uint8List? _photoBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPhoto();
+  }
+
+  Future<void> _loadPhoto() async {
+    final childId = widget.child.id;
+    if (childId.isEmpty) return;
+    try {
+      final bytes = await ChildService.getChildPhotoBytes(childId);
+      if (mounted) setState(() => _photoBytes = bytes);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return SizedBox(
+      width: 56,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: const Color(0xFFDCE6F5),
+            backgroundImage: _photoBytes != null
+                ? MemoryImage(_photoBytes!)
+                : null,
+            child: _photoBytes == null
+                ? const Icon(IconsaxPlusLinear.user, color: _blue, size: 22)
+                : null,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.child.fullName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.75),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
