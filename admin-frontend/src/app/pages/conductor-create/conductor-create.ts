@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ConductorService } from '../../services/conductor.service';
 import { Conductor } from '../../models';
+import { isValidEmail, isValidPhone } from '../../shared/validators';
 import { catchError, finalize, of, timeout } from 'rxjs';
 
 @Component({
@@ -19,8 +20,6 @@ export class ConductorCreatePage {
   private cdr = inject(ChangeDetectorRef);
 
   // Account credentials
-  firstName = '';
-  lastName = '';
   email = '';
   password = '';
   // Profile
@@ -28,9 +27,7 @@ export class ConductorCreatePage {
   gender = '';
   age = '';
   status: Conductor['status'] | '' = '';
-  driverId = '';
   phone = '';
-  licenceNumber = '';
   licenceType = '';
   licenceExpiry = '';
   experience = '';
@@ -56,27 +53,35 @@ export class ConductorCreatePage {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoPreview = String(reader.result || '');
+      this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
   }
 
   createConductor(): void {
+    if (this.email && !isValidEmail(this.email)) {
+      this.errorMessage = 'Please enter a valid email address.';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (this.phone && !isValidPhone(this.phone)) {
+      this.errorMessage = 'Please enter a valid phone number.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
     this.cdr.detectChanges();
 
     const payload: Conductor = {
-      firstName: this.firstName || undefined,
-      lastName: this.lastName || undefined,
       email: this.email || undefined,
       password: this.password || undefined,
       fullName: this.fullName,
       gender: this.gender || undefined,
       age: this.age ? Number(this.age) : undefined,
       status: (this.status || undefined) as Conductor['status'],
-      driverId: this.driverId || undefined,
       phoneNumber: this.phone,
-      licenceNumber: this.licenceNumber || undefined,
       licenceType: this.licenceType || undefined,
       licenceExpiry: this.licenceExpiry || undefined,
       experience: this.experience || undefined,
