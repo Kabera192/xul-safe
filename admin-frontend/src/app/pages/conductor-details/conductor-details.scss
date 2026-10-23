@@ -55,7 +55,7 @@
 
 .details-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: 280px 1fr;
   gap: 1.25rem;
 }
 
@@ -226,88 +226,6 @@ a.primary-btn:focus {
   border-radius: 50%;
   border: 2px solid #1A56DB;
   transform: translate(-50%, -50%);
-}
-
-.performance-card {
-  display: grid;
-  gap: 1rem;
-}
-
-.metric {
-  display: flex;
-  justify-content: space-between;
-  background-color: #F8FAFF;
-  border: 1px solid #E5E7EB;
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  font-size: 0.8rem;
-  color: #6B7280;
-}
-
-.metric strong {
-  color: #1A56DB;
-}
-
-.metric.danger strong {
-  color: #EF4444;
-}
-
-.attendance-card {
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 0.75rem;
-}
-
-.attendance-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.month-pill {
-  background-color: #F5F7FA;
-  color: #1A56DB;
-  border: none;
-  border-radius: 999px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.calendar {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-}
-
-.calendar-row {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.35rem;
-  font-size: 0.65rem;
-  color: #6B7280;
-  text-align: center;
-}
-
-.calendar-row.header {
-  font-weight: 600;
-  color: #1A56DB;
-}
-
-.day {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  margin: 0 auto;
-  background-color: #E5E7EB;
-}
-
-.day.present {
-  background-color: #10B981;
-}
-
-.day.muted {
-  background-color: #D1D5DB;
 }
 
 @media (max-width: 1200px) {
