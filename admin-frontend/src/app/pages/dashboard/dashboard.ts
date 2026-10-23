@@ -59,6 +59,7 @@ export class Dashboard implements OnInit {
     date: string;
     bus: string;
     route: string;
+    totalStudents: number;
     present: number | null;
     absent: number | null;
     status: string;
@@ -125,6 +126,7 @@ export class Dashboard implements OnInit {
         date: today,
         bus: bus.plateNumber,
         route: 'N/A',
+        totalStudents: students.filter((s) => s.busId === bus.id).length,
         present: null,
         absent: null,
         status: bus.status === 'ACTIVE' ? 'In Progress' : 'Completed'
@@ -150,11 +152,13 @@ export class Dashboard implements OnInit {
         this.unreadCount = notifications.length;
         this.updateIncidentStat();
         this.notificationsLoading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Failed to load notifications:', error);
         this.loadMockNotifications();
         this.notificationsLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
