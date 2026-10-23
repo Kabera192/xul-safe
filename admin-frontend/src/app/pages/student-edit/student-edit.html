@@ -19,6 +19,7 @@
         </label>
       </div>
       <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+      <div class="notice-message" *ngIf="noticeMessage && !errorMessage">{{ noticeMessage }}</div>
     <div class="form-grid">
       <label>
         Full name
@@ -37,12 +38,8 @@
         <input type="text" [(ngModel)]="grade" />
       </label>
       <label>
-        Parent ID
-        <input type="number" [(ngModel)]="parentId" />
-      </label>
-      <label>
         Assigned bus
-        <select [(ngModel)]="selectedBusId">
+        <select [(ngModel)]="selectedBusId" (change)="onBusChange()">
           <option [ngValue]="null">-- Select Bus --</option>
           <option *ngFor="let bus of buses" [ngValue]="bus.id">{{ bus.plateNumber }}</option>
         </select>
@@ -56,6 +53,15 @@
         <select [(ngModel)]="selectedBusStopId">
           <option [ngValue]="null">-- Select Bus Stop --</option>
           <option *ngFor="let stop of busStops" [ngValue]="stop.id">{{ stop.name }}</option>
+        </select>
+      </label>
+      <label>
+        Parent
+        <select [(ngModel)]="parentId" [disabled]="isLoadingParents">
+          <option value="" disabled>
+            {{ isLoadingParents ? 'Loading parents...' : (parents.length ? 'Select parent' : 'No parents registered yet') }}
+          </option>
+          <option *ngFor="let parent of parents" [value]="parent.id">{{ parent.fullName }} ({{ parent.phoneNumber }})</option>
         </select>
       </label>
     </div>
