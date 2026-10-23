@@ -4,8 +4,24 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RouteService } from '../../services/route.service';
 import { StudentService } from '../../services/student.service';
+import { UserService } from '../../services/user.service';
 import { ChildDetail, RouteRequest } from '../../models';
 import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
+import { applySort, initialSortState, SortState, sortIndicator, toggleSort } from '../../shared/table-sort';
+
+type RequestSortColumn = 'parentName' | 'childName' | 'date' | 'address' | 'description' | 'status';
+
+interface BusStopRequestRow {
+  id: string;
+  no: string;
+  parentName: string;
+  childName: string;
+  date: string;
+  dateValue: number | null;
+  address: string;
+  description: string;
+  status: string;
+}
 
 @Component({
   selector: 'app-user-requests',
@@ -17,6 +33,7 @@ import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
 export class UserRequests implements OnInit {
   private routeService = inject(RouteService);
   private studentService = inject(StudentService);
+  private userService = inject(UserService);
   private cdr = inject(ChangeDetectorRef);
 
   searchTerm = '';
@@ -24,16 +41,8 @@ export class UserRequests implements OnInit {
   isLoading = false;
   errorMessage = '';
 
-  busStopRequests: Array<{
-    id: string;
-    no: string;
-    parentId: string;
-    childName: string;
-    date: string;
-    address: string;
-    description: string;
-    status: string;
-  }> = [];
+  busStopRequests: BusStopRequestRow[] = [];
+  sortState: SortState<RequestSortColumn> = initialSortState();
 
 
   ngOnInit(): void {
@@ -81,40 +90,70 @@ export class UserRequests implements OnInit {
         }
       });
 
-      this.busStopRequests = requests.map((request, index) => ({
-        id: String(request.id ?? index),
-        no: String(index + 1).padStart(2, '0'),
-        parentId: request.parentId != null ? String(request.parentId) : 'N/A',
-        childName: childNameById.get(request.childId) ?? 'Unknown child',
-        date: request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A',
-        address: request.address ?? 'N/A',
-        description: request.description ?? 'N/A',
-        status: request.status ?? 'PENDING'
-      }));
-      this.cdr.detectChanges();
+      const parentIds = [...new Set(
+        requests.map((r) => r.parentId).filter((id): id is number => id != null)
+      )];
+
+      forkJoin(
+        parentIds.map((parentId) =>
+          this.userService.getProfile(parentId).pipe(
+            catchError(() => of(null))
+          )
+        )
+      ).subscribe((parents) => {
+        const parentNameById = new Map<number, string>();
+        parentIds.forEach((parentId, i) => {
+          const parent = parents[i];
+          parentNameById.set(
+            parentId,
+            parent ? `${parent.firstName} ${parent.lastName}`.trim() : 'Unknown parent'
+          );
+        });
+
+        this.busStopRequests = requests.map((request, index) => ({
+          id: String(request.id ?? index),
+          no: String(index + 1).padStart(2, '0'),
+          parentName: request.parentId != null
+            ? (parentNameById.get(request.parentId) ?? 'Unknown parent')
+            : 'N/A',
+          childName: childNameById.get(request.childId) ?? 'Unknown child',
+          date: request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A',
+          dateValue: request.createdAt ?? null,
+          address: request.address ?? 'N/A',
+          description: request.description ?? 'N/A',
+          status: request.status ?? 'PENDING'
+        }));
+        this.cdr.detectChanges();
+      });
     });
   }
 
-  get filteredBusStopRequests(): Array<{
-    id: string;
-    no: string;
-    parentId: string;
-    childName: string;
-    date: string;
-    address: string;
-    description: string;
-    status: string;
-  }> {
+  get filteredBusStopRequests(): BusStopRequestRow[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) {
       return this.busStopRequests;
     }
     return this.busStopRequests.filter((request) =>
-      request.parentId.toLowerCase().includes(term) ||
+      request.parentName.toLowerCase().includes(term) ||
       request.childName.toLowerCase().includes(term) ||
       request.address.toLowerCase().includes(term) ||
       request.description.toLowerCase().includes(term) ||
       request.status.toLowerCase().includes(term)
     );
+  }
+
+  get sortedBusStopRequests(): BusStopRequestRow[] {
+    return applySort(this.filteredBusStopRequests, this.sortState, (row, column) => {
+      if (column === 'date') return row.dateValue;
+      return row[column];
+    });
+  }
+
+  sort(column: RequestSortColumn): void {
+    this.sortState = toggleSort(this.sortState, column);
+  }
+
+  sortArrow(column: RequestSortColumn): string {
+    return sortIndicator(this.sortState, column);
   }
 }
