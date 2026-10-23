@@ -31,7 +31,6 @@ export class BusEditPage implements OnInit, OnDestroy {
   model = '';
   capacity = '';
   status = 'ACTIVE';
-  deviceId = '';
   selectedRouteId = '';
   selectedConductorId = '';
   conductors: Conductor[] = [];
@@ -40,6 +39,10 @@ export class BusEditPage implements OnInit, OnDestroy {
   isSaving = false;
   isLoading = false;
   errorMessage = '';
+  noticeMessage = '';
+  private conductorsLoaded = false;
+  private routesLoaded = false;
+  private busApplied = false;
 
   ngOnInit(): void {
     this.loadConductors();
@@ -73,6 +76,8 @@ export class BusEditPage implements OnInit, OnDestroy {
       })
     ).subscribe((conductors) => {
       this.conductors = conductors;
+      this.conductorsLoaded = true;
+      this.pruneStaleReferences();
       this.cdr.detectChanges();
     });
   }
@@ -86,8 +91,46 @@ export class BusEditPage implements OnInit, OnDestroy {
       })
     ).subscribe((routes) => {
       this.routes = routes;
+      this.routesLoaded = true;
+      this.pruneStaleReferences();
       this.cdr.detectChanges();
     });
+  }
+
+  /**
+   * A bus can reference a conductor/route that was since deleted elsewhere.
+   * The <select> then shows nothing selected (no matching <option>), but the
+   * stale ID was still sitting in the bound field and would otherwise be
+   * submitted as-is, producing a confusing "not found" error for a field
+   * that looks blank. Clear it so a visibly blank field behaves as blank.
+   *
+   * Conductors, routes, and the bus itself load via three independent async
+   * calls with no guaranteed order — wait until all three have actually
+   * landed before checking, otherwise a list that just hasn't arrived yet
+   * looks identical to "this ID doesn't exist" and gets wrongly cleared.
+   */
+  private pruneStaleReferences(): void {
+    if (!this.conductorsLoaded || !this.routesLoaded || !this.busApplied) {
+      return;
+    }
+
+    const staleConductor = this.selectedConductorId &&
+      !this.conductors.some((c) => String(c.id) === this.selectedConductorId);
+    const staleRoute = this.selectedRouteId &&
+      !this.routes.some((r) => String(r.id) === this.selectedRouteId);
+
+    if (staleConductor) {
+      this.selectedConductorId = '';
+    }
+    if (staleRoute) {
+      this.selectedRouteId = '';
+    }
+    if (staleConductor || staleRoute) {
+      const fields = [staleConductor ? 'conductor' : null, staleRoute ? 'route' : null]
+        .filter(Boolean)
+        .join(' and ');
+      this.noticeMessage = `The previously assigned ${fields} is no longer available. Please select one if needed.`;
+    }
   }
 
   private resetFormState(): void {
@@ -96,10 +139,11 @@ export class BusEditPage implements OnInit, OnDestroy {
     this.model = '';
     this.capacity = '';
     this.status = 'ACTIVE';
-    this.deviceId = '';
     this.selectedRouteId = '';
     this.selectedConductorId = '';
     this.errorMessage = '';
+    this.noticeMessage = '';
+    this.busApplied = false;
   }
 
   private loadBusById(busId: number): void {
@@ -124,6 +168,8 @@ export class BusEditPage implements OnInit, OnDestroy {
         return;
       }
       this.applyBus(bus);
+      this.busApplied = true;
+      this.pruneStaleReferences();
       this.cdr.detectChanges();
     });
   }
@@ -134,7 +180,6 @@ export class BusEditPage implements OnInit, OnDestroy {
     this.capacity = bus.capacity != null ? String(bus.capacity) : '';
     this.status = (bus.status ?? 'ACTIVE') as string;
     this.selectedConductorId = bus.conductorId != null ? String(bus.conductorId) : '';
-    this.deviceId = bus.deviceId ?? '';
     this.selectedRouteId = bus.routeId != null ? String(bus.routeId) : '';
     this.photoPreview = this.normalizePhotoUrl(bus.photoUrl);
   }
@@ -165,13 +210,13 @@ export class BusEditPage implements OnInit, OnDestroy {
       capacity: this.capacity ? Number(this.capacity) : undefined,
       status: this.status as Bus['status'],
       conductorId: this.selectedConductorId ? Number(this.selectedConductorId) : undefined,
-      deviceId: this.deviceId || undefined,
       routeId: this.selectedRouteId ? Number(this.selectedRouteId) : undefined,
       photoUrl: this.photoPreview || undefined
     }).pipe(
       timeout(5000),
       finalize(() => {
         this.isSaving = false;
+        this.cdr.detectChanges();
       })
     ).subscribe({
       next: () => {
@@ -179,6 +224,7 @@ export class BusEditPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.errorMessage = error?.message || 'Failed to update bus.';
+        this.cdr.detectChanges();
       }
     });
   }
