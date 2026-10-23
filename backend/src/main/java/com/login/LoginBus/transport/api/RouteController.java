@@ -1,6 +1,8 @@
 package com.login.LoginBus.transport.api;
 
+import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.shared.api.ApiResponse;
+import com.login.LoginBus.transport.api.dto.ParentSummaryResponse;
 import com.login.LoginBus.transport.app.TransportService;
 import com.login.LoginBus.transport.domain.Route;
 import com.login.LoginBus.transport.domain.RouteRequest;
@@ -282,6 +284,37 @@ public class RouteController {
             "Route retrieved successfully",
             route
         ));
+    }
+
+    /**
+     * Get the parents who already have a child assigned to a bus running
+     * this route. Used by the admin "add/edit student" screens to narrow
+     * the parent picker instead of listing every parent in the system.
+     * GET /api/v1/routes/{routeId}/parents
+     *
+     * @param routeId The route ID
+     * @return Distinct parents on this route
+     */
+    @GetMapping("/{routeId}/parents")
+    public ResponseEntity<ApiResponse<List<ParentSummaryResponse>>> getParentsForRoute(
+            @PathVariable Long routeId) {
+        List<ParentSummaryResponse> parents = transportService.getParentsForRoute(routeId).stream()
+                .map(this::toParentSummary)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Parents retrieved successfully",
+            parents
+        ));
+    }
+
+    private ParentSummaryResponse toParentSummary(User user) {
+        return new ParentSummaryResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getPhoneNumber(),
+                user.getEmail()
+        );
     }
 
     /**

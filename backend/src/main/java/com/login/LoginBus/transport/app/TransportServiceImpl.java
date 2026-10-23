@@ -2,6 +2,7 @@ package com.login.LoginBus.transport.app;
 
 import com.login.LoginBus.accounts.app.AccountsPublicService;
 import com.login.LoginBus.accounts.domain.Conductor;
+import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.accounts.infra.ConductorRepository;
 import com.login.LoginBus.notifications.app.NotificationsPublicService;
 import com.login.LoginBus.notifications.domain.NotificationCategory;
@@ -10,6 +11,7 @@ import com.login.LoginBus.students.app.StudentsPublicService;
 import com.login.LoginBus.students.domain.Child;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
+import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
 import com.login.LoginBus.transport.domain.*;
 import com.login.LoginBus.transport.infra.*;
@@ -681,9 +683,6 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             }
             existing.setConductorId(bus.getConductorId());
         }
-        if (bus.getDeviceId() != null) {
-            existing.setDeviceId(bus.getDeviceId());
-        }
         if (bus.getRouteId() != null) {
             if (!routeRepository.existsById(bus.getRouteId())) {
                 throw new IllegalArgumentException("Route not found with ID: " + bus.getRouteId());
@@ -721,6 +720,34 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
     public Route getRouteById(Long routeId) {
         Optional<RouteJpaEntity> entityOpt = routeRepository.findById(routeId);
         return entityOpt.map(RouteJpaEntity::toDomain).orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> getParentsForRoute(Long routeId) {
+        if (accountsService == null) {
+            return List.of();
+        }
+
+        List<Long> busIds = busRepository.findByRouteId(routeId).stream()
+                .map(BusJpaEntity::getId)
+                .toList();
+
+        if (busIds.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> parentIds = busIds.stream()
+                .flatMap(busId -> childRepository.findByBusId(busId).stream())
+                .map(ChildJpaEntity::getParentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return parentIds.stream()
+                .map(accountsService::getUserById)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(User::getFullName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
     }
 
     @Override

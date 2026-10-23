@@ -1,5 +1,6 @@
 package com.login.LoginBus.transport.app;
 
+import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.transport.domain.*;
 import java.util.List;
 import java.util.Map;
@@ -265,6 +266,18 @@ public interface TransportService {
      * @return List of all routes
      */
     List<Route> getAllRoutes();
+
+    /**
+     * Get the distinct parents who already have a child assigned to a bus
+     * running this route — used by the admin "add/edit student" screens to
+     * narrow the parent picker to families already on this route instead of
+     * every parent in the system.
+     *
+     * @param routeId The route ID
+     * @return Distinct list of parent users, or empty if the route has no
+     *         buses/children assigned
+     */
+    List<User> getParentsForRoute(Long routeId);
 
     /**
      * Get route by ID.
