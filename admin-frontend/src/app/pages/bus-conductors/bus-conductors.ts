@@ -4,8 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BusService } from '../../services/bus.service';
 import { ConductorService } from '../../services/conductor.service';
-import { Bus, Conductor } from '../../models';
+import { RouteService } from '../../services/route.service';
+import { Bus, Conductor, Route } from '../../models';
 import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
+import { applySort, initialSortState, SortState, sortIndicator, toggleSort } from '../../shared/table-sort';
+
+type ConductorSortColumn = 'name' | 'bus' | 'route' | 'phone' | 'status';
+
+interface ConductorRow {
+  id: number;
+  no: string;
+  name: string;
+  bus: string;
+  route: string;
+  phone: string;
+  status: string;
+}
 
 @Component({
   selector: 'app-bus-conductors',
@@ -17,6 +31,7 @@ import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
 export class BusConductors implements OnInit {
   private conductorService = inject(ConductorService);
   private busService = inject(BusService);
+  private routeService = inject(RouteService);
   private cdr = inject(ChangeDetectorRef);
 
   searchTerm = '';
@@ -28,19 +43,11 @@ export class BusConductors implements OnInit {
   isLoading = false;
   errorMessage = '';
 
-  conductors: Array<{
-    id: number;
-    no: string;
-    name: string;
-    bus: string;
-    route: string;
-    driverId: string;
-    phone: string;
-    status: string;
-  }> = [];
+  conductors: ConductorRow[] = [];
 
   currentPage = 1;
   pageSize = 8;
+  sortState: SortState<ConductorSortColumn> = initialSortState();
 
   ngOnInit(): void {
     this.loadConductors();
@@ -59,20 +66,21 @@ export class BusConductors implements OnInit {
 
     forkJoin({
       conductors: this.conductorService.getAll(),
-      buses: this.busService.getAll()
+      buses: this.busService.getAll(),
+      routes: this.routeService.getAll().pipe(catchError(() => of([] as Route[])))
     }).pipe(
       timeout(5000),
       catchError((error) => {
         console.error('Failed to load conductors:', error);
         this.errorMessage = error?.message || 'Failed to load conductors.';
-        return of({ conductors: [] as Conductor[], buses: [] as Bus[] });
+        return of({ conductors: [] as Conductor[], buses: [] as Bus[], routes: [] as Route[] });
       }),
       finalize(() => {
         this.isLoading = false;
         window.clearTimeout(fallbackTimer);
         this.cdr.detectChanges();
       })
-    ).subscribe(({ conductors, buses }) => {
+    ).subscribe(({ conductors, buses, routes }) => {
       const busByConductorId = new Map<number, Bus>();
       buses.forEach((bus) => {
         if (bus.conductorId != null) {
@@ -82,13 +90,15 @@ export class BusConductors implements OnInit {
 
       this.conductors = conductors.map((conductor, index) => {
         const assignedBus = conductor.id != null ? busByConductorId.get(conductor.id) : undefined;
+        const assignedRoute = assignedBus?.routeId != null
+          ? routes.find((route) => route.id === assignedBus.routeId)
+          : undefined;
         return {
           id: conductor.id ?? index,
           no: String(index + 1).padStart(2, '0'),
           name: conductor.fullName ?? 'N/A',
           bus: assignedBus?.plateNumber ?? 'N/A',
-          route: 'N/A',
-          driverId: conductor.id != null ? `#DVR-${String(conductor.id).padStart(6, '0')}` : 'N/A',
+          route: assignedRoute?.name ?? 'N/A',
           phone: conductor.phoneNumber ?? 'N/A',
           status: conductor.status ?? 'N/A'
         };
@@ -125,26 +135,19 @@ export class BusConductors implements OnInit {
     this.conductorService.delete(this.selectedConductorId).subscribe({
       next: () => {
         this.closeDeleteConfirm();
+        this.cdr.detectChanges();
         this.loadConductors();
       },
       error: (error) => {
         console.error('Failed to delete conductor:', error);
         this.errorMessage = 'Failed to delete conductor. Please try again.';
         this.closeDeleteConfirm();
+        this.cdr.detectChanges();
       }
     });
   }
 
-  get filteredConductors(): Array<{
-    id: number;
-    no: string;
-    name: string;
-    bus: string;
-    route: string;
-    driverId: string;
-    phone: string;
-    status: string;
-  }> {
+  get filteredConductors(): ConductorRow[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) {
       return this.conductors.filter((conductor) =>
@@ -155,24 +158,26 @@ export class BusConductors implements OnInit {
       (!this.selectedStatus || conductor.status === this.selectedStatus) && (
         conductor.name.toLowerCase().includes(term) ||
         conductor.bus.toLowerCase().includes(term) ||
-        conductor.driverId.toLowerCase().includes(term) ||
         conductor.phone.toLowerCase().includes(term)
       )
     ));
   }
 
-  get pagedConductors(): Array<{
-    id: number;
-    no: string;
-    name: string;
-    bus: string;
-    route: string;
-    driverId: string;
-    phone: string;
-    status: string;
-  }> {
+  get sortedConductors(): ConductorRow[] {
+    return applySort(this.filteredConductors, this.sortState, (row, column) => row[column]);
+  }
+
+  sort(column: ConductorSortColumn): void {
+    this.sortState = toggleSort(this.sortState, column);
+  }
+
+  sortArrow(column: ConductorSortColumn): string {
+    return sortIndicator(this.sortState, column);
+  }
+
+  get pagedConductors(): ConductorRow[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredConductors.slice(start, start + this.pageSize);
+    return this.sortedConductors.slice(start, start + this.pageSize);
   }
 
   get totalPages(): number {
