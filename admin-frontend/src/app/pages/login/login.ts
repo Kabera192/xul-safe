@@ -57,15 +57,18 @@ export class Login {
       error: (error) => {
         if (error?.name === 'TimeoutError') {
           this.errorMessage = 'Login timed out. Please try again.';
+          this.cdr.detectChanges();
           return;
         }
 
         if (error?.message === 'Bad request') {
           this.errorMessage = 'Invalid email or password.';
+          this.cdr.detectChanges();
           return;
         }
 
         this.errorMessage = error?.message || 'Login failed. Please try again.';
+        this.cdr.detectChanges();
       }
     });
   }
