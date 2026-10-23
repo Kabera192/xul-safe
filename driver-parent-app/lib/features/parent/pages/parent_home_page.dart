@@ -105,6 +105,17 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return _assignedBus;
   }
 
+  // Only the children riding the bus this panel is tracking — a parent
+  // with children on different buses shouldn't see all of them here.
+  List<ChildModel> get _busChildren {
+    final rawBusId = _bus?['id'];
+    if (rawBusId == null) return const [];
+    final busId =
+        rawBusId is int ? rawBusId : int.tryParse(rawBusId.toString());
+    if (busId == null) return const [];
+    return _children.where((c) => c.busId == busId).toList();
+  }
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
   @override
@@ -397,7 +408,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                 conductor: _conductor,
                 bus: _bus,
                 journeyActive: _journeyActive,
-                children: _children,
+                children: _busChildren,
               ),
             ),
           ],
