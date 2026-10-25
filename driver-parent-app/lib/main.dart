@@ -9,12 +9,16 @@ import 'mobile_authentication.dart';
 import 'widgets/mobile_auth_gate.dart';
 import 'widgets/mobile_location_gate.dart';
 import 'widgets/mobile_network_gate.dart';
+import 'widgets/session_expired_page.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 bool _isReturningToLogin = false;
 
-Future<void> logoutAndReturnToLogin() async {
+/// Clears the session and returns to the login flow. Pass [sessionExpired]
+/// when this is triggered by a timed-out/invalid session (rather than the
+/// user tapping "Sign out") so they see the session-expired notice first.
+Future<void> logoutAndReturnToLogin({bool sessionExpired = false}) async {
   if (_isReturningToLogin) return;
 
   _isReturningToLogin = true;
@@ -27,7 +31,10 @@ Future<void> logoutAndReturnToLogin() async {
     if (navigator == null) return;
 
     navigator.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      MaterialPageRoute(
+        builder: (_) =>
+            sessionExpired ? const SessionExpiredPage() : const LoginPage(),
+      ),
       (_) => false,
     );
   } finally {
