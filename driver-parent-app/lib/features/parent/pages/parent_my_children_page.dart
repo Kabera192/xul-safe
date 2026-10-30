@@ -8,6 +8,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../forms/parent_add_child_form.dart';
 import '../forms/parent_my_children_form.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentMyChildrenPage extends StatefulWidget {
   final bool isActive;
@@ -31,7 +32,14 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
     super.didUpdateWidget(oldWidget);
 
     if (widget.isActive && !oldWidget.isActive) {
-      _scheduleShow();
+      // Re-entering this tab should show fresh data, not whatever was last
+      // fetched — _scheduleShow() alone would just re-show the same form
+      // instance (same key), so initState never reruns and never refetches.
+      if (_alreadyScheduled) {
+        _refreshForm();
+      } else {
+        _scheduleShow();
+      }
     }
 
     if (!widget.isActive && oldWidget.isActive) {
@@ -101,6 +109,7 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -108,14 +117,14 @@ class _ParentMyChildrenPageState extends State<ParentMyChildrenPage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'My Children',
-                    style: TextStyle(
+                    l10n.myChildren,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

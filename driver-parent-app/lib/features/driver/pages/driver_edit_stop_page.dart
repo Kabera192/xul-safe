@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/child_service.dart';
 import '../../../services/transport_service.dart';
 import '../../../widgets/mobile_animated_form_host.dart';
@@ -214,6 +215,7 @@ class _DriverEditStopPageState extends State<DriverEditStopPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -240,14 +242,14 @@ class _DriverEditStopPageState extends State<DriverEditStopPage> {
                   ),
                 ),
               ),
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Modify bus stop',
-                    style: TextStyle(
+                    l10n.drvModifyBusStopTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/child_model.dart';
 
 class DriverAssignStudentsForm extends StatefulWidget {
@@ -88,7 +89,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
   Future<void> _complete() async {
     if (_selectedChildIds.isEmpty) {
       setState(() {
-        _error = 'Please select at least one student';
+        _error = AppLocalizations.of(context).drvPleaseSelectOneStudent;
       });
       return;
     }
@@ -112,6 +113,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final surface = Theme.of(context).colorScheme.surface;
@@ -148,7 +150,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
           const SizedBox(height: 10),
 
           Text(
-            'Assign students',
+            l10n.drvAssignStudents,
             style: TextStyle(
               color: onSurface,
               fontSize: 22,
@@ -171,7 +173,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
             decoration: InputDecoration(
               filled: true,
               fillColor: isDark ? const Color(0xFF1A2530) : inputBg,
-              hintText: 'Search a name',
+              hintText: l10n.searchName,
               hintStyle: TextStyle(
                 color: onSurface.withValues(alpha: 0.45),
                 fontSize: 13,
@@ -275,7 +277,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
                 ),
               ),
               child: Text(
-                _saving ? 'Saving…' : 'Complete changes',
+                _saving ? l10n.drvSavingEllipsis : l10n.drvCompleteChangesBtn,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -313,12 +315,13 @@ class _StudentAssignRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final rowBg = isDark ? const Color(0xFF1A2530) : Colors.white;
     final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
 
-    final buttonText = selected ? 'Assigning' : (reassign ? 'Re-assign' : 'Assign');
+    final buttonText = selected ? l10n.drvAssigningStatus : (reassign ? l10n.drvReassignStatus : l10n.drvAssignStatus);
     final buttonColor = selected ? assigningGreen : (reassign ? reassignYellow : assignBlue);
     final buttonBg = selected ? assigningGreenBg : (reassign ? reassignYellowBg : assignBlueBg);
     final buttonIcon = selected ? Icons.check : IconsaxPlusLinear.add;
@@ -337,7 +340,7 @@ class _StudentAssignRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              child.fullName.isEmpty ? 'Unnamed student' : child.fullName,
+              child.fullName.isEmpty ? l10n.drvUnnamedStudent : child.fullName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -439,7 +442,7 @@ class _EmptyStudentsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
-        'No students available to assign',
+        AppLocalizations.of(context).drvNoStudentsAvailable,
         style: TextStyle(
           color: onSurface.withValues(alpha: 0.5),
           fontSize: 13,

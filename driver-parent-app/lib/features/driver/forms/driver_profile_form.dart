@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/config/theme_service.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/l10n/locale_service.dart';
 import '../../../widgets/language_picker_sheet.dart';
 import '../models/driver_profile_edit_mode.dart';
@@ -32,6 +33,7 @@ class DriverProfileForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final infoAndSignoutBg = isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE6EDF6);
@@ -50,7 +52,7 @@ class DriverProfileForm extends StatelessWidget {
           const SizedBox(height: 4),
           Center(
             child: Text(
-              'Conductor profile',
+              l10n.conductorProfile,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -121,7 +123,7 @@ class DriverProfileForm extends StatelessWidget {
           _ProfileButtonCard(
             bgColor: settingsBg,
             leftIcon: IconsaxPlusLinear.setting_2,
-            text: 'Bus & route settings',
+            text: l10n.busRouteSettings,
             onTap: onBusRouteTap,
           ),
 
@@ -136,19 +138,19 @@ class DriverProfileForm extends StatelessWidget {
             child: Column(
               children: [
                 _DriverActionRow(
-                  text: 'Theme',
+                  text: l10n.theme,
                   rightWidget: const _ThemeDot(),
                   onTap: () => ThemeService.toggle(),
                 ),
                 Divider(height: 1, color: stroke),
                 _DriverActionRow(
-                  text: 'Language',
+                  text: l10n.language,
                   rightWidget: const _LangDot(),
                   onTap: () => showLanguagePicker(context),
                 ),
                 Divider(height: 1, color: stroke),
                 _DriverActionRow(
-                  text: 'Sign out',
+                  text: l10n.signOut,
                   rightIcon: IconsaxPlusLinear.logout,
                   onTap: () => _signOut(context),
                 ),
@@ -219,11 +221,12 @@ class _ThemeDot extends StatelessWidget {
       valueListenable: ThemeService.notifier,
       builder: (context, mode, _) {
         final isDark = mode == ThemeMode.dark;
+        final l10n = AppLocalizations.of(context);
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isDark ? 'Dark' : 'Light',
+              isDark ? l10n.themeDark : l10n.themeLight,
               style: const TextStyle(
                 color: blue,
                 fontSize: 13,
@@ -250,15 +253,19 @@ class _ThemeDot extends StatelessWidget {
 class _LangDot extends StatelessWidget {
   const _LangDot();
 
-  static const _names = {'en': 'English', 'fr': 'Français', 'rw': 'Kinyarwanda'};
-
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF0D4896);
+    final l10n = AppLocalizations.of(context);
+    final names = {
+      'en': l10n.drvLangEnglish,
+      'fr': l10n.drvLangFrench,
+      'rw': l10n.drvLangKinyarwanda,
+    };
     return ValueListenableBuilder<Locale>(
       valueListenable: LocaleService.notifier,
       builder: (context, locale, _) {
-        final name = _names[locale.languageCode] ?? 'English';
+        final name = names[locale.languageCode] ?? l10n.drvLangEnglish;
         return Text(
           name,
           style: const TextStyle(

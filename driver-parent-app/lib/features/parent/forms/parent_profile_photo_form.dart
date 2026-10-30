@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class ParentProfilePhotoForm extends StatelessWidget {
   static const blue = Color(0xFF0D4896);
   static const uploadTextBlue = Color(0xFF1358B6);
@@ -30,6 +32,7 @@ class ParentProfilePhotoForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasImage = selectedImage != null;
 
     return Padding(
@@ -78,9 +81,9 @@ class ParentProfilePhotoForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Change profile picture',
-            style: TextStyle(
+          Text(
+            l10n.parChangeProfilePicture,
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w300,
               color: Colors.black87,
@@ -135,7 +138,7 @@ class ParentProfilePhotoForm extends StatelessWidget {
                 ),
               ),
               child: Text(
-                saving ? 'Saving…' : 'Save changes',
+                saving ? l10n.parSaving : l10n.saveChanges,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -156,20 +159,21 @@ class _UploadPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const uploadTextBlue = ParentProfilePhotoForm.uploadTextBlue;
+    final l10n = AppLocalizations.of(context);
 
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             IconsaxPlusLinear.profile_add,
             color: uploadTextBlue,
             size: 28,
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
-            'Profile picture',
-            style: TextStyle(
+            l10n.parProfilePicture,
+            style: const TextStyle(
               color: uploadTextBlue,
               fontSize: 15,
               fontWeight: FontWeight.w600,

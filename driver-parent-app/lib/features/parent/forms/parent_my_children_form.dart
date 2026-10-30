@@ -188,7 +188,10 @@ class _ParentMyChildrenFormState extends State<ParentMyChildrenForm> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 14,
                 crossAxisSpacing: 14,
-                childAspectRatio: 0.78,
+                // Slightly taller than a plain square so the avatar + 2-line
+                // name + grade + absence badge don't get tight against the
+                // cell at larger OS text-scale settings.
+                childAspectRatio: 0.7,
               ),
               itemBuilder: (_, i) => _ChildTile(
                 child: _children[i],

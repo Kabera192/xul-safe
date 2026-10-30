@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/attendance_service.dart';
 import '../../../services/child_service.dart';
 import '../models/attendance_record_model.dart';
@@ -21,7 +22,9 @@ import '../widgets/stop_attendance_sheet.dart';
 import '../pages/driver_manage_incidents_page.dart';
 
 class DriverHomePage extends StatefulWidget {
-  const DriverHomePage({super.key});
+  final bool isActive;
+
+  const DriverHomePage({super.key, this.isActive = true});
 
   @override
   State<DriverHomePage> createState() => _DriverHomePageState();
@@ -88,6 +91,20 @@ bool _incidentActionsOpen = false;
     _startLocationStream();
     _seedLastKnownLocation();
     _loadData();
+  }
+
+  @override
+  void didUpdateWidget(covariant DriverHomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // This tab is kept alive in driver_nav.dart's IndexedStack, so returning
+    // to it from another tab doesn't rerun initState — refetch explicitly,
+    // same pattern as DriverNotificationsPage/DriverProfilePage. The
+    // location stream/GPS timer are left running either way, since journey
+    // tracking shouldn't stop just because this tab isn't focused.
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadData();
+    }
   }
 
   Future<void> _seedLastKnownLocation() async {
@@ -214,7 +231,7 @@ bool _incidentActionsOpen = false;
 
   Future<void> _showStartJourneyDialog() async {
     if (_children.isEmpty) {
-      _showSnack('No children are assigned to this bus yet.');
+      _showSnack(AppLocalizations.of(context).noChildrenOnBus);
       return;
     }
 
@@ -271,7 +288,10 @@ bool _incidentActionsOpen = false;
           allStops: _stops,
           allChildren: childrenForPopup,
           session: 'MORNING',
-          confirmLabel: 'Confirm & Start Journey',
+          confirmLabel: AppLocalizations.of(context).confirmAndStartJourney,
+          subtitle:
+              "This records this MORNING's attendance — it's still missing "
+              "and must be confirmed before the afternoon journey can start.",
         ),
       );
       _popupShowing = false;
@@ -288,11 +308,11 @@ bool _incidentActionsOpen = false;
     final route = _route;
 
     if (driver == null) {
-      _showSnack('Waiting for GPS fix — try again in a moment.');
+      _showSnack(AppLocalizations.of(context).waitingForGps);
       return;
     }
     if (profile == null || bus == null || route == null) {
-      _showSnack('Bus data not loaded. Tap refresh and try again.');
+      _showSnack(AppLocalizations.of(context).busDataNotLoaded);
       return;
     }
 
@@ -309,8 +329,17 @@ bool _incidentActionsOpen = false;
       setState(() => _activeJourney = result);
       _startGpsSharing();
     } catch (e) {
-      _showSnack('Could not start journey: $e');
+      _showJourneyBlockedDialog(e);
     }
+  }
+
+  void _showJourneyBlockedDialog(Object error) {
+    if (!mounted) return;
+    final message = error.toString().replaceFirst('Exception: ', '');
+    showDialog(
+      context: context,
+      builder: (_) => _JourneyBlockedDialog(message: message),
+    );
   }
 
   Future<void> _showEndJourneyDialog() async {
@@ -335,7 +364,7 @@ bool _incidentActionsOpen = false;
         _confirmedStopIds.clear();
       });
     } catch (e) {
-      _showSnack('Could not end journey: $e');
+      _showSnack(AppLocalizations.of(context).couldNotEndJourney(e.toString()));
     }
   }
 
@@ -362,7 +391,7 @@ bool _incidentActionsOpen = false;
 
   Future<void> _showAllChildrenSheet() async {
     if (_children.isEmpty) {
-      _showSnack('No children assigned to this bus yet.');
+      _showSnack(AppLocalizations.of(context).noChildrenOnBusYet);
       return;
     }
 
@@ -385,7 +414,7 @@ bool _incidentActionsOpen = false;
         allChildren: _children,
         session: session,
         forceAction: 'BOARDED',
-        confirmLabel: 'Mark as Onboarded',
+        confirmLabel: AppLocalizations.of(context).markAsOnboarded,
       ),
     );
   }
@@ -452,6 +481,7 @@ bool _incidentActionsOpen = false;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final nearestIdx = _journeyActive ? _nearestStopIndex : -1;
     final nearestStop =
@@ -573,13 +603,13 @@ bool _incidentActionsOpen = false;
                     children: [
                       if (_incidentActionsOpen) ...[
                         _IncidentQuickAction(
-                          label: 'Manage incidents',
+                          label: l10n.drvManageIncidents,
                           icon: IconsaxPlusLinear.document_text,
                           onTap: _openManageIncidents,
                         ),
                         const SizedBox(height: 10),
                         _IncidentQuickAction(
-                          label: 'Report incident',
+                          label: l10n.drvReportIncidentAction,
                           icon: IconsaxPlusLinear.add,
                           onTap: _openIncidentReport,
                         ),
@@ -675,6 +705,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bg = isOnline
         ? const Color(0xFF21C260)
         : const Color(0xFF4A5568);
@@ -703,13 +734,17 @@ class _StatusPill extends StatelessWidget {
             size: 16,
           ),
           const SizedBox(width: 8),
-          Text(
-            '$plateNumber — ${isOnline ? 'online' : 'offline'}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
+          Flexible(
+            child: Text(
+              '$plateNumber — ${isOnline ? l10n.online : l10n.offline}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],
@@ -986,6 +1021,7 @@ class _DriverInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
     final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -994,10 +1030,10 @@ class _DriverInfoCard extends StatelessWidget {
 
     final routeName = route?['name']?.toString() ??
         route?['routeName']?.toString() ??
-        'Bus route';
+        l10n.busRoute;
     final routeId = route?['id'];
     final routeLabel =
-        routeId != null ? 'Bus route $routeId' : 'Bus route';
+        routeId != null ? l10n.drvBusRouteWithId(routeId) : l10n.busRoute;
 
     return Container(
       decoration: BoxDecoration(
@@ -1074,9 +1110,9 @@ class _DriverInfoCard extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text(
-                          'End Journey',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.endJourney,
+                          style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       )
@@ -1089,9 +1125,9 @@ class _DriverInfoCard extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text(
-                          'Start a new journey',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.startNewJourney,
+                          style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -1213,6 +1249,7 @@ class _ChildrenRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tileBg = isDark
         ? const Color(0xFF162035)
         : const Color(0xFFEEF3FD);
@@ -1236,7 +1273,7 @@ class _ChildrenRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '$childCount Total children',
+              l10n.totalChildren(childCount),
               style: TextStyle(
                 color: onSurface,
                 fontSize: 14,
@@ -1263,15 +1300,17 @@ class _JourneyActiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final label = tripType == 'MORNING_PICKUP'
-        ? 'Morning Pickup — GPS Sharing Active'
+        ? l10n.morningPickupActive
         : tripType == 'AFTERNOON_DROPOFF'
-            ? 'Afternoon Drop-off — GPS Sharing Active'
-            : 'Journey Active — GPS Sharing';
+            ? l10n.afternoonDropoffActive
+            : l10n.journeyActive;
 
     return Container(
       width: double.infinity,
       height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF21C260),
         borderRadius: BorderRadius.circular(12),
@@ -1282,12 +1321,16 @@ class _JourneyActiveChip extends StatelessWidget {
           const Icon(IconsaxPlusBold.location_tick,
               color: Colors.white, size: 16),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -1313,6 +1356,7 @@ class _CurrentStopRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tileBg =
         isDark ? const Color(0xFF1A2A3E) : const Color(0xFFF5F8FE);
 
@@ -1351,7 +1395,7 @@ class _CurrentStopRow extends StatelessWidget {
                 Text(
                   stop.locationName.isNotEmpty
                       ? stop.locationName
-                      : 'Stop $number',
+                      : l10n.drvStopNumberFallback(number),
                   style: TextStyle(
                     color: onSurface,
                     fontSize: 15,
@@ -1359,9 +1403,9 @@ class _CurrentStopRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Current target stop',
-                  style: TextStyle(
+                Text(
+                  l10n.currentTargetStop,
+                  style: const TextStyle(
                     color: Color(0xFFFF6B35),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -1393,6 +1437,7 @@ class _ErrorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -1411,8 +1456,8 @@ class _ErrorRow extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetry,
-            child: const Text('Retry',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            child: Text(l10n.retry,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -1424,6 +1469,87 @@ class _ErrorRow extends StatelessWidget {
 // Start journey bottom sheet
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _JourneyBlockedDialog extends StatelessWidget {
+  final String message;
+
+  const _JourneyBlockedDialog({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return Dialog(
+      backgroundColor: bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF3E0),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                IconsaxPlusBold.warning_2,
+                color: Color(0xFFFF9500),
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              l10n.drvCantStartJourneyTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: onSurface.withValues(alpha: 0.6),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D4896),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  l10n.gotIt,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StartJourneySheet extends StatelessWidget {
   final String suggestedType;
 
@@ -1431,6 +1557,7 @@ class _StartJourneySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
     final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -1468,7 +1595,7 @@ class _StartJourneySheet extends StatelessWidget {
           ),
 
           Text(
-            'Start a new journey',
+            l10n.startJourneySheetTitle,
             style: TextStyle(
               color: onSurface,
               fontSize: 20,
@@ -1477,7 +1604,7 @@ class _StartJourneySheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Your GPS location will be shared with parents in real time. Select the trip type to begin.',
+            l10n.startJourneySheetSubtitle,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.5),
               fontSize: 13,
@@ -1490,8 +1617,8 @@ class _StartJourneySheet extends StatelessWidget {
             icon: IconsaxPlusBold.sun_1,
             iconColor: const Color(0xFFFF9500),
             iconBg: const Color(0xFFFFF3E0),
-            title: 'Morning Pickup',
-            subtitle: 'Pick up children and take them to school',
+            title: l10n.morningPickup,
+            subtitle: l10n.morningPickupDesc,
             borderColor: borderColor,
             isDark: isDark,
             isSuggested: suggestedType == 'MORNING_PICKUP',
@@ -1503,8 +1630,8 @@ class _StartJourneySheet extends StatelessWidget {
             icon: IconsaxPlusBold.moon,
             iconColor: const Color(0xFF0D4896),
             iconBg: const Color(0xFFEEF3FD),
-            title: 'Afternoon Drop-off',
-            subtitle: 'Drop children off at their bus stops after school',
+            title: l10n.afternoonDropoff,
+            subtitle: l10n.afternoonDropoffDesc,
             borderColor: borderColor,
             isDark: isDark,
             isSuggested: suggestedType == 'AFTERNOON_DROPOFF',
@@ -1543,6 +1670,7 @@ class _StartJourneyOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final tileBg = isDark ? const Color(0xFF1A2A3E) : Colors.white;
     final activeBorder = isSuggested ? _blue : borderColor;
@@ -1598,9 +1726,9 @@ class _StartJourneyOption extends StatelessWidget {
                             color: _blue.withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            'Suggested',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.suggested,
+                            style: const TextStyle(
                               color: _blue,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -1644,6 +1772,7 @@ class _EndJourneySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
     final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -1695,7 +1824,7 @@ class _EndJourneySheet extends StatelessWidget {
           const SizedBox(height: 16),
 
           Text(
-            'End Journey',
+            l10n.endJourneyConfirmTitle,
             style: TextStyle(
               color: onSurface,
               fontSize: 20,
@@ -1704,7 +1833,7 @@ class _EndJourneySheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Are you sure you want to end the current journey?\nGPS sharing will stop immediately.',
+            l10n.endJourneyConfirmBody,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.55),
@@ -1729,9 +1858,9 @@ class _EndJourneySheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.cancel,
+                      style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -1750,9 +1879,9 @@ class _EndJourneySheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text(
-                      'End Journey',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.endJourney,
+                      style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -1777,6 +1906,7 @@ class _SessionPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
     final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -1814,7 +1944,7 @@ class _SessionPickerSheet extends StatelessWidget {
           ),
 
           Text(
-            'Mark attendance for',
+            l10n.markAttendanceFor,
             style: TextStyle(
               color: onSurface,
               fontSize: 20,
@@ -1823,7 +1953,7 @@ class _SessionPickerSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Which session are these children boarding for?',
+            l10n.whichSession,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.5),
               fontSize: 13,
@@ -1837,8 +1967,8 @@ class _SessionPickerSheet extends StatelessWidget {
             icon: IconsaxPlusBold.sun_1,
             iconColor: const Color(0xFFFF9500),
             iconBg: const Color(0xFFFFF3E0),
-            title: 'Morning',
-            subtitle: 'Mark children as onboarded for the morning session',
+            title: l10n.morning,
+            subtitle: l10n.morningSessionDesc,
             borderColor: borderColor,
             isDark: isDark,
             onTap: () => Navigator.of(context).pop('MORNING'),
@@ -1850,8 +1980,8 @@ class _SessionPickerSheet extends StatelessWidget {
             icon: IconsaxPlusBold.moon,
             iconColor: _blue,
             iconBg: const Color(0xFFEEF3FD),
-            title: 'Afternoon',
-            subtitle: 'Mark children as onboarded for the afternoon session',
+            title: l10n.afternoon,
+            subtitle: l10n.afternoonSessionDesc,
             borderColor: borderColor,
             isDark: isDark,
             onTap: () => Navigator.of(context).pop('AFTERNOON'),

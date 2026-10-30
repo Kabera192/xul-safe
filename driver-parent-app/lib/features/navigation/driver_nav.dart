@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
@@ -78,7 +80,6 @@ class _DriverNavState extends State<DriverNav> {
   Widget build(BuildContext context) {
     const blue = Color(0xFF0D4896);
     const barHeight = 64.0;
-    const indicatorWidth = 70.0;
     const indicatorHeight = 16.0;
 
     final items = [
@@ -101,7 +102,7 @@ class _DriverNavState extends State<DriverNav> {
     ];
 
     final pages = [
-      const DriverHomePage(),
+      DriverHomePage(isActive: _index == 0),
       DriverChildrenAttendancePage(isActive: _index == 1),
       DriverNotificationsPage(
         isActive: _index == 2,
@@ -113,6 +114,7 @@ class _DriverNavState extends State<DriverNav> {
     final screenWidth = MediaQuery.of(context).size.width;
     final itemCount = items.length;
     final cellWidth = screenWidth / itemCount;
+    final indicatorWidth = min(70.0, cellWidth - 8);
 
     final indicatorLeft =
         cellWidth * _index + (cellWidth - indicatorWidth) / 2;

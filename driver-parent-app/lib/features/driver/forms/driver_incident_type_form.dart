@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverIncidentTypeForm extends StatelessWidget {
   final VoidCallback onClose;
   final ValueChanged<String> onIncidentTypeSelected;
@@ -15,6 +17,7 @@ class DriverIncidentTypeForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final closeBackground =
@@ -51,7 +54,7 @@ class DriverIncidentTypeForm extends StatelessWidget {
           const SizedBox(height: 4),
 
           Text(
-            'On Trip Incidents',
+            l10n.drvOnTripIncidentsTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -64,49 +67,49 @@ class DriverIncidentTypeForm extends StatelessWidget {
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.car,
-            title: 'Bus accident or collision',
+            title: l10n.drvIncidentOptionAccident,
             onTap: () => onIncidentTypeSelected('ACCIDENT'),
           ),
           const SizedBox(height: 10),
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.health,
-            title: 'Sick / injured student',
+            title: l10n.drvIncidentOptionMedical,
             onTap: () => onIncidentTypeSelected('MEDICAL'),
           ),
           const SizedBox(height: 10),
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.setting_2,
-            title: 'Bus mechanical issue',
+            title: l10n.drvIncidentOptionBreakdown,
             onTap: () => onIncidentTypeSelected('VEHICLE_BREAKDOWN'),
           ),
           const SizedBox(height: 10),
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.clock,
-            title: 'Journey delay',
+            title: l10n.drvIncidentOptionDelay,
             onTap: () => onIncidentTypeSelected('DELAY'),
           ),
           const SizedBox(height: 10),
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.routing,
-            title: 'Road obstruction',
+            title: l10n.drvIncidentOptionRoadObstruction,
             onTap: () => onIncidentTypeSelected('ROAD_OBSTRUCTION'),
           ),
           const SizedBox(height: 10),
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.people,
-            title: 'Student behavior issue',
+            title: l10n.drvIncidentOptionBehavior,
             onTap: () => onIncidentTypeSelected('CHILD_BEHAVIOR'),
           ),
           const SizedBox(height: 10),
 
           _IncidentTypeOption(
             icon: IconsaxPlusLinear.more,
-            title: 'Other incidents',
+            title: l10n.drvIncidentOptionOther,
             onTap: () => onIncidentTypeSelected('OTHER'),
           ),
         ],

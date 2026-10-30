@@ -10,6 +10,7 @@ import '../../../widgets/mobile_form_controller.dart';
 import '../forms/parent_request_stop_form.dart';
 import '../forms/parent_request_stop_success_form.dart';
 import '../models/child_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentRequestStopPage extends StatefulWidget {
   const ParentRequestStopPage({super.key});
@@ -89,13 +90,13 @@ class _ParentRequestStopPageState extends State<ParentRequestStopPage> {
         ),
       );
     } else if (_children.isEmpty) {
-      child = const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
+      child = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Center(
           child: Text(
-            'Add a child first to request a bus stop for them.',
+            AppLocalizations.of(context).parAddChildFirstRequestStop,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
         ),
       );
@@ -144,6 +145,7 @@ class _ParentRequestStopPageState extends State<ParentRequestStopPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -163,14 +165,14 @@ class _ParentRequestStopPageState extends State<ParentRequestStopPage> {
                   ),
                 ),
               ),
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Request a bus stop',
-                    style: TextStyle(
+                    l10n.parRequestStopTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
@@ -64,7 +66,6 @@ class _ParentNavState extends State<ParentNav> {
   Widget build(BuildContext context) {
     const blue = Color(0xFF0D4896);
     const barHeight = 64.0;
-    const indicatorWidth = 70.0;
     const indicatorHeight = 16.0;
 
     // Only 2 pages for now
@@ -78,6 +79,9 @@ class _ParentNavState extends State<ParentNav> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final cellWidth = screenWidth / _items.length;
+    // Cap the indicator to the cell it sits in — on a narrow phone (5 tabs)
+    // a fixed 70px indicator is wider than the cell and overlaps neighbors.
+    final indicatorWidth = min(70.0, cellWidth - 8);
 
     final indicatorLeft =
         cellWidth * _index + (cellWidth - indicatorWidth) / 2;

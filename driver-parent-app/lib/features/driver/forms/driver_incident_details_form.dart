@@ -4,6 +4,8 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverIncidentDetailsForm extends StatefulWidget {
 
   final String incidentType;
@@ -88,40 +90,42 @@ class _DriverIncidentDetailsFormState
   }
 
   String get _title {
+    final l10n = AppLocalizations.of(context);
+
     if (widget.isEditing) {
       switch (widget.incidentType) {
         case 'ACCIDENT':
-          return 'Edit accident';
+          return l10n.drvEditAccidentTitle;
         case 'VEHICLE_BREAKDOWN':
-          return 'Edit mechanical issue';
+          return l10n.drvEditBreakdownTitle;
         case 'DELAY':
-          return 'Edit delay';
+          return l10n.drvEditDelayTitle;
         case 'ROAD_OBSTRUCTION':
-          return 'Edit road obstruction';
+          return l10n.drvEditRoadObstructionTitle;
         case 'MEDICAL':
-          return 'Edit medical incident';
+          return l10n.drvEditMedicalTitle;
         case 'CHILD_BEHAVIOR':
-          return 'Edit behavior incident';
+          return l10n.drvEditBehaviorTitle;
         case 'OTHER':
-          return 'Edit other incident';
+          return l10n.drvEditOtherIncidentTitle;
         default:
-          return 'Edit incident';
+          return l10n.drvEditIncidentTitle;
       }
     }
 
     switch (widget.incidentType) {
       case 'ACCIDENT':
-        return 'Report accident';
+        return l10n.drvReportAccidentTitle;
       case 'VEHICLE_BREAKDOWN':
-        return 'Report mechanical issue';
+        return l10n.drvReportBreakdownTitle;
       case 'DELAY':
-        return 'Report delay';
+        return l10n.drvReportDelayTitle;
       case 'ROAD_OBSTRUCTION':
-        return 'Report road obstruction';
+        return l10n.drvReportRoadObstructionTitle;
       case 'OTHER':
-        return 'Report other incident';
+        return l10n.drvReportOtherIncidentTitle;
       default:
-        return 'Report incident';
+        return l10n.drvReportIncidentTitle;
     }
   }
 
@@ -143,13 +147,15 @@ class _DriverIncidentDetailsFormState
   }
 
   String get _descriptionHint {
+    final l10n = AppLocalizations.of(context);
+
     switch (widget.incidentType) {
       case 'DELAY':
-        return 'What is causing the delay?';
+        return l10n.drvDelayHint;
       case 'ROAD_OBSTRUCTION':
-        return 'What is blocking or affecting the road?';
+        return l10n.drvRoadObstructionHint;
       default:
-        return 'Write a message';
+        return l10n.drvWriteMessageHint;
     }
   }
 
@@ -194,6 +200,8 @@ class _DriverIncidentDetailsFormState
   Future<void> _choosePhotoSource() async {
     if (widget.submitting || _selectedImage != null) return;
 
+    final l10n = AppLocalizations.of(context);
+
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) {
@@ -202,7 +210,7 @@ class _DriverIncidentDetailsFormState
             children: [
               ListTile(
                 leading: const Icon(IconsaxPlusLinear.camera),
-                title: const Text('Take photo'),
+                title: Text(l10n.drvTakePhoto),
                 onTap: () {
                   Navigator.pop(
                     context,
@@ -212,7 +220,7 @@ class _DriverIncidentDetailsFormState
               ),
               ListTile(
                 leading: const Icon(IconsaxPlusLinear.gallery),
-                title: const Text('Choose from gallery'),
+                title: Text(l10n.drvChooseFromGallery),
                 onTap: () {
                   Navigator.pop(
                     context,
@@ -278,9 +286,9 @@ class _DriverIncidentDetailsFormState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Microphone permission is required to record a voice note.',
+            AppLocalizations.of(context).drvMicPermissionRequired,
           ),
         ),
       );
@@ -354,6 +362,7 @@ class _DriverIncidentDetailsFormState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final fieldBackground =
@@ -451,7 +460,7 @@ class _DriverIncidentDetailsFormState
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Add photo',
+                          l10n.drvAddPhotoBtn,
                           style: TextStyle(
                             color: photoContent,
                             fontSize: 14,
@@ -592,10 +601,10 @@ class _DriverIncidentDetailsFormState
                     Expanded(
                       child: Text(
                         _isRecording
-                            ? 'Recording... Tap to stop'
+                            ? l10n.drvRecordingTapToStop
                             : _recordedAudio != null
-                                ? 'Voice note recorded'
-                                : 'Record audio',
+                                ? l10n.drvVoiceNoteRecorded
+                                : l10n.drvRecordAudioLabel,
                         style: TextStyle(
                           color: _recordedAudio != null ||
                                   _isRecording
@@ -638,7 +647,7 @@ class _DriverIncidentDetailsFormState
 
         // ── Journey impact ────────────────────────────────────────────────
         Text(
-          'Journey impact',
+          l10n.drvJourneyImpactLabel,
           style: TextStyle(
             color: onSurface,
             fontSize: 15,
@@ -653,6 +662,7 @@ class _DriverIncidentDetailsFormState
             for (int i = 0; i < _availableImpacts.length; i++) ...[
               Expanded(
                 child: _JourneyImpactChoice(
+                  l10n: l10n,
                   impact: _availableImpacts[i],
                   selected: _selectedImpact == _availableImpacts[i],
                   onTap: () {
@@ -716,8 +726,8 @@ class _DriverIncidentDetailsFormState
                 )
               : Text(
                   widget.isEditing
-                      ? 'Save changes'
-                      : 'Send report',
+                      ? l10n.saveChanges
+                      : l10n.drvSendReportBtn,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -733,11 +743,13 @@ class _DriverIncidentDetailsFormState
 }
 
 class _JourneyImpactChoice extends StatelessWidget {
+  final AppLocalizations l10n;
   final String impact;
   final bool selected;
   final VoidCallback onTap;
 
   const _JourneyImpactChoice({
+    required this.l10n,
     required this.impact,
     required this.selected,
     required this.onTap,
@@ -748,11 +760,11 @@ class _JourneyImpactChoice extends StatelessWidget {
   String get _label {
     switch (impact) {
       case 'NONE':
-        return 'No impact';
+        return l10n.drvImpactNone;
       case 'DELAYED':
-        return 'Delayed';
+        return l10n.drvImpactDelayed;
       case 'STOPPED':
-        return 'Stopped';
+        return l10n.drvImpactStopped;
       default:
         return impact;
     }

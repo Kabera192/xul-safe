@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/driver_incident_model.dart';
 
 class DriverManageIncidentsForm extends StatefulWidget {
@@ -42,6 +43,7 @@ class _DriverManageIncidentsFormState
   }
 
   List<DriverIncidentModel> get _filtered {
+    final l10n = AppLocalizations.of(context);
     final query = _searchCtrl.text.trim().toLowerCase();
 
     if (query.isEmpty) {
@@ -49,8 +51,10 @@ class _DriverManageIncidentsFormState
     }
 
     return widget.incidents.where((incident) {
-      return _typeLabel(incident.type).toLowerCase().contains(query) ||
-          _impactLabel(incident.journeyImpact).toLowerCase().contains(query) ||
+      return _typeLabel(l10n, incident.type).toLowerCase().contains(query) ||
+          _impactLabel(l10n, incident.journeyImpact)
+              .toLowerCase()
+              .contains(query) ||
           incident.description.toLowerCase().contains(query);
     }).toList();
   }
@@ -65,6 +69,7 @@ class _DriverManageIncidentsFormState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final inputFill =
@@ -116,7 +121,7 @@ class _DriverManageIncidentsFormState
           const SizedBox(height: 6),
 
           Text(
-            'Manage incidents',
+            l10n.drvManageIncidents,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -153,7 +158,7 @@ class _DriverManageIncidentsFormState
                     onChanged: (_) => setState(() {}),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search incidents',
+                      hintText: l10n.drvSearchIncidentsHint,
                       hintStyle: TextStyle(
                         color: onSurface.withValues(alpha: 0.4),
                         fontSize: 13,
@@ -190,7 +195,7 @@ class _DriverManageIncidentsFormState
             ),
           ] else if (filtered.isEmpty) ...[
             _MessageCard(
-              text: 'No incidents found',
+              text: l10n.drvNoIncidentsFound,
               textColor: onSurface.withValues(alpha: 0.5),
               bgColor: inputFill,
               borderColor: borderColor,
@@ -198,7 +203,7 @@ class _DriverManageIncidentsFormState
           ] else ...[
             if (active.isNotEmpty) ...[
               _SectionTitle(
-                'ONGOING',
+                l10n.drvOngoingLabel,
                 onSurface: onSurface,
               ),
               const SizedBox(height: 10),
@@ -219,7 +224,7 @@ class _DriverManageIncidentsFormState
 
             if (resolved.isNotEmpty) ...[
               _SectionTitle(
-                'RESOLVED',
+                l10n.drvResolvedLabel,
                 onSurface: onSurface,
               ),
               const SizedBox(height: 10),
@@ -263,6 +268,7 @@ class _IncidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final surface = Theme.of(context).colorScheme.surface;
@@ -321,7 +327,7 @@ class _IncidentCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _typeLabel(incident.type),
+                          _typeLabel(l10n, incident.type),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -343,7 +349,9 @@ class _IncidentCard extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   Text(
-                    'Journey: ${_impactLabel(incident.journeyImpact)}',
+                    l10n.drvJourneyImpactPrefix(
+                      _impactLabel(l10n, incident.journeyImpact),
+                    ),
                     style: TextStyle(
                       color: onSurface.withValues(alpha: 0.55),
                       fontSize: 12,
@@ -354,7 +362,7 @@ class _IncidentCard extends StatelessWidget {
                   if (incident.createdAt != null) ...[
                     const SizedBox(height: 3),
                     Text(
-                      _formatCreatedAt(incident.createdAt!),
+                      _formatCreatedAt(l10n, incident.createdAt!),
                       style: TextStyle(
                         color: onSurface.withValues(alpha: 0.38),
                         fontSize: 11,
@@ -370,7 +378,7 @@ class _IncidentCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         _SmallActionButton(
-                          label: 'Edit',
+                          label: l10n.drvEditBtn,
                           onTap: onEdit!,
                           primary: false,
                         ),
@@ -378,7 +386,7 @@ class _IncidentCard extends StatelessWidget {
                         const SizedBox(width: 8),
 
                         _SmallActionButton(
-                          label: 'Resolve',
+                          label: l10n.drvResolveBtn,
                           onTap: onResolve!,
                           primary: true,
                         ),
@@ -404,8 +412,9 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Text(
-      resolved ? 'RESOLVED' : 'ACTIVE',
+      resolved ? l10n.drvResolvedLabel : l10n.drvActiveLabel,
       style: TextStyle(
         color: resolved
             ? const Color(0xFF21C260)
@@ -569,49 +578,49 @@ IconData _iconForType(String type) {
   }
 }
 
-String _typeLabel(String type) {
+String _typeLabel(AppLocalizations l10n, String type) {
   switch (type.toUpperCase()) {
     case 'ACCIDENT':
-      return 'Bus accident or collision';
+      return l10n.drvIncidentOptionAccident;
 
     case 'MEDICAL':
-      return 'Sick / injured student';
+      return l10n.drvIncidentOptionMedical;
 
     case 'VEHICLE_BREAKDOWN':
-      return 'Bus mechanical issue';
+      return l10n.drvIncidentOptionBreakdown;
 
     case 'DELAY':
-      return 'Journey delay';
+      return l10n.drvIncidentOptionDelay;
 
     case 'ROAD_OBSTRUCTION':
-      return 'Road obstruction';
+      return l10n.drvIncidentOptionRoadObstruction;
 
     case 'CHILD_BEHAVIOR':
-      return 'Student behavior issue';
+      return l10n.drvIncidentOptionBehavior;
 
     case 'OTHER':
     default:
-      return 'Other incident';
+      return l10n.drvOtherIncidentSingular;
   }
 }
 
-String _impactLabel(String impact) {
+String _impactLabel(AppLocalizations l10n, String impact) {
   switch (impact.toUpperCase()) {
     case 'NONE':
-      return 'No impact';
+      return l10n.drvImpactNone;
 
     case 'DELAYED':
-      return 'Delayed';
+      return l10n.drvImpactDelayed;
 
     case 'STOPPED':
-      return 'Stopped';
+      return l10n.drvImpactStopped;
 
     default:
       return impact;
   }
 }
 
-String _formatCreatedAt(int milliseconds) {
+String _formatCreatedAt(AppLocalizations l10n, int milliseconds) {
   final date =
       DateTime.fromMillisecondsSinceEpoch(milliseconds);
 
@@ -629,7 +638,7 @@ String _formatCreatedAt(int milliseconds) {
       date.minute.toString().padLeft(2, '0');
 
   if (sameDay) {
-    return 'Today, $hour:$minute';
+    return l10n.drvTodayTime('$hour:$minute');
   }
 
   final yesterday =
@@ -641,7 +650,7 @@ String _formatCreatedAt(int milliseconds) {
       date.day == yesterday.day;
 
   if (wasYesterday) {
-    return 'Yesterday, $hour:$minute';
+    return l10n.drvYesterdayTime('$hour:$minute');
   }
 
   final day =
