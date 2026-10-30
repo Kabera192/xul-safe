@@ -252,6 +252,46 @@ class AppLocalizations {
   String get markAsAbsentSubtitle => _t({'en': 'Notify driver for one or more days', 'fr': 'Notifier le conducteur pour un ou plusieurs jours', 'rw': 'Menyesha umushoferi ku munsi umwe cyangwa myinshi'});
   String get removeChildAction => _t({'en': 'Remove child', 'fr': 'Supprimer l\'enfant', 'rw': 'Kuraho umwana'});
   String get removeChildSubtitle => _t({'en': 'Permanently delete this record', 'fr': 'Supprimer définitivement cet enregistrement', 'rw': 'Siba burundu iki gice'});
+
+  String get appNotificationFallbackTitle => _t({'en': 'Notification', 'fr': 'Notification', 'rw': 'Menyesha'});
+
+  // ── Notification templates (server sends category + params, client
+  // ── localizes using these — see lib/core/notifications/notification_localizer.dart) ──
+
+  String get notifAbsenceMarkedTitle => _t({'en': 'Your child has been marked absent', 'fr': 'Votre enfant a été marqué absent', 'rw': 'Umwana wawe yashyizwe nk\'ubuze'});
+  String notifAbsenceMarkedMorning(String name) => _t({'en': '$name was not present for the morning bus pickup today.', 'fr': '$name n\'était pas présent pour le ramassage du matin aujourd\'hui.', 'rw': '$name ntiyabonetse ku gufatwa na bisi mu gitondo uyu munsi.'});
+  String notifAbsenceMarkedAfternoon(String name) => _t({'en': '$name was not present for the afternoon bus drop-off today.', 'fr': '$name n\'était pas présent pour la dépose de l\'après-midi aujourd\'hui.', 'rw': '$name ntiyabonetse ku gusubizwa na bisi nimugoroba uyu munsi.'});
+  String notifAbsenceReportedTitle(String name) => _t({'en': 'Absence: $name', 'fr': 'Absence : $name', 'rw': 'Ubuze: $name'});
+  String notifAbsenceReportedMorning(String name) => _t({'en': '$name will not be attending this morning.', 'fr': '$name ne sera pas présent ce matin.', 'rw': '$name ntazaboneka mu gitondo.'});
+  String notifAbsenceReportedEvening(String name) => _t({'en': '$name will not be attending this evening.', 'fr': '$name ne sera pas présent ce soir.', 'rw': '$name ntazaboneka nimugoroba.'});
+  String notifAbsenceReportedRange(String name, String start, String end) => _t({'en': '$name will not be attending from $start to $end.', 'fr': '$name ne sera pas présent du $start au $end.', 'rw': '$name ntazaboneka kuva $start kugeza $end.'});
+  String get notifBoardedMorningTitle => _t({'en': 'Your child has boarded the bus', 'fr': 'Votre enfant est monté dans le bus', 'rw': 'Umwana wawe yinjiye mu bisi'});
+  String notifBoardedMorningBody(String name) => _t({'en': '$name has boarded the school bus and is on their way to school.', 'fr': '$name est monté dans le bus scolaire et se dirige vers l\'école.', 'rw': '$name yinjiye mu bisi y\'ishuri kandi ajya ku ishuri.'});
+  String get notifBoardedAfternoonTitle => _t({'en': 'Your child is heading home', 'fr': 'Votre enfant rentre à la maison', 'rw': 'Umwana wawe ajya mu rugo'});
+  String notifBoardedAfternoonBody(String name) => _t({'en': '$name has boarded the bus and is on their way home.', 'fr': '$name est monté dans le bus et rentre à la maison.', 'rw': '$name yinjiye mu bisi kandi ajya mu rugo.'});
+  String get notifExitedMorningTitle => _t({'en': 'Your child has arrived at school', 'fr': 'Votre enfant est arrivé à l\'école', 'rw': 'Umwana wawe yageze ku ishuri'});
+  String notifExitedMorningBody(String name) => _t({'en': '$name has been dropped off at school safely.', 'fr': '$name a été déposé à l\'école en toute sécurité.', 'rw': '$name yamanuwe ku ishuri amutekanye.'});
+  String get notifExitedAfternoonTitle => _t({'en': 'Your child has been dropped off', 'fr': 'Votre enfant a été déposé', 'rw': 'Umwana wawe yamanuwe'});
+  String notifExitedAfternoonBody(String name) => _t({'en': '$name has been dropped off at their stop safely.', 'fr': '$name a été déposé à son arrêt en toute sécurité.', 'rw': '$name yamanuwe ku gihagararo cye amutekanye.'});
+  String notifBusReachedStopTitle(String stopName) => _t({'en': 'Bus has arrived at $stopName', 'fr': 'Le bus est arrivé à $stopName', 'rw': 'Bisi yageze kuri $stopName'});
+  String notifBusReachedStopMorning(String name, String stopName) => _t({'en': '$name should board the bus at $stopName shortly.', 'fr': '$name devrait monter dans le bus à $stopName bientôt.', 'rw': '$name agiye kwinjira mu bisi kuri $stopName vuba.'});
+  String notifBusReachedStopAfternoon(String name, String stopName) => _t({'en': '$name will be dropped off at $stopName shortly.', 'fr': '$name sera déposé à $stopName bientôt.', 'rw': '$name agiye kumanurwa kuri $stopName vuba.'});
+  String get notifJourneyStartedTitle => _t({'en': 'Bus journey has started', 'fr': 'Le trajet du bus a commencé', 'rw': 'Urugendo rwa bisi rwatangiye'});
+  String get notifJourneyStartedMorning => _t({'en': 'The morning pickup journey has started. The bus is now on the road.', 'fr': 'Le trajet de ramassage du matin a commencé. Le bus est maintenant sur la route.', 'rw': 'Urugendo rwo kwakira abana mu gitondo rwatangiye. Bisi iri mu nzira.'});
+  String get notifJourneyStartedAfternoon => _t({'en': 'The afternoon drop-off journey has started. The bus is now on the road.', 'fr': 'Le trajet de dépose de l\'après-midi a commencé. Le bus est maintenant sur la route.', 'rw': 'Urugendo rwo gusubiza abana nimugoroba rwatangiye. Bisi iri mu nzira.'});
+  String get notifJourneyEndedTitle => _t({'en': 'Bus journey has ended', 'fr': 'Le trajet du bus est terminé', 'rw': 'Urugendo rwa bisi rwarangiye'});
+  String get notifJourneyEndedBody => _t({'en': 'The bus journey has come to an end. Your child should be home soon.', 'fr': 'Le trajet du bus est terminé. Votre enfant devrait être bientôt à la maison.', 'rw': 'Urugendo rwa bisi rwarangiye. Umwana wawe agiye kugera mu rugo vuba.'});
+  String get notifIncidentReportedTitle => _t({'en': 'Incident reported', 'fr': 'Incident signalé', 'rw': 'Ikibazo cyatanzwe'});
+  String get notifJourneyAffectedTitle => _t({'en': 'Journey affected by incident', 'fr': 'Trajet affecté par un incident', 'rw': 'Urugendo rwagizweho ingaruka n\'ikibazo'});
+  String get notifJourneyStoppedBody => _t({'en': 'The bus journey has been stopped due to an active incident.', 'fr': 'Le trajet du bus a été arrêté à cause d\'un incident en cours.', 'rw': 'Urugendo rwa bisi rwahagaritswe kubera ikibazo kiriho.'});
+  String get notifJourneyDelayedBody => _t({'en': 'The bus journey is delayed due to an active incident.', 'fr': 'Le trajet du bus est retardé à cause d\'un incident en cours.', 'rw': 'Urugendo rwa bisi rwatinze kubera ikibazo kiriho.'});
+  String get notifIncidentReportedDefaultBody => _t({'en': 'An incident has been reported.', 'fr': 'Un incident a été signalé.', 'rw': 'Hari ikibazo cyatanzwe.'});
+  String get notifNewParentRegisteredTitle => _t({'en': 'New parent registered', 'fr': 'Nouveau parent enregistré', 'rw': 'Umubyeyi mushya yiyandikishije'});
+  String notifNewParentRegisteredBody(String firstName, String lastName) => _t({'en': '$firstName $lastName verified their account and joined as a parent.', 'fr': '$firstName $lastName a vérifié son compte et a rejoint en tant que parent.', 'rw': '$firstName $lastName yemeje konti ye kandi yinjiye nk\'umubyeyi.'});
+  String get notifNewStudentAddedTitle => _t({'en': 'New student added', 'fr': 'Nouvel élève ajouté', 'rw': 'Umwana mushya yongewe'});
+  String notifNewStudentAddedBody(String name) => _t({'en': '$name was added as a student.', 'fr': '$name a été ajouté comme élève.', 'rw': '$name yongewe nk\'umwana w\'ishuri.'});
+  String get notifBusCapacityExceededTitle => _t({'en': 'Bus at full capacity', 'fr': 'Bus à pleine capacité', 'rw': 'Bisi yuzuye'});
+  String notifBusCapacityExceededBody(String plate, String capacity) => _t({'en': 'Bus $plate is full ($capacity seats) — a student assignment to this bus was blocked.', 'fr': 'Le bus $plate est plein ($capacity places) — l\'affectation d\'un élève à ce bus a été bloquée.', 'rw': 'Bisi $plate yuzuye (imyanya $capacity) — gushyira umwana kuri iyi bisi byanze.'});
 }
 
 // ── Delegate ──────────────────────────────────────────────────────────────────

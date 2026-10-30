@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/app_localizations.dart';
+import '../core/notifications/notification_localizer.dart';
 import '../features/driver/models/notification_model.dart';
 import 'mobile_notification_visual_template.dart';
 
@@ -19,6 +21,8 @@ class MobileNotificationCardTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final localized = localizeNotification(l10n, notification);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final surface = Theme.of(context).colorScheme.surface;
@@ -55,9 +59,9 @@ class MobileNotificationCardTemplate extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    notification.title.isEmpty
-                        ? 'Notification'
-                        : notification.title,
+                    localized.title.isEmpty
+                        ? l10n.appNotificationFallbackTitle
+                        : localized.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -68,7 +72,7 @@ class MobileNotificationCardTemplate extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    notification.message,
+                    localized.message,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

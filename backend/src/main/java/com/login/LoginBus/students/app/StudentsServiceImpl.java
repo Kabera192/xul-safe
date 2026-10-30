@@ -1,5 +1,8 @@
 package com.login.LoginBus.students.app;
 
+import com.login.LoginBus.accounts.app.AccountsPublicService;
+import com.login.LoginBus.accounts.domain.User;
+import com.login.LoginBus.accounts.domain.UserRole;
 import com.login.LoginBus.accounts.infra.ConductorJpaEntity;
 import com.login.LoginBus.accounts.infra.ConductorRepository;
 import com.login.LoginBus.notifications.app.NotificationsPublicService;
@@ -15,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,6 +44,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
 
     @Autowired
     private NotificationsPublicService notificationsPublicService;
+
+    @Autowired
+    private AccountsPublicService accountsService;
 
     // ========== Child Operations ==========
 
@@ -76,6 +84,7 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     @Transactional
     public Child createChild(Child child) {
         validateSingleBusPerParent(child.getParentId(), child.getBusId(), null);
+        validateBusCapacity(child.getBusId(), null);
 
         // Set creation timestamp
         if (child.getCreatedAt() == null) {
@@ -90,7 +99,83 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         ChildJpaEntity entity = ChildJpaEntity.fromDomain(child);
         ChildJpaEntity saved = childRepository.save(entity);
 
+        notifyAdminsStudentAdded(saved);
+
         return saved.toDomain();
+    }
+
+    /**
+     * Blocks the assignment outright when the bus is already at capacity —
+     * per product decision, parents/admins see a clear error rather than
+     * silently overbooking the bus. Also pings admins so they know a seat
+     * was requested and refused.
+     */
+    private void validateBusCapacity(Long busId, String excludeChildId) {
+        if (busId == null) return;
+
+        BusJpaEntity bus = busRepository.findById(busId).orElse(null);
+        if (bus == null || bus.getCapacity() == null) return;
+
+        long currentCount = childRepository.findByBusId(busId).stream()
+                .filter(c -> excludeChildId == null || !excludeChildId.equals(c.getId()))
+                .count();
+
+        if (currentCount >= bus.getCapacity()) {
+            notifyAdminsBusFull(bus);
+            throw new IllegalStateException(
+                    "This bus is full (" + bus.getCapacity() + " seats) — choose a different bus"
+                            + " or ask the admin to free up a seat before trying again.");
+        }
+    }
+
+    private void notifyAdminsStudentAdded(ChildJpaEntity child) {
+        try {
+            List<Long> adminIds = adminUserIds();
+            if (adminIds.isEmpty()) return;
+
+            notificationsPublicService.sendNotificationToUsers(
+                    adminIds,
+                    child.getParentId(),
+                    NotificationType.INFO,
+                    NotificationCategory.STUDENT_ADDED,
+                    "New student added",
+                    child.getFullName() + " was added as a student.",
+                    Map.of("childName", child.getFullName())
+            );
+        } catch (Exception e) {
+            // Don't fail student creation if notification delivery fails
+        }
+    }
+
+    private void notifyAdminsBusFull(BusJpaEntity bus) {
+        try {
+            List<Long> adminIds = adminUserIds();
+            if (adminIds.isEmpty()) return;
+
+            notificationsPublicService.sendNotificationToUsers(
+                    adminIds,
+                    null,
+                    NotificationType.WARNING,
+                    NotificationCategory.BUS_CAPACITY_EXCEEDED,
+                    "Bus at full capacity",
+                    "Bus " + bus.getPlateNumber() + " is full (" + bus.getCapacity()
+                            + " seats) — a student assignment to this bus was blocked.",
+                    Map.of(
+                            "plateNumber", bus.getPlateNumber() != null ? bus.getPlateNumber() : "",
+                            "capacity", String.valueOf(bus.getCapacity())
+                    )
+            );
+        } catch (Exception e) {
+            // Don't fail the assignment flow if notification delivery fails
+        }
+    }
+
+    private List<Long> adminUserIds() {
+        return accountsService.getUsersByRole(UserRole.ADMIN)
+                .stream()
+                .map(User::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -149,6 +234,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         // Update bus and bus stop assignment. Route lives only on the bus —
         // a child has no independent route of their own.
         validateSingleBusPerParent(existing.getParentId(), child.getBusId(), childId);
+        if (!Objects.equals(existing.getBusId(), child.getBusId())) {
+            validateBusCapacity(child.getBusId(), childId);
+        }
         existing.setBusId(child.getBusId());
         existing.setBusStopId(child.getBusStopId());
 
@@ -266,9 +354,15 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
                     conductor.getUserId(),
                     absence.getParentId(),
                     NotificationType.INFO,
-                    NotificationCategory.ABSENCE_CREATED,
+                    NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
                     "Absence: " + childName,
-                    childName + " will not be attending " + absenceTypeLabel + "."
+                    childName + " will not be attending " + absenceTypeLabel + ".",
+                    Map.of(
+                            "childName", childName,
+                            "absenceType", absence.getAbsenceType().name(),
+                            "startDate", absence.getStartDate() != null ? absence.getStartDate().toString() : "",
+                            "endDate", absence.getEndDate() != null ? absence.getEndDate().toString() : ""
+                    )
             );
         } catch (Exception e) {
             // Don't fail the absence creation if notification delivery fails
