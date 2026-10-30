@@ -21,9 +21,9 @@ class ParentAddChildForm extends StatefulWidget {
 class _ParentAddChildFormState extends State<ParentAddChildForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
-  final _gradeCtrl = TextEditingController();
 
   String? _selectedGender;
+  String? _selectedGrade;
   DateTime? _selectedBirthDate;
   File? _selectedPhoto;
   bool _saving = false;
@@ -32,7 +32,6 @@ class _ParentAddChildFormState extends State<ParentAddChildForm> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _gradeCtrl.dispose();
     super.dispose();
   }
 
@@ -64,7 +63,7 @@ class _ParentAddChildFormState extends State<ParentAddChildForm> {
         fullName: _nameCtrl.text,
         birthDate: birthDateStr,
         gender: _selectedGender,
-        grade: _gradeCtrl.text.trim(),
+        grade: _selectedGrade,
       );
 
       if (_selectedPhoto != null) {
@@ -186,21 +185,14 @@ class _ParentAddChildFormState extends State<ParentAddChildForm> {
               onChanged: (g) => setState(() => _selectedGender = g),
             ),
             const SizedBox(height: 14),
-            SheetInput(
+            GradePicker(
+              value: _selectedGrade,
               label: l10n.gradeField,
-              hint: l10n.gradeHint,
-              controller: _gradeCtrl,
               fill: inputFill,
               border: borderColor,
               textColor: onSurface,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return l10n.required;
-                final match = RegExp(r'^Grade\s+(\d+)$').firstMatch(v.trim());
-                if (match == null) return l10n.gradeFormat;
-                final n = int.parse(match.group(1)!);
-                if (n < 1 || n > 13) return l10n.gradeRange;
-                return null;
-              },
+              onChanged: (g) => setState(() => _selectedGrade = g),
+              validator: (v) => v == null ? l10n.required : null,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

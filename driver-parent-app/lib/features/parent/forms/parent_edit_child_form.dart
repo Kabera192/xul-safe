@@ -19,8 +19,8 @@ class ParentEditChildForm extends StatefulWidget {
 class _ParentEditChildFormState extends State<ParentEditChildForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _gradeCtrl;
   String? _selectedGender;
+  String? _selectedGrade;
   DateTime? _selectedBirthDate;
   bool _saving = false;
   String? _error;
@@ -29,7 +29,7 @@ class _ParentEditChildFormState extends State<ParentEditChildForm> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.child.fullName);
-    _gradeCtrl = TextEditingController(text: widget.child.grade ?? '');
+    _selectedGrade = widget.child.grade;
     _selectedGender = widget.child.gender;
     _selectedBirthDate = parseSheetDate(widget.child.birthDate);
   }
@@ -37,7 +37,6 @@ class _ParentEditChildFormState extends State<ParentEditChildForm> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _gradeCtrl.dispose();
     super.dispose();
   }
 
@@ -58,7 +57,7 @@ class _ParentEditChildFormState extends State<ParentEditChildForm> {
         fullName: _nameCtrl.text,
         birthDate: bdStr,
         gender: _selectedGender,
-        grade: _gradeCtrl.text.trim(),
+        grade: _selectedGrade,
       );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -128,21 +127,14 @@ class _ParentEditChildFormState extends State<ParentEditChildForm> {
               onChanged: (v) => setState(() => _selectedGender = v),
             ),
             const SizedBox(height: 14),
-            SheetInput(
+            GradePicker(
+              value: _selectedGrade,
               label: l10n.gradeLabel,
-              hint: l10n.gradeHint,
-              controller: _gradeCtrl,
               fill: inputFill,
               border: borderColor,
               textColor: onSurface,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return l10n.required;
-                final match = RegExp(r'^Grade\s+(\d+)$').firstMatch(v.trim());
-                if (match == null) return l10n.gradeFormat;
-                final n = int.parse(match.group(1)!);
-                if (n < 1 || n > 13) return l10n.gradeRange;
-                return null;
-              },
+              onChanged: (g) => setState(() => _selectedGrade = g),
+              validator: (v) => v == null ? l10n.required : null,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
