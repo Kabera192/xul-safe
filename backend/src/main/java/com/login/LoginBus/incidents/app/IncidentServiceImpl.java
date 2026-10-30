@@ -171,7 +171,18 @@ private final IncidentAttachmentStorage attachmentStorage;
 
     @Override
     @Transactional(readOnly = true)
-    public List<Incident> getAllIncidents() {
+    public List<Incident> getAllIncidents(Jwt jwt) {
+        Long userId = getAuthenticatedUserId(jwt);
+        User requester = accountsService.getUserById(userId);
+
+        // The unfiltered list has no per-parent redaction — restrict it to
+        // admins so a non-admin JWT can never see incidents outside the
+        // scoped views (getMyIncidents / getParentIncidents).
+        if (requester == null || requester.getRole() != UserRole.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Admin access required");
+        }
+
         return incidentRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(IncidentJpaEntity::toDomain)
