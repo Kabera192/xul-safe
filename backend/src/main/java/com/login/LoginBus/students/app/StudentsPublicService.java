@@ -50,4 +50,14 @@ public interface StudentsPublicService {
      * @param busStopId The predefined bus stop ID
      */
     void assignBusStop(String childId, String busStopId);
+
+    /**
+     * Assign a bus to a child directly (used when approving a route request
+     * for a child who has no bus yet). Enforces the same capacity check as
+     * the regular child-update path.
+     *
+     * @param childId The child ID
+     * @param busId   The bus ID
+     */
+    void assignBus(String childId, Long busId);
 }

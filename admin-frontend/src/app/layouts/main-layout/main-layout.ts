@@ -30,6 +30,7 @@ const DRIVER_PARENT_ACTION_CATEGORIES: NotificationCategory[] = [
   'JOURNEY_STARTED',
   'JOURNEY_ENDED',
   'INCIDENT_REPORTED',
+  'ROUTE_REQUEST_SUBMITTED',
 ];
 
 @Component({

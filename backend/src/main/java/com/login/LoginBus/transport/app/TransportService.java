@@ -148,6 +148,23 @@ public interface TransportService {
      */
     RouteRequest approveRouteRequest(Long requestId, Long routeId);
 
+    /**
+     * Submit a new custom route/bus stop request on a child's behalf.
+     * Notifies admins that a request is waiting on them.
+     *
+     * @param request The route request data
+     * @return The saved RouteRequest
+     */
+    RouteRequest createRouteRequest(RouteRequest request);
+
+    /**
+     * Decline a pending custom route request. Notifies the requesting parent.
+     *
+     * @param requestId The route request ID
+     * @return The updated RouteRequest
+     */
+    RouteRequest rejectRouteRequest(Long requestId);
+
     // ========== Journey Operations ==========
 
     /**

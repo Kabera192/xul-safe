@@ -56,6 +56,95 @@ class TransportService {
     );
   }
 
+  /// GET /api/v1/routes
+  ///
+  /// Lists every route in the system so a parent can browse before
+  /// resorting to a free-form stop request.
+  static Future<List<Map<String, dynamic>>> getAllRoutes() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/routes');
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = decoded is Map<String, dynamic> ? decoded['data'] : decoded;
+      if (data is! List) {
+        throw Exception('Unexpected routes response');
+      }
+      return data.whereType<Map<String, dynamic>>().toList();
+    }
+
+    throw Exception(_extractErrorMessage(decoded, 'Failed to load routes'));
+  }
+
+  /// GET /api/v1/bus-stops/route/{routeId}
+  static Future<List<Map<String, dynamic>>> getStopsForRoute(
+    int routeId,
+  ) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/bus-stops/route/$routeId',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = decoded is Map<String, dynamic> ? decoded['data'] : decoded;
+      if (data is! List) {
+        throw Exception('Unexpected bus stops response');
+      }
+      return data.whereType<Map<String, dynamic>>().toList();
+    }
+
+    throw Exception(_extractErrorMessage(decoded, 'Failed to load bus stops'));
+  }
+
+  /// POST /api/v1/routes/select-bus-stop
+  ///
+  /// Picks an existing, already-approved bus stop for a child — no admin
+  /// approval needed, unlike createRouteRequest.
+  static Future<void> selectBusStop({
+    required String childId,
+    required String busStopId,
+  }) async {
+    final parentId = await SessionStorage.getUserId();
+
+    if (parentId == null) {
+      throw Exception('Not logged in');
+    }
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/routes/select-bus-stop');
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('POST', uri);
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'parentId': parentId,
+        'childId': childId,
+        'busStopId': busStopId,
+      });
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return;
+    }
+
+    throw Exception(_extractErrorMessage(decoded, 'Failed to select bus stop'));
+  }
+
   static Future<Map<String, dynamic>> getMyBus() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/v1/me/bus',
@@ -83,6 +172,39 @@ class TransportService {
         decoded,
         'Failed to load bus',
       ),
+    );
+  }
+
+  /// GET /api/v1/routes/child/{childId}/details
+  ///
+  /// Returns the child's assigned route/stop, or an explanatory
+  /// `assignmentMessage` (e.g. "No bus assigned to this child") when there
+  /// isn't one yet.
+  static Future<Map<String, dynamic>> getChildRouteDetails(
+    String childId,
+  ) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/routes/child/$childId/details',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = decoded is Map<String, dynamic> ? decoded['data'] : decoded;
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Unexpected route details response');
+      }
+      return data;
+    }
+
+    throw Exception(
+      _extractErrorMessage(decoded, 'Failed to load route details'),
     );
   }
 

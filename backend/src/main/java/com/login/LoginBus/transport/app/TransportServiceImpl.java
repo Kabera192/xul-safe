@@ -3,6 +3,7 @@ package com.login.LoginBus.transport.app;
 import com.login.LoginBus.accounts.app.AccountsPublicService;
 import com.login.LoginBus.accounts.domain.Conductor;
 import com.login.LoginBus.accounts.domain.User;
+import com.login.LoginBus.accounts.domain.UserRole;
 import com.login.LoginBus.accounts.infra.ConductorRepository;
 import com.login.LoginBus.notifications.app.NotificationsPublicService;
 import com.login.LoginBus.notifications.domain.NotificationCategory;
@@ -382,6 +383,8 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         result.put("childName", child.getFullName());
         result.put("availableBusStops", List.of());
         result.put("assignedBusStopName", "Not assigned");
+        result.put("hasPendingRouteRequest",
+                !routeRequestRepository.findByChildIdAndStatus(childId, RouteRequestStatus.PENDING).isEmpty());
 
         if (child.getBusId() == null) {
             result.put("assignmentMessage", "No bus assigned to this child");
@@ -849,26 +852,39 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         if (child == null) {
             throw new IllegalArgumentException("Child not found with ID: " + childId);
         }
-        if (child.getBusId() == null) {
-            throw new IllegalArgumentException("Cannot assign bus stop: no bus is assigned to this child");
-        }
-
-        BusJpaEntity busEntity = busRepository.findById(child.getBusId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Assigned bus not found with ID: " + child.getBusId()));
-        if (busEntity.getRouteId() == null) {
-            throw new IllegalArgumentException("Cannot assign bus stop: no route is assigned to the child's bus");
-        }
 
         BusStopJpaEntity stop = busStopRepository.findById(busStopId)
                 .orElseThrow(() -> new IllegalArgumentException("Bus stop not found with ID: " + busStopId));
         if (stop.getRouteId() == null) {
             throw new IllegalArgumentException("Selected bus stop is not assigned to any route");
         }
-        if (!busEntity.getRouteId().equals(stop.getRouteId())) {
-            throw new IllegalArgumentException(
-                    "Selected bus stop does not belong to the route assigned to the child's bus"
-            );
+
+        if (child.getBusId() == null) {
+            // A parent browsing routes for the first time has no bus yet —
+            // pick the one bus that serves this stop's route automatically,
+            // the same way an approved route request does.
+            List<BusJpaEntity> routeBuses = busRepository.findByRouteId(stop.getRouteId());
+            if (routeBuses.isEmpty()) {
+                throw new IllegalArgumentException("No bus currently serves this stop's route");
+            }
+            if (routeBuses.size() > 1) {
+                throw new IllegalArgumentException(
+                        "More than one bus serves this route — ask the admin to assign a bus first"
+                );
+            }
+            studentsService.assignBus(childId, routeBuses.get(0).getId());
+        } else {
+            BusJpaEntity busEntity = busRepository.findById(child.getBusId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Assigned bus not found with ID: " + child.getBusId()));
+            if (busEntity.getRouteId() == null) {
+                throw new IllegalArgumentException("Cannot assign bus stop: no route is assigned to the child's bus");
+            }
+            if (!busEntity.getRouteId().equals(stop.getRouteId())) {
+                throw new IllegalArgumentException(
+                        "Selected bus stop does not belong to the route assigned to the child's bus"
+                );
+            }
         }
 
         studentsService.assignBusStop(childId, busStopId);
@@ -921,6 +937,19 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
         BusStopJpaEntity savedStop = busStopRepository.save(newStop);
 
+        // If the child has no bus yet, and exactly one bus already serves
+        // this route, assign it now — otherwise the child stays stopless-on-
+        // paper: route/stop details stay hidden until a bus is picked, even
+        // though the request was just approved. Ambiguous (0 or 2+ buses on
+        // the route) is left for the admin to resolve via the normal child
+        // edit flow, rather than guessing.
+        if (child.getBusId() == null) {
+            List<BusJpaEntity> routeBuses = busRepository.findByRouteId(routeId);
+            if (routeBuses.size() == 1) {
+                studentsService.assignBus(requestEntity.getChildId(), routeBuses.get(0).getId());
+            }
+        }
+
         // Link the child to the new stop
         studentsService.assignBusStop(requestEntity.getChildId(), savedStop.getId());
 
@@ -928,7 +957,115 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         requestEntity.setStatus(RouteRequestStatus.APPROVED);
         RouteRequestJpaEntity saved = routeRequestRepository.save(requestEntity);
 
+        RouteJpaEntity routeEntity = routeRepository.findById(routeId).orElse(null);
+        notifyParentRouteRequestDecided(saved, child, true,
+                routeEntity != null && routeEntity.getName() != null ? routeEntity.getName() : "Route " + routeId,
+                savedStop.getName());
+
         return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public RouteRequest createRouteRequest(RouteRequest request) {
+        RouteRequestJpaEntity entity = RouteRequestJpaEntity.fromDomain(request);
+        RouteRequestJpaEntity saved = routeRequestRepository.save(entity);
+
+        notifyAdminsRouteRequestSubmitted(saved);
+
+        return saved.toDomain();
+    }
+
+    @Override
+    @Transactional
+    public RouteRequest rejectRouteRequest(Long requestId) {
+        RouteRequestJpaEntity requestEntity = routeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Route request not found with ID: " + requestId));
+
+        if (requestEntity.getStatus() != RouteRequestStatus.PENDING) {
+            throw new IllegalArgumentException("Only PENDING requests can be rejected");
+        }
+
+        requestEntity.setStatus(RouteRequestStatus.REJECTED);
+        RouteRequestJpaEntity saved = routeRequestRepository.save(requestEntity);
+
+        Child child = studentsService != null ? studentsService.getChildById(saved.getChildId()) : null;
+        notifyParentRouteRequestDecided(saved, child, false, null, null);
+
+        return saved.toDomain();
+    }
+
+    private void notifyAdminsRouteRequestSubmitted(RouteRequestJpaEntity request) {
+        try {
+            if (notificationsPublicService == null || accountsService == null) return;
+            List<Long> adminIds = adminUserIds();
+            if (adminIds.isEmpty()) return;
+
+            String childName = resolveChildName(request.getChildId());
+
+            notificationsPublicService.sendNotificationToUsers(
+                    adminIds,
+                    request.getParentId(),
+                    NotificationType.INFO,
+                    NotificationCategory.ROUTE_REQUEST_SUBMITTED,
+                    "New bus stop request",
+                    childName + "'s parent requested a new bus stop — pending your approval.",
+                    Map.of("childName", childName)
+            );
+        } catch (Exception e) {
+            // Don't fail the request submission if notification delivery fails
+        }
+    }
+
+    private void notifyParentRouteRequestDecided(
+            RouteRequestJpaEntity request, Child child, boolean approved, String routeName, String stopName) {
+        try {
+            if (notificationsPublicService == null || request.getParentId() == null) return;
+
+            String childName = child != null ? child.getFullName() : resolveChildName(request.getChildId());
+
+            if (approved) {
+                notificationsPublicService.sendNotification(
+                        request.getParentId(),
+                        null,
+                        NotificationType.INFO,
+                        NotificationCategory.ROUTE_REQUEST_APPROVED,
+                        "Bus stop request approved",
+                        "Your requested bus stop for " + childName + " was approved.",
+                        Map.of(
+                                "childName", childName,
+                                "routeName", routeName != null ? routeName : "",
+                                "stopName", stopName != null ? stopName : ""
+                        )
+                );
+            } else {
+                notificationsPublicService.sendNotification(
+                        request.getParentId(),
+                        null,
+                        NotificationType.INFO,
+                        NotificationCategory.ROUTE_REQUEST_REJECTED,
+                        "Bus stop request declined",
+                        "Your requested bus stop for " + childName + " was declined.",
+                        Map.of("childName", childName)
+                );
+            }
+        } catch (Exception e) {
+            // Don't fail the approval/rejection flow if notification delivery fails
+        }
+    }
+
+    private String resolveChildName(String childId) {
+        if (studentsService == null) return "A child";
+        Child child = studentsService.getChildById(childId);
+        return child != null ? child.getFullName() : "A child";
+    }
+
+    private List<Long> adminUserIds() {
+        return accountsService.getUsersByRole(UserRole.ADMIN)
+                .stream()
+                .map(User::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     // ========== TransportPublicService Implementation ==========

@@ -1,9 +1,13 @@
 package com.login.LoginBus.notifications.infra;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.login.LoginBus.notifications.domain.Notification;
 import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import jakarta.persistence.*;
+
+import java.util.Map;
 
 /**
  * JPA entity for Notification.
@@ -37,6 +41,12 @@ public class NotificationJpaEntity {
     @Column(name = "created_at")
     private Long createdAt;
 
+    // JSON-encoded Map<String, String> — see Notification.getParams() for why.
+    @Column(name = "params_json", columnDefinition = "TEXT")
+    private String paramsJson;
+
+    private static final ObjectMapper PARAMS_MAPPER = new ObjectMapper();
+
     public NotificationJpaEntity() {
     }
 
@@ -64,6 +74,7 @@ public class NotificationJpaEntity {
         notification.setCategory(this.category);
         notification.setCreatedBy(this.createdBy);
         notification.setCreatedAt(this.createdAt);
+        notification.setParams(decodeParams(this.paramsJson));
         return notification;
     }
 
@@ -76,7 +87,26 @@ public class NotificationJpaEntity {
         entity.setCategory(notification.getCategory());
         entity.setCreatedBy(notification.getCreatedBy());
         entity.setCreatedAt(notification.getCreatedAt());
+        entity.setParamsJson(encodeParams(notification.getParams()));
         return entity;
+    }
+
+    private static String encodeParams(Map<String, String> params) {
+        if (params == null || params.isEmpty()) return null;
+        try {
+            return PARAMS_MAPPER.writeValueAsString(params);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Map<String, String> decodeParams(String json) {
+        if (json == null || json.isBlank()) return Map.of();
+        try {
+            return PARAMS_MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
     }
 
     @PrePersist
@@ -148,5 +178,13 @@ public class NotificationJpaEntity {
 
     public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getParamsJson() {
+        return paramsJson;
+    }
+
+    public void setParamsJson(String paramsJson) {
+        this.paramsJson = paramsJson;
     }
 }
