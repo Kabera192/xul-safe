@@ -34,6 +34,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/check-email").permitAll()
+                // Password reset is only reachable while logged out — can't require a JWT
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-otp").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
+                // Registration verification happens before the account has any token
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-registration").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/resend-registration-otp").permitAll()
                 // One-time admin setup endpoint — self-disables once an admin exists
                 .requestMatchers(HttpMethod.POST, "/api/v1/admin/setup").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/admin/setup/reset-password").permitAll()

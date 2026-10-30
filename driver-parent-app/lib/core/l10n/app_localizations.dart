@@ -252,6 +252,32 @@ class AppLocalizations {
   String get markAsAbsentSubtitle => _t({'en': 'Notify driver for one or more days', 'fr': 'Notifier le conducteur pour un ou plusieurs jours', 'rw': 'Menyesha umushoferi ku munsi umwe cyangwa myinshi'});
   String get removeChildAction => _t({'en': 'Remove child', 'fr': 'Supprimer l\'enfant', 'rw': 'Kuraho umwana'});
   String get removeChildSubtitle => _t({'en': 'Permanently delete this record', 'fr': 'Supprimer définitivement cet enregistrement', 'rw': 'Siba burundu iki gice'});
+
+  // ── Email OTP / auth screens ─────────────────────────────────────────────
+  String get appFailedToSendCode => _t({'en': 'Failed to send code. Please check your phone number and try again.', 'fr': 'Échec de l\'envoi du code. Veuillez vérifier votre numéro de téléphone et réessayer.', 'rw': 'Kohereza kode byanze. Reba nimero ya telefoni yawe hanyuma ugerageze nanone.'});
+  String get appForgotPasswordIntro => _t({'en': 'Enter your registered email address. We\'ll send a verification code to reset your password.', 'fr': 'Entrez votre adresse e-mail enregistrée. Nous vous enverrons un code de vérification pour réinitialiser votre mot de passe.', 'rw': 'Injiza aderesi yawe y\'imeyili yiyandikishije. Tuzakohereza kode yo kugenzura kugira ngo wongere ushyireho ijambo banga.'});
+  String get appEmailHintExample => _t({'en': 'you@example.com', 'fr': 'vous@exemple.com', 'rw': 'wowe@urugero.com'});
+  String get appSendCode => _t({'en': 'Send code', 'fr': 'Envoyer le code', 'rw': 'Ohereza kode'});
+  String get appCouldNotSendCodeTitle => _t({'en': 'Couldn\'t Send Code', 'fr': 'Impossible d\'envoyer le code', 'rw': 'Kode ntiyoherejwe'});
+  String get appFailedToResetPassword => _t({'en': 'Failed to reset password. Please try again.', 'fr': 'Échec de la réinitialisation du mot de passe. Veuillez réessayer.', 'rw': 'Guhindura ijambo banga byanze. Gerageza nanone.'});
+  String get appPasswordResetTitle => _t({'en': 'Password reset!', 'fr': 'Mot de passe réinitialisé !', 'rw': 'Ijambo banga ryahinduwe!'});
+  String get appPasswordResetBody => _t({'en': 'Your password has been updated. You can now sign in with your new password.', 'fr': 'Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.', 'rw': 'Ijambo banga ryawe ryahinduwe. Noneho ushobora kwinjira ukoresheje ijambo banga rishya.'});
+  String get appCreateNewPasswordTitle => _t({'en': 'Create new password', 'fr': 'Créer un nouveau mot de passe', 'rw': 'Shyiraho ijambo banga rishya'});
+  String get appNewPasswordRequirements => _t({'en': 'Your new password must be at least 8 characters, contain no spaces, and include a number.', 'fr': 'Votre nouveau mot de passe doit contenir au moins 8 caractères, aucun espace, et un chiffre.', 'rw': 'Ijambo banga rishya rigomba kuba rifite inyuguti 8 nibura, ntirigire umwanya, kandi rigire nimero imwe.'});
+  String get appNewPasswordLabel => _t({'en': 'New password', 'fr': 'Nouveau mot de passe', 'rw': 'Ijambo banga rishya'});
+  String get appPasswordNoSpaces => _t({'en': 'Password must not contain spaces', 'fr': 'Le mot de passe ne doit pas contenir d\'espaces', 'rw': 'Ijambo banga ntirigomba kugira umwanya'});
+  String get appPasswordNeedsNumber => _t({'en': 'Password must contain at least one number', 'fr': 'Le mot de passe doit contenir au moins un chiffre', 'rw': 'Ijambo banga rigomba kugira nimero imwe nibura'});
+  String get appResetPasswordButton => _t({'en': 'Reset password', 'fr': 'Réinitialiser le mot de passe', 'rw': 'Hindura ijambo banga'});
+  String get appEnterAll6Digits => _t({'en': 'Please enter all 6 digits', 'fr': 'Veuillez entrer les 6 chiffres', 'rw': 'Nyamuneka injiza imibare 6 yose'});
+  String get appInvalidOrExpiredCode => _t({'en': 'Invalid or expired code. Please try again.', 'fr': 'Code invalide ou expiré. Veuillez réessayer.', 'rw': 'Kode ntabwo ari nziza cyangwa yarangiye. Gerageza nanone.'});
+  String get appCouldNotResendCode => _t({'en': 'Could not resend code', 'fr': 'Impossible de renvoyer le code', 'rw': 'Byanze kongera kohereza kode'});
+  String get appEnterVerificationCode => _t({'en': 'Enter verification code', 'fr': 'Entrez le code de vérification', 'rw': 'Injiza kode yo kugenzura'});
+  String appOtpSentToEmail(String email) => _t({'en': 'We sent a 6-digit code to $email. Enter it below.', 'fr': 'Nous avons envoyé un code à 6 chiffres à $email. Entrez-le ci-dessous.', 'rw': 'Twohereje kode y\'imibare 6 kuri $email. Yinjize hepfo.'});
+  String get appVerifyCode => _t({'en': 'Verify code', 'fr': 'Vérifier le code', 'rw': 'Genzura kode'});
+  String get appResendCode => _t({'en': 'Resend code', 'fr': 'Renvoyer le code', 'rw': 'Ongera wohereze kode'});
+  String get appVerifyYourEmail => _t({'en': 'Verify your email', 'fr': 'Vérifiez votre e-mail', 'rw': 'Genzura imeyili yawe'});
+  String appOtpSentToEmailActivate(String email) => _t({'en': 'We sent a 6-digit code to $email. Enter it below to activate your account.', 'fr': 'Nous avons envoyé un code à 6 chiffres à $email. Entrez-le ci-dessous pour activer votre compte.', 'rw': 'Twohereje kode y\'imibare 6 kuri $email. Yinjize hepfo kugira ngo wemeze konti yawe.'});
+  String get appVerifyAndContinue => _t({'en': 'Verify & continue', 'fr': 'Vérifier et continuer', 'rw': 'Genzura maze ukomeze'});
 }
 
 // ── Delegate ──────────────────────────────────────────────────────────────────

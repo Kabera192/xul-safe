@@ -17,6 +17,16 @@ public class LoginBusApplication {
 		System.setProperty("JWT_SECRET", dotenv.get("JWT_SECRET"));
         System.setProperty("JWT_ISSUER", dotenv.get("JWT_ISSUER"));
 
+        // Email OTP (password reset + account verification). Leave MAIL_USERNAME
+        // unset to keep using the EMAIL-DEV console fallback.
+        System.setProperty("MAIL_HOST", dotenv.get("MAIL_HOST", "smtp.gmail.com"));
+        System.setProperty("MAIL_PORT", dotenv.get("MAIL_PORT", "465"));
+        System.setProperty("MAIL_SSL", dotenv.get("MAIL_SSL", "true"));
+        System.setProperty("MAIL_STARTTLS", dotenv.get("MAIL_STARTTLS", "false"));
+        System.setProperty("MAIL_USERNAME", dotenv.get("MAIL_USERNAME", ""));
+        System.setProperty("MAIL_PASSWORD", dotenv.get("MAIL_PASSWORD", ""));
+        System.setProperty("MAIL_FROM", dotenv.get("MAIL_FROM", ""));
+
 		SpringApplication.run(LoginBusApplication.class, args);
 	}
 

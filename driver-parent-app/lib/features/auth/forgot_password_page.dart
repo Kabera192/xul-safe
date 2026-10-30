@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
+import '../../core/l10n/app_localizations.dart';
 import '../../widgets/mobile_splash_gradient.dart';
 import 'otp_verification_page.dart';
 
@@ -15,61 +16,79 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
 
   bool _loading = false;
-  String? _error;
 
   static const blue = Color(0xFF0D4896);
 
   @override
   void dispose() {
-    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
+  }
+
+  bool _isValidEmail(String value) {
+    return RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+        .hasMatch(value);
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    final l10n = AppLocalizations.of(context);
+
+    setState(() => _loading = true);
 
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/forgot-password');
       final res = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phoneNumber': _phoneCtrl.text.trim()}),
+        body: jsonEncode({'email': _emailCtrl.text.trim()}),
       );
 
       if (!mounted) return;
 
+      // The backend always returns 200 here, whether or not the email has
+      // an account, so this can't be used to tell which emails are
+      // registered. Only a non-200 (e.g. malformed email, server error)
+      // stops here and surfaces the reason in a popup.
       if (res.statusCode == 200) {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) =>
-                OtpVerificationPage(phoneNumber: _phoneCtrl.text.trim()),
+                OtpVerificationPage(email: _emailCtrl.text.trim()),
           ),
         );
       } else {
         final decoded = res.body.isNotEmpty ? jsonDecode(res.body) : null;
-        setState(() {
-          _error = (decoded is Map ? decoded['message'] : null) ??
-              'Failed to send OTP. Check your phone number.';
-        });
+        final message =
+            (decoded is Map ? decoded['message'] as String? : null) ??
+                l10n.appFailedToSendCode;
+        _showErrorDialog(message);
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Could not reach server');
+      _showErrorDialog(l10n.couldNotReachServerCheck);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => _ForgotPasswordErrorDialog(message: message),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -87,8 +106,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 ),
               ),
               const Spacer(),
-              // Card
-              Container(
+              // Card — padded up above the keyboard when it opens, since
+              // resizeToAvoidBottomInset is off (would otherwise squash the
+              // gradient background).
+              AnimatedPadding(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.only(bottom: keyboard),
+                child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 24)
                     .copyWith(top: 32, bottom: 32),
@@ -106,7 +130,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Forgot password?',
+                        l10n.forgotPassword,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 24,
@@ -115,7 +139,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Enter your registered phone number. We\'ll send a verification code to reset your password.',
+                        l10n.appForgotPasswordIntro,
                         style: TextStyle(
                           color: Theme.of(context)
                               .colorScheme
@@ -126,38 +150,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      if (_error != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  color: Colors.red, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: const TextStyle(
-                                      color: Colors.red, fontSize: 13),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
                       _AuthInput(
-                        label: 'Phone number',
-                        controller: _phoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        hintText: '+1234567890',
+                        label: l10n.emailAddress,
+                        controller: _emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        hintText: l10n.appEmailHintExample,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
-                            return 'Phone number is required';
+                          if (v == null || v.trim().isEmpty) {
+                            return l10n.emailRequired;
+                          }
+                          if (!_isValidEmail(v.trim())) {
+                            return l10n.enterValidEmail;
+                          }
                           return null;
                         },
                       ),
@@ -183,9 +187,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
-                                  'Send code',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.appSendCode,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
@@ -196,9 +200,94 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ],
                   ),
                 ),
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Error popup ─────────────────────────────────────────────────────────────
+
+class _ForgotPasswordErrorDialog extends StatelessWidget {
+  final String message;
+
+  const _ForgotPasswordErrorDialog({required this.message});
+
+  static const _blue = Color(0xFF0D4896);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final surface = Theme.of(context).colorScheme.surface;
+
+    return Dialog(
+      backgroundColor: surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEBEB),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                color: Color(0xFFE53935),
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              l10n.appCouldNotSendCodeTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: onSurface.withValues(alpha: 0.6),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _blue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  l10n.retry,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
