@@ -4,6 +4,7 @@ class NotificationModel {
   final String message;
   final String type;
   final String category;
+  final Map<String, String> params;
   final String status;
   final int? sentAt;
   final int? readAt;
@@ -14,6 +15,7 @@ class NotificationModel {
     required this.message,
     required this.type,
     required this.category,
+    required this.params,
     required this.status,
     required this.sentAt,
     required this.readAt,
@@ -27,6 +29,7 @@ class NotificationModel {
     String? message,
     String? type,
     String? category,
+    Map<String, String>? params,
     String? status,
     int? sentAt,
     int? readAt,
@@ -37,6 +40,7 @@ class NotificationModel {
       message: message ?? this.message,
       type: type ?? this.type,
       category: category ?? this.category,
+      params: params ?? this.params,
       status: status ?? this.status,
       sentAt: sentAt ?? this.sentAt,
       readAt: readAt ?? this.readAt,
@@ -50,12 +54,20 @@ class NotificationModel {
       message: (json['message'] ?? json['body'] ?? '').toString(),
       type: (json['type'] ?? json['notificationType'] ?? 'INFO').toString(),
       category: (json['category'] ?? 'GENERAL').toString(),
+      params: _parseParams(json['params']),
       status: _parseStatus(json),
       sentAt: _toNullableInt(
         json['sentAt'] ?? json['createdAt'] ?? json['timestamp'],
       ),
       readAt: _toNullableInt(json['readAt'] ?? json['updatedAt']),
     );
+  }
+
+  static Map<String, String> _parseParams(dynamic value) {
+    if (value is Map) {
+      return value.map((k, v) => MapEntry(k.toString(), v.toString()));
+    }
+    return const {};
   }
 
   static String _parseStatus(Map<String, dynamic> json) {
