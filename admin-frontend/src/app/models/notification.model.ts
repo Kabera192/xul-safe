@@ -11,7 +11,10 @@ export type NotificationCategory =
   | 'BUS_REACHED_STOP'
   | 'JOURNEY_STARTED'
   | 'JOURNEY_ENDED'
-  | 'INCIDENT_REPORTED';
+  | 'INCIDENT_REPORTED'
+  | 'ROUTE_REQUEST_SUBMITTED'
+  | 'ROUTE_REQUEST_APPROVED'
+  | 'ROUTE_REQUEST_REJECTED';
 
 export interface Notification {
   id?: number;

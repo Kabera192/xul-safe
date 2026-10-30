@@ -252,6 +252,27 @@ class AppLocalizations {
   String get markAsAbsentSubtitle => _t({'en': 'Notify driver for one or more days', 'fr': 'Notifier le conducteur pour un ou plusieurs jours', 'rw': 'Menyesha umushoferi ku munsi umwe cyangwa myinshi'});
   String get removeChildAction => _t({'en': 'Remove child', 'fr': 'Supprimer l\'enfant', 'rw': 'Kuraho umwana'});
   String get removeChildSubtitle => _t({'en': 'Permanently delete this record', 'fr': 'Supprimer définitivement cet enregistrement', 'rw': 'Siba burundu iki gice'});
+
+  String get parAddChildFirstChooseStop => _t({'en': 'Add a child first to choose a bus stop for them.', 'fr': 'Ajoutez d\'abord un enfant pour choisir un arrêt de bus pour lui.', 'rw': 'Banza wongere umwana kugira ngo uhitemo ahagarara ha bisi kuri we.'});
+  String get parChooseStopTitle => _t({'en': 'Choose a bus stop', 'fr': 'Choisir un arrêt de bus', 'rw': 'Hitamo ahagarara ha bisi'});
+  String get parChooseStopIntro => _t({'en': 'Pick an existing route and stop — if none fit, you can request a new one below.', 'fr': 'Choisissez un itinéraire et un arrêt existants — si aucun ne convient, vous pouvez en demander un nouveau ci-dessous.', 'rw': 'Hitamo inzira n\'ahagarara bisanzweho — nta na kimwe gikwiye, ushobora gusaba ahashya hepfo.'});
+  String get parChildLabel => _t({'en': 'Child', 'fr': 'Enfant', 'rw': 'Umwana'});
+  String get parAvailableRoutes => _t({'en': 'Available routes', 'fr': 'Itinéraires disponibles', 'rw': 'Inzira ziraho'});
+  String get parNoRoutesYet => _t({'en': 'No routes exist yet. Request a new stop below.', 'fr': 'Aucun itinéraire n\'existe encore. Demandez un nouvel arrêt ci-dessous.', 'rw': 'Nta nzira iriho ubu. Saba ahagarara hashya hepfo.'});
+  String get parRouteFallback => _t({'en': 'Route', 'fr': 'Itinéraire', 'rw': 'Inzira'});
+  String get parCantFindStopRequestNew => _t({'en': 'Can\'t find your stop? Request a new one', 'fr': 'Vous ne trouvez pas votre arrêt ? Demandez-en un nouveau', 'rw': 'Ntiwabona ahagarara hawe? Saba ahashya'});
+  String get parNoStopsOnRoute => _t({'en': 'No stops on this route yet.', 'fr': 'Aucun arrêt sur cet itinéraire pour le moment.', 'rw': 'Nta hagarara kuri iyi nzira ubu.'});
+  String get parStopFallback => _t({'en': 'Stop', 'fr': 'Arrêt', 'rw': 'Ahagarara'});
+  String get parSelectChildFirst => _t({'en': 'Select a child first', 'fr': 'Sélectionnez d\'abord un enfant', 'rw': 'Banza uhitemo umwana'});
+  String get parNoRouteAssignedYet => _t({'en': 'No route assigned yet', 'fr': 'Aucun itinéraire assigné', 'rw': 'Nta nzira yashyizweho'});
+  String get parChooseOrRequestBusStop => _t({'en': 'Choose or request a bus stop', 'fr': 'Choisir ou demander un arrêt de bus', 'rw': 'Hitamo cyangwa saba ahagarara ha bisi'});
+  String get notifRouteRequestApprovedTitle => _t({'en': 'Bus stop request approved', 'fr': 'Demande d\'arrêt de bus approuvée', 'rw': 'Icyifuzo cy\'ahagarara cyemejwe'});
+  String notifRouteRequestApprovedBody(String childName) => _t({'en': 'Your requested bus stop for $childName was approved.', 'fr': 'L\'arrêt de bus demandé pour $childName a été approuvé.', 'rw': 'Ahagarara wasabye kuri $childName hemejwe.'});
+  String get notifRouteRequestRejectedTitle => _t({'en': 'Bus stop request declined', 'fr': 'Demande d\'arrêt de bus refusée', 'rw': 'Icyifuzo cy\'ahagarara cyanzwe'});
+  String notifRouteRequestRejectedBody(String childName) => _t({'en': 'Your requested bus stop for $childName was declined.', 'fr': 'L\'arrêt de bus demandé pour $childName a été refusé.', 'rw': 'Ahagarara wasabye kuri $childName hanzwe.'});
+
+  // ── Pending route/stop request ───────────────────────────────────────────────
+  String get parStopRequestPending => _t({'en': 'Bus stop request pending admin approval', 'fr': 'Demande d\'arrêt de bus en attente d\'approbation', 'rw': 'Icyifuzo cy\'ahagarara gitegereje kwemezwa n\'ubuyobozi'});
 }
 
 // ── Delegate ──────────────────────────────────────────────────────────────────
