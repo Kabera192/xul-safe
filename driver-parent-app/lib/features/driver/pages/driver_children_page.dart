@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/child_service.dart';
 import '../../../services/transport_service.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
@@ -137,6 +138,7 @@ class _DriverChildrenPageState extends State<DriverChildrenPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -151,7 +153,7 @@ class _DriverChildrenPageState extends State<DriverChildrenPage> {
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Children(${_children.length})',
+                    l10n.drvChildrenCountTitle(_children.length),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,

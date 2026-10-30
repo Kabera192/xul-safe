@@ -15,6 +15,7 @@ import '../forms/parent_profile_form.dart';
 import '../forms/parent_profile_photo_form.dart';
 import '../models/parent_profile_edit_mode.dart';
 import '../models/parent_profile_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentProfilePage extends StatefulWidget {
   final bool isActive;
@@ -193,8 +194,9 @@ class _ParentProfilePageState extends State<ParentProfilePage> {
     } catch (e) {
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
       setState(() {
-        _photoError = 'Could not pick image';
+        _photoError = l10n.couldNotPickImage;
       });
 
       _showCurrentForm();
@@ -204,8 +206,9 @@ class _ParentProfilePageState extends State<ParentProfilePage> {
   Future<void> _savePhoto() async {
     final file = _selectedPhotoFile;
     if (file == null) {
+      final l10n = AppLocalizations.of(context);
       setState(() {
-        _photoError = 'Please choose an image first';
+        _photoError = l10n.pleaseChooseImage;
       });
       _showCurrentForm();
       return;
@@ -351,6 +354,7 @@ class _ProfilePictureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasPhoto = photoBytes != null && photoBytes!.isNotEmpty;
 
     return Stack(
@@ -417,9 +421,9 @@ class _ProfilePictureCard extends StatelessWidget {
                   horizontal: 18,
                   vertical: 8,
                 ),
-                child: const Text(
-                  'Change photo',
-                  style: TextStyle(
+                child: Text(
+                  l10n.changePhoto,
+                  style: const TextStyle(
                     color: blue,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

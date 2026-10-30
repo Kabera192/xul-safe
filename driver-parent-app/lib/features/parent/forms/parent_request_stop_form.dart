@@ -8,6 +8,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/child_model.dart';
 
 class ParentRequestStopForm extends StatefulWidget {
@@ -175,7 +176,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
       setState(() {
         _suggestions = [];
         _searching = false;
-        _error = 'Could not search location';
+        _error = AppLocalizations.of(context).parCouldNotSearchLocation;
       });
     }
   }
@@ -208,7 +209,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
 
       setState(() {
         _capturing = false;
-        _error = 'Could not capture current location';
+        _error = AppLocalizations.of(context).parCouldNotCaptureLocation;
       });
     }
   }
@@ -231,22 +232,23 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final childId = _selectedChildId;
     final address = _addressCtrl.text.trim();
     final selected = _selectedLocation;
 
     if (childId == null) {
-      setState(() => _error = 'Please select which child this stop is for');
+      setState(() => _error = l10n.parSelectChildForStop);
       return;
     }
 
     if (address.isEmpty) {
-      setState(() => _error = 'Address is required');
+      setState(() => _error = l10n.parAddressRequired);
       return;
     }
 
     if (selected == null) {
-      setState(() => _error = 'Please capture or select a location first');
+      setState(() => _error = l10n.parCaptureOrSelectLocation);
       return;
     }
 
@@ -275,6 +277,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final center = _selectedLocation ?? _currentLocation ?? _kigaliFallback;
 
     return Padding(
@@ -315,7 +318,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
 
           _InputBox(
             controller: _addressCtrl,
-            hintText: 'Address',
+            hintText: l10n.parAddressLabel,
             icon: IconsaxPlusLinear.edit_2,
           ),
 
@@ -323,7 +326,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
 
           _InputBox(
             controller: _descriptionCtrl,
-            hintText: 'Note (optional), e.g. near the blue gate',
+            hintText: l10n.parNoteOptionalHint,
             icon: IconsaxPlusLinear.message_text,
           ),
 
@@ -331,15 +334,15 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
 
           _InputBox(
             controller: _searchCtrl,
-            hintText: 'Search a place name',
+            hintText: l10n.parSearchPlaceName,
             icon: IconsaxPlusLinear.search_normal_1,
           ),
 
           if (_searching) ...[
             const SizedBox(height: 8),
-            const Text(
-              'Searching location…',
-              style: TextStyle(
+            Text(
+              l10n.parSearchingLocation,
+              style: const TextStyle(
                 color: Colors.black45,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -427,7 +430,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
                 ),
               ),
               child: Text(
-                _capturing ? 'Capturing…' : 'Capture my current location',
+                _capturing ? l10n.parCapturing : l10n.parCaptureCurrentLocation,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -452,7 +455,7 @@ class _ParentRequestStopFormState extends State<ParentRequestStopForm> {
                 ),
               ),
               child: Text(
-                _saving ? 'Submitting…' : 'Submit request',
+                _saving ? l10n.parSubmitting : l10n.parSubmitRequest,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -484,6 +487,7 @@ class _ChildDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: inputBg,
@@ -496,9 +500,9 @@ class _ChildDropdown extends StatelessWidget {
           value: selectedChildId,
           isExpanded: true,
           icon: const Icon(IconsaxPlusLinear.arrow_down_1, color: blue, size: 16),
-          hint: const Text(
-            'Which child is this stop for?',
-            style: TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500),
+          hint: Text(
+            l10n.parWhichChildForStop,
+            style: const TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500),
           ),
           items: children
               .map((c) => DropdownMenuItem(

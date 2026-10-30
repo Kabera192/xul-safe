@@ -6,6 +6,7 @@ import '../../../widgets/mobile_animated_form_host.dart';
 import '../../../widgets/mobile_form_controller.dart';
 
 import '../forms/parent_more_settings_form.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentMoreSettingsPage extends StatefulWidget {
   final bool isActive;
@@ -23,19 +24,36 @@ class ParentMoreSettingsPage extends StatefulWidget {
 class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
   final MobileFormController _formCtrl = MobileFormController();
   bool _alreadyScheduled = false;
+  Key _formKey = UniqueKey();
 
   @override
   void didUpdateWidget(covariant ParentMoreSettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.isActive && !oldWidget.isActive) {
-      _scheduleShow();
+      // Re-entering this tab should refetch contacts/route details, not
+      // just re-show the same form instance — a fresh key forces its
+      // initState (and therefore its data loads) to rerun.
+      if (_alreadyScheduled) {
+        setState(() => _formKey = UniqueKey());
+        _showForm();
+      } else {
+        _scheduleShow();
+      }
     }
 
     if (!widget.isActive && oldWidget.isActive) {
       _formCtrl.hide();
       _alreadyScheduled = false;
     }
+  }
+
+  void _showForm() {
+    _formCtrl.show(
+      MobileFormShell(
+        child: ParentMoreSettingsForm(key: _formKey),
+      ),
+    );
   }
 
   void _scheduleShow() {
@@ -47,11 +65,7 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
       await Future.delayed(const Duration(milliseconds: 1));
       if (!mounted || !widget.isActive) return;
 
-      _formCtrl.show(
-        MobileFormShell(
-          child: const ParentMoreSettingsForm(),
-        ),
-      );
+      _showForm();
     });
   }
 
@@ -63,6 +77,7 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -71,14 +86,14 @@ class _ParentMoreSettingsPageState extends State<ParentMoreSettingsPage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'More settings',
-                    style: TextStyle(
+                    l10n.moreSettings,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500, // medium

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/child_service.dart';
 import '../../../widgets/mobile_fullscreen_image_viewer.dart';
 import '../models/child_model.dart';
@@ -32,6 +33,8 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -89,7 +92,7 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
             Flexible(
               child: Text(
-                _typeLabel(incident.type),
+                _typeLabel(incident.type, l10n),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: onSurface,
@@ -140,7 +143,7 @@ class ParentIncidentDetailsForm extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Photo unavailable',
+                        l10n.parPhotoUnavailable,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.6),
                           fontSize: 13,
@@ -168,8 +171,8 @@ class ParentIncidentDetailsForm extends StatelessWidget {
         if (affectedChildren.isNotEmpty) ...[
           Text(
             affectedChildren.length == 1
-                ? 'Affected student'
-                : 'Affected students',
+                ? l10n.parAffectedStudentSingular
+                : l10n.parAffectedStudentsPlural,
             style: TextStyle(
               color: onSurface,
               fontSize: 14,
@@ -195,7 +198,7 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
         // ── Journey impact ────────────────────────────────────────────────
         Text(
-          'Journey impact',
+          l10n.parJourneyImpact,
           style: TextStyle(
             color: onSurface,
             fontSize: 14,
@@ -229,7 +232,7 @@ class ParentIncidentDetailsForm extends StatelessWidget {
               const SizedBox(width: 10),
 
               Text(
-                _impactLabel(incident.journeyImpact),
+                _impactLabel(incident.journeyImpact, l10n),
                 style: TextStyle(
                   color: onSurface,
                   fontSize: 13,
@@ -244,7 +247,7 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
         // ── Description ───────────────────────────────────────────────────
         Text(
-          'What happened?',
+          l10n.parWhatHappened,
           style: TextStyle(
             color: onSurface,
             fontSize: 14,
@@ -284,8 +287,8 @@ class ParentIncidentDetailsForm extends StatelessWidget {
         // ── Timeline ──────────────────────────────────────────────────────
         _TimeRow(
           icon: IconsaxPlusLinear.clock,
-          label: 'Reported',
-          value: _formatDateTime(incident.createdAt),
+          label: l10n.parReported,
+          value: _formatDateTime(incident.createdAt, l10n),
           onSurface: onSurface,
         ),
 
@@ -294,8 +297,8 @@ class ParentIncidentDetailsForm extends StatelessWidget {
 
           _TimeRow(
             icon: IconsaxPlusLinear.tick_circle,
-            label: 'Resolved',
-            value: _formatDateTime(incident.resolvedAt!),
+            label: l10n.parResolvedLabel,
+            value: _formatDateTime(incident.resolvedAt!, l10n),
             onSurface: onSurface,
           ),
         ],
@@ -432,6 +435,8 @@ class _IncidentVoiceNoteState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -456,7 +461,7 @@ class _IncidentVoiceNoteState
           border: Border.all(color: borderColor),
         ),
         child: Text(
-          'Voice note unavailable',
+          l10n.parVoiceNoteUnavailable,
           style: TextStyle(
             color: onSurface.withValues(alpha: 0.6),
             fontSize: 13,
@@ -567,6 +572,7 @@ class _AffectedChildRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface =
         Theme.of(context).colorScheme.onSurface;
 
@@ -594,7 +600,7 @@ class _AffectedChildRow extends StatelessWidget {
           Expanded(
             child: Text(
               child.fullName.isEmpty
-                  ? 'Student'
+                  ? l10n.parStudentFallback
                   : child.fullName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -745,8 +751,9 @@ class _StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Text(
-      resolved ? 'RESOLVED' : 'ACTIVE',
+      resolved ? l10n.parResolved : l10n.parActive,
       style: TextStyle(
         color: resolved
             ? const Color(0xFF21C260)
@@ -788,42 +795,42 @@ IconData _iconForType(String type) {
   }
 }
 
-String _typeLabel(String type) {
+String _typeLabel(String type, AppLocalizations l10n) {
   switch (type.toUpperCase()) {
     case 'ACCIDENT':
-      return 'Bus accident or collision';
+      return l10n.parIncidentTypeAccident;
 
     case 'MEDICAL':
-      return 'Sick / injured student';
+      return l10n.parIncidentTypeMedical;
 
     case 'VEHICLE_BREAKDOWN':
-      return 'Bus mechanical issue';
+      return l10n.parIncidentTypeBreakdown;
 
     case 'DELAY':
-      return 'Journey delay';
+      return l10n.parIncidentTypeDelay;
 
     case 'ROAD_OBSTRUCTION':
-      return 'Road obstruction';
+      return l10n.parIncidentTypeRoadObstruction;
 
     case 'CHILD_BEHAVIOR':
-      return 'Student behavior issue';
+      return l10n.parIncidentTypeChildBehavior;
 
     case 'OTHER':
     default:
-      return 'Other incident';
+      return l10n.parIncidentTypeOther;
   }
 }
 
-String _impactLabel(String impact) {
+String _impactLabel(String impact, AppLocalizations l10n) {
   switch (impact.toUpperCase()) {
     case 'NONE':
-      return 'No impact';
+      return l10n.parImpactNone;
 
     case 'DELAYED':
-      return 'Delayed';
+      return l10n.parImpactDelayed;
 
     case 'STOPPED':
-      return 'Stopped';
+      return l10n.parImpactStopped;
 
     default:
       return impact;
@@ -858,7 +865,7 @@ Color _impactColor(String impact) {
   }
 }
 
-String _formatDateTime(int milliseconds) {
+String _formatDateTime(int milliseconds, AppLocalizations l10n) {
   final date =
       DateTime.fromMillisecondsSinceEpoch(milliseconds);
 
@@ -876,7 +883,7 @@ String _formatDateTime(int milliseconds) {
       date.minute.toString().padLeft(2, '0');
 
   if (sameDay) {
-    return 'Today, $hour:$minute';
+    return l10n.parTodayAt('$hour:$minute');
   }
 
   final yesterday =
@@ -888,7 +895,7 @@ String _formatDateTime(int milliseconds) {
       date.day == yesterday.day;
 
   if (wasYesterday) {
-    return 'Yesterday, $hour:$minute';
+    return l10n.parYesterdayAt('$hour:$minute');
   }
 
   final day =

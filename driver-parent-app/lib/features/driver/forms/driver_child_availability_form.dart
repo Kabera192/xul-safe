@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/attendance_record_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 /// Detail view shown when the driver taps a student card.
 /// Shows both MORNING and AFTERNOON attendance with two steps per session:
@@ -49,7 +50,8 @@ class DriverChildAvailabilityForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = childName.isEmpty ? 'Unnamed student' : childName;
+    final l10n = AppLocalizations.of(context);
+    final name = childName.isEmpty ? l10n.drvUnnamedStudent : childName;
 
     // MORNING state
     final morningBoarded = morningRecord?.boarded ?? false;
@@ -108,10 +110,10 @@ class DriverChildAvailabilityForm extends StatelessWidget {
 
           // ── Morning Journey ────────────────────────────────────────────────────────
           _SessionSection(
-            sectionLabel: 'Morning Journey',
+            sectionLabel: l10n.drvMorningJourneyLabel,
             sectionIcon: Icons.wb_sunny_outlined,            isAbsent: isAbsentMorning,            rows: [
               _AttendanceStepRow(
-                label: 'Boarded bus',
+                label: l10n.drvBoardedBusLabel,
                 icon: Icons.directions_bus_outlined,
                 active: morningBoarded,
                 toggling: morningBoardedToggling,
@@ -120,7 +122,7 @@ class DriverChildAvailabilityForm extends StatelessWidget {
                     : () => onMarkAction('MORNING', 'BOARDED', !morningBoarded),
               ),
               _AttendanceStepRow(
-                label: 'Arrived at school',
+                label: l10n.drvArrivedAtSchoolLabel,
                 icon: Icons.school_outlined,
                 active: morningDropped,
                 toggling: morningDroppedToggling,
@@ -135,10 +137,10 @@ class DriverChildAvailabilityForm extends StatelessWidget {
 
           // ── Afternoon Journey ─────────────────────────────────────────────────
           _SessionSection(
-            sectionLabel: 'Afternoon Journey',
+            sectionLabel: l10n.drvAfternoonJourneyLabel,
             sectionIcon: Icons.wb_twilight_outlined,            isAbsent: isAbsentAfternoon,            rows: [
               _AttendanceStepRow(
-                label: 'Boarded bus',
+                label: l10n.drvBoardedBusLabel,
                 icon: Icons.directions_bus_outlined,
                 active: afternoonBoarded,
                 toggling: afternoonBoardedToggling,
@@ -148,7 +150,7 @@ class DriverChildAvailabilityForm extends StatelessWidget {
                         onMarkAction('AFTERNOON', 'BOARDED', !afternoonBoarded),
               ),
               _AttendanceStepRow(
-                label: 'Dropped at stop',
+                label: l10n.drvDroppedAtStopLabel,
                 icon: Icons.home_outlined,
                 active: afternoonDropped,
                 toggling: afternoonDroppedToggling,
@@ -184,6 +186,7 @@ class _SessionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
@@ -238,7 +241,7 @@ class _SessionSection extends StatelessWidget {
                       size: 16, color: const Color(0xFFE67E22)),
                   const SizedBox(width: 8),
                   Text(
-                    'Absent for this journey',
+                    l10n.drvAbsentForJourney,
                     style: const TextStyle(
                       color: Color(0xFFE67E22),
                       fontSize: 13,

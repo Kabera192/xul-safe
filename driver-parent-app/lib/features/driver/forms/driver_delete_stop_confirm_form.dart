@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverDeleteStopConfirmForm extends StatefulWidget {
   final Future<void> Function(String reason) onConfirm;
   final VoidCallback onCancel;
@@ -26,14 +28,6 @@ class _DriverDeleteStopConfirmFormState
   bool _saving = false;
   String? _error;
 
-  static const otherReason = 'Other reason';
-
-  final reasons = const [
-    'Students have moved to another place',
-    'Students are no longer in this school',
-    otherReason,
-  ];
-
   @override
   void dispose() {
     _otherReasonCtrl.dispose();
@@ -41,8 +35,10 @@ class _DriverDeleteStopConfirmFormState
   }
 
   Future<void> _confirm() async {
+    final otherReason = AppLocalizations.of(context).drvOtherReason;
+
     if (_selectedReason == null) {
-      setState(() => _error = 'Please select a reason');
+      setState(() => _error = AppLocalizations.of(context).drvPleaseSelectReason);
       return;
     }
 
@@ -51,7 +47,7 @@ class _DriverDeleteStopConfirmFormState
         : _selectedReason!;
 
     if (reason.isEmpty) {
-      setState(() => _error = 'Please enter the reason');
+      setState(() => _error = AppLocalizations.of(context).drvPleaseEnterReason);
       return;
     }
 
@@ -73,6 +69,13 @@ class _DriverDeleteStopConfirmFormState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final otherReason = l10n.drvOtherReason;
+    final reasons = [
+      l10n.drvReasonMovedAway,
+      l10n.drvReasonNoLongerInSchool,
+      otherReason,
+    ];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
@@ -110,7 +113,7 @@ class _DriverDeleteStopConfirmFormState
           ),
           const SizedBox(height: 8),
           Text(
-            'Are you sure?',
+            l10n.drvAreYouSureTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -120,7 +123,7 @@ class _DriverDeleteStopConfirmFormState
           ),
           const SizedBox(height: 12),
           Text(
-            'Are you sure you want to delete this bus stop? If so, can you clarify why below.',
+            l10n.drvDeleteStopConfirmBody,
             textAlign: TextAlign.left,
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.55),
@@ -171,7 +174,7 @@ class _DriverDeleteStopConfirmFormState
                             });
                           },
                           decoration: InputDecoration(
-                            hintText: 'Other reason',
+                            hintText: otherReason,
                             hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.4)),
                             border: InputBorder.none,
                             isCollapsed: true,
@@ -248,7 +251,7 @@ class _DriverDeleteStopConfirmFormState
                 ),
               ),
               child: Text(
-                _saving ? 'Deleting…' : 'Confirm',
+                _saving ? l10n.drvDeletingEllipsis : l10n.confirm,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,

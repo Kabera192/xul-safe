@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/notification_model.dart';
 import '../../../widgets/mobile_notification_card_template.dart';
 
@@ -44,6 +45,7 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final inputFill = isDark ? const Color(0xFF1A2530) : Colors.white;
@@ -81,7 +83,7 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
                     onChanged: (_) => setState(() {}),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search notifications',
+                      hintText: l10n.searchNotifications,
                       hintStyle: TextStyle(
                         color: onSurface.withValues(alpha: 0.4),
                         fontSize: 13,
@@ -117,14 +119,14 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
             ),
           ] else if (!hasAny) ...[
             _MessageCard(
-              text: 'You have no notifications',
+              text: l10n.noNotifications,
               textColor: onSurface.withValues(alpha: 0.5),
               bgColor: inputFill,
               borderColor: borderColor,
             ),
           ] else ...[
             if (newNotifications.isNotEmpty) ...[
-              _SectionTitle('NEW', onSurface: onSurface),
+              _SectionTitle(l10n.sectionNew, onSurface: onSurface),
               const SizedBox(height: 10),
               ...newNotifications.asMap().entries.map(
                 (entry) => InkWell(
@@ -139,7 +141,7 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
               const SizedBox(height: 18),
             ],
             if (oldNotifications.isNotEmpty) ...[
-              _SectionTitle('EARLIER', onSurface: onSurface),
+              _SectionTitle(l10n.sectionEarlier, onSurface: onSurface),
               const SizedBox(height: 10),
               ...oldNotifications.asMap().entries.map(
                 (entry) => InkWell(

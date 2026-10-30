@@ -11,6 +11,7 @@ import '../../../widgets/mobile_form_controller.dart';
 import '../forms/driver_attendance_form.dart';
 import '../forms/driver_child_availability_form.dart';
 import '../models/attendance_record_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class DriverAttendancePage extends StatefulWidget {
   final bool isActive;
@@ -159,6 +160,7 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
   }
 
   void _notifyAbsenceRevocations(Set<String> revokedIds) {
+    final l10n = AppLocalizations.of(context);
     // Build name map from newly-loaded records
     final nameMap = {
       for (final r in [
@@ -172,7 +174,7 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
       if (name == null || name.isEmpty) continue;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$name is now available for pickup'),
+          content: Text(l10n.drvChildAvailableForPickup(name)),
           backgroundColor: const Color(0xFF21C260),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 6),
@@ -319,6 +321,7 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -327,14 +330,14 @@ class _DriverAttendancePageState extends State<DriverAttendancePage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Attendance',
-                    style: TextStyle(
+                    l10n.drvAttendanceTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,
@@ -389,30 +392,30 @@ class _AttendanceDatePickerCard extends StatelessWidget {
     }
   }
 
-  String _fmt(DateTime d) {
-    const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
+  String _fmt(DateTime d, AppLocalizations l10n) {
+    final days = [
+      l10n.drvWeekdayMonday,
+      l10n.drvWeekdayTuesday,
+      l10n.drvWeekdayWednesday,
+      l10n.drvWeekdayThursday,
+      l10n.drvWeekdayFriday,
+      l10n.drvWeekdaySaturday,
+      l10n.drvWeekdaySunday,
     ];
 
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+    final months = [
+      l10n.drvMonthJan,
+      l10n.drvMonthFeb,
+      l10n.drvMonthMar,
+      l10n.drvMonthApr,
+      l10n.drvMonthMay,
+      l10n.drvMonthJun,
+      l10n.drvMonthJul,
+      l10n.drvMonthAug,
+      l10n.drvMonthSep,
+      l10n.drvMonthOct,
+      l10n.drvMonthNov,
+      l10n.drvMonthDec,
     ];
 
     final dayName = days[d.weekday - 1];
@@ -424,6 +427,7 @@ class _AttendanceDatePickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -446,7 +450,7 @@ class _AttendanceDatePickerCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                _fmt(selected),
+                _fmt(selected, l10n),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

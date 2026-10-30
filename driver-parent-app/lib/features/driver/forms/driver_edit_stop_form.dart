@@ -8,6 +8,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/stop_model.dart';
 
 class DriverEditStopForm extends StatefulWidget {
@@ -90,6 +91,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
 
   Future<void> _searchPlaces(String query) async {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     setState(() { _searching = true; _error = null; });
 
     try {
@@ -103,10 +105,14 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
 
       final res = await http.get(uri, headers: {'User-Agent': 'buss-app/1.0'});
 
-      if (res.statusCode != 200) throw Exception('Could not search location');
+      if (res.statusCode != 200) {
+        throw Exception(l10n.drvCouldNotSearchLocation);
+      }
 
       final decoded = jsonDecode(res.body);
-      if (decoded is! List) throw Exception('Unexpected search response');
+      if (decoded is! List) {
+        throw Exception(l10n.drvUnexpectedSearchResponse);
+      }
 
       final suggestions = decoded
           .whereType<Map<String, dynamic>>()
@@ -118,11 +124,13 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
       setState(() { _suggestions = suggestions; _searching = false; });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _suggestions = []; _searching = false; _error = 'Could not search location'; });
+      setState(() { _suggestions = []; _searching = false; _error = l10n.drvCouldNotSearchLocation; });
     }
   }
 
   Future<void> _captureCurrentLocation() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     setState(() { _capturing = true; _error = null; });
 
     try {
@@ -135,7 +143,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
       _moveMap(p);
     } catch (_) {
       if (!mounted) return;
-      setState(() { _capturing = false; _error = 'Could not capture current location'; });
+      setState(() { _capturing = false; _error = l10n.drvCouldNotCaptureLocation; });
     }
   }
 
@@ -154,7 +162,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() { _error = 'Stop name is required'; _tab = 1; });
+      setState(() { _error = AppLocalizations.of(context).drvStopNameRequired; _tab = 1; });
       return;
     }
     setState(() { _saving = true; _error = null; });
@@ -173,6 +181,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cardBg = isDark ? const Color(0xFF1A2530) : const Color(0xFFF5F8FB);
@@ -206,7 +215,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
           // ── Tab selector ─────────────────────────────────────────────────
           _TabSelector(
             active: _tab,
-            tabs: const ['Details', 'Edit name', 'Location'],
+            tabs: [l10n.drvTabDetails, l10n.drvTabEditName, l10n.drvTabLocation],
             onTap: (i) => setState(() { _tab = i; _error = null; }),
           ),
 
@@ -225,7 +234,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Stop name',
+                    l10n.drvStopNameLabel,
                     style: TextStyle(
                       color: onSurface.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -236,7 +245,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                   const SizedBox(height: 4),
                   Text(
                     widget.stop.locationName.isEmpty
-                        ? 'No name set'
+                        ? l10n.drvNoNameSet
                         : widget.stop.locationName,
                     style: TextStyle(
                       color: onSurface,
@@ -248,7 +257,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                   Divider(height: 1, color: borderColor),
                   const SizedBox(height: 12),
                   Text(
-                    'Coordinates',
+                    l10n.drvCoordinatesLabel,
                     style: TextStyle(
                       color: onSurface.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -320,9 +329,9 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                     child: ElevatedButton.icon(
                       onPressed: _saving ? null : widget.onAssignStudentsTap,
                       icon: const Icon(IconsaxPlusLinear.profile_2user, size: 17, color: Colors.white),
-                      label: const Text(
-                        'Assign students',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      label: Text(
+                        l10n.drvAssignStudents,
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: green,
@@ -346,7 +355,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: isDark ? const Color(0xFF1A2530) : inputBg,
-                hintText: 'Enter stop name or detail',
+                hintText: l10n.drvEnterStopNameHint,
                 hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.4), fontSize: 13),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
                 enabledBorder: OutlineInputBorder(
@@ -378,7 +387,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                 ),
                 child: Text(
-                  _saving ? 'Saving…' : 'Save name',
+                  _saving ? l10n.drvSavingEllipsis : l10n.drvSaveNameBtn,
                   style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -398,7 +407,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: isDark ? const Color(0xFF1A2530) : inputBg,
-                      hintText: 'Search a place name',
+                      hintText: l10n.drvSearchPlaceNameHint,
                       hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.4), fontSize: 13),
                       suffixIcon: Icon(IconsaxPlusLinear.search_normal_1, color: blue, size: 18),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
@@ -425,7 +434,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
             if (_searching) ...[
               const SizedBox(height: 8),
               Text(
-                'Searching location…',
+                l10n.drvSearchingLocation,
                 style: TextStyle(color: onSurface.withValues(alpha: 0.45), fontSize: 12, fontWeight: FontWeight.w500),
               ),
             ],
@@ -489,7 +498,7 @@ class _DriverEditStopFormState extends State<DriverEditStopForm> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                 ),
                 child: Text(
-                  _saving ? 'Saving…' : 'Save location',
+                  _saving ? l10n.drvSavingEllipsis : l10n.drvSaveLocationBtn,
                   style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
