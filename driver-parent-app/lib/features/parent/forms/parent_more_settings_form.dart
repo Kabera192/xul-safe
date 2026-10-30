@@ -260,15 +260,23 @@ class _SoftActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          height: 50,
-          alignment: Alignment.center,
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: borderColor, width: 1)),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 18, color: blue),
               const SizedBox(width: 8),
-              Text(text, style: const TextStyle(color: blue, fontSize: 14.5, fontWeight: FontWeight.w500)),
+              Flexible(
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: blue, fontSize: 14.5, fontWeight: FontWeight.w500),
+                ),
+              ),
             ],
           ),
         ),
