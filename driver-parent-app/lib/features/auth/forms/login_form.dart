@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/session/session_storage.dart';
 import '../../../services/auth_api_service.dart';
 import '../../navigation/driver_nav.dart';
@@ -78,10 +79,10 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AuthFormShell(
-      title: 'Welcome back!',
-      subtitle:
-          'Please provide your login information to sign in to your account.',
+      title: l10n.welcomeBack,
+      subtitle: l10n.loginSubtitle,
       children: [
         Form(
           key: _formKey,
@@ -98,24 +99,24 @@ class _LoginFormState extends State<LoginForm> {
                 const SizedBox(height: 8),
               ],
               AuthFieldInput(
-                label: 'Email or phone number',
+                label: l10n.emailOrPhone,
                 controller: _identifierCtrl,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
-                    return 'This field is required';
+                    return l10n.fieldRequired;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 12),
               AuthFieldInput(
-                label: 'Password',
+                label: l10n.password,
                 controller: _passwordCtrl,
                 obscure: true,
                 showEye: true,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
-                    return 'Password is required';
+                    return l10n.passwordRequired;
                   }
                   return null;
                 },
@@ -138,9 +139,9 @@ class _LoginFormState extends State<LoginForm> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
-                    'Forgot password?',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.forgotPassword,
+                    style: const TextStyle(
                       color: Color(0xFF0D4896),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -162,7 +163,7 @@ class _LoginFormState extends State<LoginForm> {
                   ),
                   onPressed: _loading ? null : _onLogin,
                   child: Text(
-                    _loading ? 'Signing in…' : 'Sign in',
+                    _loading ? l10n.signingIn : l10n.signIn,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -178,9 +179,9 @@ class _LoginFormState extends State<LoginForm> {
         Center(
           child: TextButton(
             onPressed: widget.onSwitch,
-            child: const Text(
-              'New here? Create account',
-              style: TextStyle(
+            child: Text(
+              l10n.newHereCreateAccount,
+              style: const TextStyle(
                 color: Color(0xFF0D4896),
                 fontWeight: FontWeight.w500,
               ),

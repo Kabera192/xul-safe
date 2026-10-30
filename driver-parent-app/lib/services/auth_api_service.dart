@@ -38,7 +38,10 @@ class AuthApiService {
     throw Exception(_extractErrorMessage(decoded, 'Invalid credentials'));
   }
 
-  static Future<AuthResultModel> register({
+  /// Creates the account in an unverified state and sends an OTP to
+  /// [email]. No tokens are issued yet — the account only becomes usable
+  /// once [verifyRegistrationOtp] succeeds.
+  static Future<void> register({
     required String firstName,
     required String lastName,
     required String phoneNumber,
@@ -67,10 +70,63 @@ class AuthApiService {
     final decoded = _decodeBody(res.body);
 
     if (res.statusCode == 200 || res.statusCode == 201) {
-      return AuthResultModel.fromApiResponse(decoded);
+      return;
     }
 
     throw Exception(_extractErrorMessage(decoded, 'Registration failed'));
+  }
+
+  /// Confirms the registration OTP and activates the account. Issues
+  /// tokens on success, same shape as [login].
+  static Future<AuthResultModel> verifyRegistrationOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/verify-registration');
+
+    http.Response res;
+    try {
+      res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email.trim(), 'otp': otp.trim()}),
+      );
+    } catch (_) {
+      throw Exception('Could not reach server. Check your connection.');
+    }
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      return AuthResultModel.fromApiResponse(decoded);
+    }
+
+    throw Exception(_extractErrorMessage(decoded, 'Invalid or expired code'));
+  }
+
+  /// Resends the registration OTP for an unverified account.
+  static Future<void> resendRegistrationOtp({required String email}) async {
+    final uri =
+        Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/resend-registration-otp');
+
+    http.Response res;
+    try {
+      res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email.trim()}),
+      );
+    } catch (_) {
+      throw Exception('Could not reach server. Check your connection.');
+    }
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      return;
+    }
+
+    throw Exception(_extractErrorMessage(decoded, 'Failed to resend code'));
   }
 
   static dynamic _decodeBody(String body) {

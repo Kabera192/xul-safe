@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
+import '../../core/l10n/app_localizations.dart';
 import '../../widgets/mobile_splash_gradient.dart';
 
 class NewPasswordPage extends StatefulWidget {
-  final String phoneNumber;
+  final String email;
   final String otp;
   const NewPasswordPage({
     super.key,
-    required this.phoneNumber,
+    required this.email,
     required this.otp,
   });
 
@@ -40,6 +41,8 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l10n = AppLocalizations.of(context);
+
     setState(() {
       _loading = true;
       _error = null;
@@ -50,7 +53,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
         Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'phoneNumber': widget.phoneNumber,
+          'email': widget.email,
           'otp': widget.otp,
           'newPassword': _passwordCtrl.text,
         }),
@@ -64,33 +67,32 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
         final decoded = res.body.isNotEmpty ? jsonDecode(res.body) : null;
         setState(() {
           _error = (decoded is Map ? decoded['message'] : null) ??
-              'Failed to reset password. Please try again.';
+              l10n.appFailedToResetPassword;
         });
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Could not reach server');
+      setState(() => _error = l10n.couldNotReachServer);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   void _showSuccess() {
+    final l10n = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 10),
-            Text('Password reset!'),
+            const Icon(Icons.check_circle, color: Colors.green, size: 28),
+            const SizedBox(width: 10),
+            Text(l10n.appPasswordResetTitle),
           ],
         ),
-        content: const Text(
-          'Your password has been updated. You can now sign in with your new password.',
-        ),
+        content: Text(l10n.appPasswordResetBody),
         actions: [
           TextButton(
             onPressed: () {
@@ -98,9 +100,9 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
               Navigator.of(context).pop();
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            child: const Text(
-              'Sign in',
-              style: TextStyle(color: blue, fontWeight: FontWeight.w600),
+            child: Text(
+              l10n.signIn,
+              style: const TextStyle(color: blue, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -110,6 +112,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -117,6 +120,8 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
         isDark ? const Color(0xFF2A3A50) : const Color(0xFFE0E0E0);
     final fillColor =
         isDark ? const Color(0xFF1A2530) : const Color(0xFFF7F9FC);
+
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -134,7 +139,10 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                 ),
               ),
               const Spacer(),
-              Container(
+              AnimatedPadding(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.only(bottom: keyboard),
+                child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 24)
                     .copyWith(top: 32, bottom: 32),
@@ -152,7 +160,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Create new password',
+                        l10n.appCreateNewPasswordTitle,
                         style: TextStyle(
                           color: onSurface,
                           fontSize: 24,
@@ -161,7 +169,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Your new password must be at least 8 characters with uppercase, lowercase, and a number.',
+                        l10n.appNewPasswordRequirements,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.6),
                           fontSize: 14,
@@ -195,7 +203,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                       ],
                       // New password
                       _PasswordField(
-                        label: 'New password',
+                        label: l10n.appNewPasswordLabel,
                         controller: _passwordCtrl,
                         hidden: _hidePassword,
                         onToggle: () =>
@@ -205,19 +213,16 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                         onSurface: onSurface,
                         validator: (v) {
                           if (v == null || v.isEmpty) {
-                            return 'Password is required';
+                            return l10n.passwordRequired;
                           }
                           if (v.length < 8) {
-                            return 'Must be at least 8 characters';
+                            return l10n.passwordMin8;
                           }
-                          if (!v.contains(RegExp(r'[A-Z]'))) {
-                            return 'Must contain an uppercase letter';
-                          }
-                          if (!v.contains(RegExp(r'[a-z]'))) {
-                            return 'Must contain a lowercase letter';
+                          if (v.contains(' ')) {
+                            return l10n.appPasswordNoSpaces;
                           }
                           if (!v.contains(RegExp(r'[0-9]'))) {
-                            return 'Must contain a number';
+                            return l10n.appPasswordNeedsNumber;
                           }
                           return null;
                         },
@@ -225,7 +230,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                       const SizedBox(height: 16),
                       // Confirm password
                       _PasswordField(
-                        label: 'Confirm password',
+                        label: l10n.confirmPassword,
                         controller: _confirmCtrl,
                         hidden: _hideConfirm,
                         onToggle: () =>
@@ -235,10 +240,10 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                         onSurface: onSurface,
                         validator: (v) {
                           if (v == null || v.isEmpty) {
-                            return 'Please confirm your password';
+                            return l10n.pleaseConfirmPassword;
                           }
                           if (v != _passwordCtrl.text) {
-                            return 'Passwords do not match';
+                            return l10n.passwordsDoNotMatch;
                           }
                           return null;
                         },
@@ -265,9 +270,9 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
-                                  'Reset password',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.appResetPasswordButton,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
@@ -278,6 +283,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                     ],
                   ),
                 ),
+              ),
               ),
             ],
           ),

@@ -3,8 +3,11 @@ package com.login.LoginBus.auth.api;
 import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.auth.app.AuthService;
 import com.login.LoginBus.auth.domain.AuthResponse;
+import com.login.LoginBus.auth.domain.ForgotPasswordRequest;
 import com.login.LoginBus.auth.domain.LoginRequest;
 import com.login.LoginBus.auth.domain.PasswordUpdateRequest;
+import com.login.LoginBus.auth.domain.ResetPasswordRequest;
+import com.login.LoginBus.auth.domain.VerifyOtpRequest;
 import com.login.LoginBus.shared.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +28,13 @@ public class AuthController {
     }
 
     /**
-     * Register a new user.
+     * Register a new user. Creates the account in an unverified state and
+     * sends an OTP to the given email — the account only becomes usable
+     * once that OTP is confirmed via /verify-registration.
      * POST /api/v1/auth/register
      */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody User user) {
+    public ResponseEntity<ApiResponse<Void>> register(@RequestBody User user) {
         if (user.getFirstName() == null || user.getFirstName().trim().isEmpty())
             throw new IllegalArgumentException("First name is required");
         if (user.getLastName() == null || user.getLastName().trim().isEmpty())
@@ -41,8 +46,39 @@ public class AuthController {
         if (user.getPhoneNumber() == null || user.getPhoneNumber().trim().isEmpty())
             throw new IllegalArgumentException("Phone number is required");
 
-        AuthResponse response = authService.registerUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        authService.registerUser(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                new ApiResponse<>("Verification code sent to your email", null));
+    }
+
+    /**
+     * Confirm the registration OTP and activate the account. Issues tokens
+     * on success, same as login.
+     * POST /api/v1/auth/verify-registration
+     */
+    @PostMapping("/verify-registration")
+    public ResponseEntity<AuthResponse> verifyRegistration(@RequestBody VerifyOtpRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+        if (request.getOtp() == null || request.getOtp().trim().isEmpty())
+            throw new IllegalArgumentException("OTP is required");
+
+        AuthResponse response = authService.verifyRegistrationOtp(
+                request.getEmail().trim(), request.getOtp().trim());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Resend the registration OTP for an unverified account.
+     * POST /api/v1/auth/resend-registration-otp
+     */
+    @PostMapping("/resend-registration-otp")
+    public ResponseEntity<ApiResponse<Void>> resendRegistrationOtp(@RequestBody ForgotPasswordRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+
+        authService.resendRegistrationOtp(request.getEmail().trim());
+        return ResponseEntity.ok(new ApiResponse<>("Verification code resent to your email", null));
     }
 
     /**
@@ -116,5 +152,57 @@ public class AuthController {
         boolean exists = authService.userExists(email);
         return ResponseEntity.ok(new ApiResponse<>(
                 exists ? "Email is already registered" : "Email is available", exists));
+    }
+
+    /**
+     * Send OTP to the email registered for this account. Always returns the
+     * same response whether or not that email has an account, so this
+     * endpoint can't be used to find out which emails are registered.
+     * POST /api/v1/auth/forgot-password
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+
+        authService.sendPasswordResetOtp(request.getEmail().trim());
+        return ResponseEntity.ok(new ApiResponse<>(
+                "If an account exists with this email, an OTP has been sent", null));
+    }
+
+    /**
+     * Verify OTP without resetting the password.
+     * POST /api/v1/auth/verify-otp
+     */
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+        if (request.getOtp() == null || request.getOtp().trim().isEmpty())
+            throw new IllegalArgumentException("OTP is required");
+
+        authService.verifyOtp(request.getEmail().trim(), request.getOtp().trim());
+        return ResponseEntity.ok(new ApiResponse<>("OTP verified", null));
+    }
+
+    /**
+     * Reset password using a verified OTP.
+     * POST /api/v1/auth/reset-password
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+        if (request.getOtp() == null || request.getOtp().trim().isEmpty())
+            throw new IllegalArgumentException("OTP is required");
+        if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty())
+            throw new IllegalArgumentException("New password is required");
+
+        authService.resetPassword(
+                request.getEmail().trim(),
+                request.getOtp().trim(),
+                request.getNewPassword()
+        );
+        return ResponseEntity.ok(new ApiResponse<>("Password reset successfully", null));
     }
 }
