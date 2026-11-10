@@ -11,7 +11,10 @@ import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -34,6 +37,7 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     private final JwtService jwtService;
     private final EmailService emailService;
     private final NotificationsPublicService notificationsPublicService;
+    private final TransactionTemplate requiresNewTransactionTemplate;
 
     private static final String UPLOAD_DIR = "uploads/profile-photos/";
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -45,13 +49,16 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
                            PasswordEncoder passwordEncoder,
                            JwtService jwtService,
                            EmailService emailService,
-                           NotificationsPublicService notificationsPublicService) {
+                           NotificationsPublicService notificationsPublicService,
+                           PlatformTransactionManager transactionManager) {
         this.accountsService = accountsService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailService = emailService;
         this.notificationsPublicService = notificationsPublicService;
+        this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.requiresNewTransactionTemplate.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
     }
 
     @Override
@@ -73,10 +80,16 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
             // before verifying — update their details in case they're
             // correcting something and resend the code, rather than leaving
             // them permanently stuck on "Email already registered".
+            //
+            // The password is deliberately NOT touched here: this endpoint is
+            // unauthenticated, so anyone can "re-register" an email they
+            // don't own. Resetting the password on this path would let an
+            // attacker set a password the real owner would then unknowingly
+            // verify (by entering the OTP sent to their own inbox). Only an
+            // OTP-verified flow may change credentials for an existing account.
             existingEntity.setFirstName(user.getFirstName());
             existingEntity.setLastName(user.getLastName());
             existingEntity.setPhoneNumber(user.getPhoneNumber());
-            existingEntity.setPassword(passwordEncoder.encode(user.getPassword()));
             userRepository.save(existingEntity);
             sendOtpToUser(existingEntity, "Account verification");
             return;
@@ -316,8 +329,18 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
             throw new IllegalArgumentException("Too many incorrect attempts. Please request a new code.");
         }
         if (!user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
-            user.setOtpAttempts(user.getOtpAttempts() + 1);
-            userRepository.save(user);
+            // Persisted in its own transaction (REQUIRES_NEW) so the increment
+            // survives the exception below rolling back the caller's
+            // transaction — otherwise the attempt counter never commits and
+            // the lockout above never triggers.
+            int attemptsSoFar = user.getOtpAttempts();
+            Long userId = user.getId();
+            requiresNewTransactionTemplate.executeWithoutResult(status -> {
+                userRepository.findById(userId).ifPresent(managed -> {
+                    managed.setOtpAttempts(attemptsSoFar + 1);
+                    userRepository.save(managed);
+                });
+            });
             throw new IllegalArgumentException("Invalid OTP code");
         }
         user.setOtpAttempts(0);
