@@ -15,7 +15,10 @@ import com.login.LoginBus.transport.infra.BusJpaEntity;
 import com.login.LoginBus.transport.infra.BusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -47,6 +50,15 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
 
     @Autowired
     private AccountsPublicService accountsService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    private TransactionTemplate requiresNewTransaction() {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
+        return template;
+    }
 
     // ========== Child Operations ==========
 
@@ -357,6 +369,7 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         ChildJpaEntity entity = childRepository.findById(childId)
             .orElseThrow(() -> new IllegalArgumentException("Child not found with ID: " + childId));
         if (!Objects.equals(entity.getBusId(), busId)) {
+            validateSingleBusPerParent(entity.getParentId(), busId, childId);
             validateBusCapacity(busId, childId);
         }
         entity.setBusId(busId);
@@ -372,7 +385,10 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     private void validateBusCapacity(Long busId, String excludeChildId) {
         if (busId == null) return;
 
-        BusJpaEntity bus = busRepository.findById(busId).orElse(null);
+        // Locks the bus row for the rest of this transaction so a second,
+        // concurrent assignment to the same bus can't also read "one seat
+        // left" before this one commits.
+        BusJpaEntity bus = busRepository.findByIdForUpdate(busId).orElse(null);
         if (bus == null || bus.getCapacity() == null) return;
 
         long currentCount = childRepository.findByBusId(busId).stream()
@@ -387,22 +403,32 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         }
     }
 
+    /**
+     * Sent in its own REQUIRES_NEW transaction — the caller (validateBusCapacity)
+     * always throws right after this to block the assignment, which would
+     * otherwise roll back this notification along with it.
+     */
     private void notifyAdminsBusFull(BusJpaEntity bus) {
         try {
             List<Long> adminIds = adminUserIds();
             if (adminIds.isEmpty()) return;
 
-            notificationsPublicService.sendNotificationToUsers(
-                    adminIds,
-                    null,
-                    NotificationType.WARNING,
-                    NotificationCategory.BUS_CAPACITY_EXCEEDED,
-                    "Bus at full capacity",
-                    "Bus " + bus.getPlateNumber() + " is full (" + bus.getCapacity()
-                            + " seats) — a student assignment to this bus was blocked.",
-                    Map.of(
-                            "plateNumber", bus.getPlateNumber() != null ? bus.getPlateNumber() : "",
-                            "capacity", String.valueOf(bus.getCapacity())
+            String plateNumber = bus.getPlateNumber();
+            Integer capacity = bus.getCapacity();
+
+            requiresNewTransaction().executeWithoutResult(status ->
+                    notificationsPublicService.sendNotificationToUsers(
+                            adminIds,
+                            null,
+                            NotificationType.WARNING,
+                            NotificationCategory.BUS_CAPACITY_EXCEEDED,
+                            "Bus at full capacity",
+                            "Bus " + plateNumber + " is full (" + capacity
+                                    + " seats) — a student assignment to this bus was blocked.",
+                            Map.of(
+                                    "plateNumber", plateNumber != null ? plateNumber : "",
+                                    "capacity", String.valueOf(capacity)
+                            )
                     )
             );
         } catch (Exception e) {

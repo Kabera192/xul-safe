@@ -8,7 +8,7 @@ import '../../../widgets/mobile_animated_form_host.dart';
 import '../../../widgets/mobile_form_controller.dart';
 
 import '../forms/parent_choose_stop_form.dart';
-import '../forms/parent_request_stop_success_form.dart';
+import '../forms/parent_stop_selected_success_form.dart';
 import '../models/child_model.dart';
 import 'parent_request_stop_page.dart';
 import '../../../core/l10n/app_localizations.dart';
@@ -85,7 +85,7 @@ class _ParentChooseStopPageState extends State<ParentChooseStopPage> {
     final Widget child;
 
     if (_success) {
-      child = ParentRequestStopSuccessForm(
+      child = ParentStopSelectedSuccessForm(
         onDone: () => Navigator.pop(context, true),
       );
     } else if (_loading) {

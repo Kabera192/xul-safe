@@ -255,6 +255,8 @@ class AppLocalizations {
 
   String get parAddChildFirstChooseStop => _t({'en': 'Add a child first to choose a bus stop for them.', 'fr': 'Ajoutez d\'abord un enfant pour choisir un arrêt de bus pour lui.', 'rw': 'Banza wongere umwana kugira ngo uhitemo ahagarara ha bisi kuri we.'});
   String get parChooseStopTitle => _t({'en': 'Choose a bus stop', 'fr': 'Choisir un arrêt de bus', 'rw': 'Hitamo ahagarara ha bisi'});
+  String get parStopSelectedTitle => _t({'en': 'Bus stop selected', 'fr': 'Arrêt de bus sélectionné', 'rw': 'Ahagarara hatoranijwe'});
+  String get parStopSelectedBody => _t({'en': 'This bus stop has been assigned to your child right away — no approval needed.', 'fr': 'Cet arrêt de bus a été attribué à votre enfant immédiatement — aucune approbation requise.', 'rw': 'Aha hagarara hahawe umwana wawe ako kanya — nta kwemezwa gusabwa.'});
   String get parChooseStopIntro => _t({'en': 'Pick an existing route and stop — if none fit, you can request a new one below.', 'fr': 'Choisissez un itinéraire et un arrêt existants — si aucun ne convient, vous pouvez en demander un nouveau ci-dessous.', 'rw': 'Hitamo inzira n\'ahagarara bisanzweho — nta na kimwe gikwiye, ushobora gusaba ahashya hepfo.'});
   String get parChildLabel => _t({'en': 'Child', 'fr': 'Enfant', 'rw': 'Umwana'});
   String get parAvailableRoutes => _t({'en': 'Available routes', 'fr': 'Itinéraires disponibles', 'rw': 'Inzira ziraho'});

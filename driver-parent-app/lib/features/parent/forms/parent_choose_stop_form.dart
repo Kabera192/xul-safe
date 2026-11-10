@@ -242,13 +242,14 @@ class _ParentChooseStopFormState extends State<ParentChooseStopForm> {
               child: TextButton.icon(
                 onPressed: widget.onRequestNewStop,
                 icon: const Icon(IconsaxPlusLinear.add_circle, size: 18),
-                label: Flexible(
-                  child: Text(
-                    l10n.parCantFindStopRequestNew,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                // TextButton.icon already wraps its label in a Flexible
+                // internally — wrapping it again here caused "Incorrect use
+                // of ParentDataWidget" when the screen opened.
+                label: Text(
+                  l10n.parCantFindStopRequestNew,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
