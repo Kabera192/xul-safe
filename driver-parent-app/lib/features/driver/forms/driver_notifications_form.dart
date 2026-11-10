@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../models/notification_model.dart';
+import '../../../core/l10n/app_localizations.dart';
+import '../../../core/notifications/notification_localizer.dart';
 import '../../../widgets/mobile_notification_card_template.dart';
 
 class DriverNotificationsForm extends StatefulWidget {
@@ -32,18 +34,20 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
     super.dispose();
   }
 
-  List<NotificationModel> get _filtered {
+  List<NotificationModel> _filtered(AppLocalizations l10n) {
     final query = _searchCtrl.text.trim().toLowerCase();
     if (query.isEmpty) return widget.notifications;
     return widget.notifications.where((n) {
-      return n.title.toLowerCase().contains(query) ||
-          n.message.toLowerCase().contains(query) ||
+      final localized = localizeNotification(l10n, n);
+      return localized.title.toLowerCase().contains(query) ||
+          localized.message.toLowerCase().contains(query) ||
           n.type.toLowerCase().contains(query);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final inputFill = isDark ? const Color(0xFF1A2530) : Colors.white;
@@ -51,7 +55,7 @@ class _DriverNotificationsFormState extends State<DriverNotificationsForm> {
         isDark ? const Color(0xFF2A3A50) : const Color(0xFFDCE6F5);
     final blue = isDark ? const Color(0xFF93B5E8) : const Color(0xFF0D4896);
 
-    final filtered = _filtered;
+    final filtered = _filtered(l10n);
     final newNotifications = filtered.where((n) => n.isUnread).toList();
     final oldNotifications = filtered.where((n) => !n.isUnread).toList();
     final hasAny = filtered.isNotEmpty;
