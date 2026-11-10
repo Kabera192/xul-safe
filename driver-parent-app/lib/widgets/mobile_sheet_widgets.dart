@@ -482,8 +482,21 @@ class GradePicker extends StatelessWidget {
     'Grade 12',
   ];
 
+  /// The stored value (e.g. "Grade 3") stays in English — only the label
+  /// shown to the parent is localized, same pattern as GenderPicker.
+  static String displayLabel(AppLocalizations l10n, String value) {
+    if (value.startsWith('Nursery ')) {
+      return l10n.nurseryOptionLabel(value.substring('Nursery '.length));
+    }
+    if (value.startsWith('Grade ')) {
+      return l10n.gradeOptionLabel(value.substring('Grade '.length));
+    }
+    return value;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -532,7 +545,7 @@ class GradePicker extends StatelessWidget {
           items: options
               .map((o) => DropdownMenuItem(
                     value: o,
-                    child: Text(o, style: TextStyle(color: textColor)),
+                    child: Text(displayLabel(l10n, o), style: TextStyle(color: textColor)),
                   ))
               .toList(),
           onChanged: onChanged,

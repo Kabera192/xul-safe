@@ -196,6 +196,8 @@ class AppLocalizations {
   String get male => _t({'en': 'Male', 'fr': 'Masculin', 'rw': 'Gabo'});
   String get female => _t({'en': 'Female', 'fr': 'Féminin', 'rw': 'Gore'});
   String get gradeField => _t({'en': 'Grade *', 'fr': 'Classe *', 'rw': 'Icyiciro *'});
+  String gradeOptionLabel(String n) => _t({'en': 'Grade $n', 'fr': 'Classe $n', 'rw': 'Icyiciro $n'});
+  String nurseryOptionLabel(String n) => _t({'en': 'Nursery $n', 'fr': 'Maternelle $n', 'rw': 'Incuke $n'});
   String get addChild => _t({'en': 'Add child', 'fr': 'Ajouter l\'enfant', 'rw': 'Ongeraho umwana'});
 
   // ── Parent profile form ────────────────────────────────────────────────────

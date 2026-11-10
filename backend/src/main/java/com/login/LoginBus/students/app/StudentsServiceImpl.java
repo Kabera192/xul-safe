@@ -125,10 +125,14 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     private void validateGrade(String grade) {
         if (grade == null) return;
         java.util.regex.Matcher matcher =
-            java.util.regex.Pattern.compile("(\\d+)").matcher(grade);
-        if (!matcher.find()) return;
-        int n = Integer.parseInt(matcher.group(1));
-        boolean isNursery = grade.trim().toLowerCase().startsWith("nursery");
+            java.util.regex.Pattern.compile("^(Nursery|Grade) (\\d{1,2})$")
+                .matcher(grade.trim());
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(
+                "Grade must be one of: Nursery 1-3, Grade 1-12");
+        }
+        boolean isNursery = matcher.group(1).equals("Nursery");
+        int n = Integer.parseInt(matcher.group(2));
         int max = isNursery ? 3 : 12;
         if (n < 1 || n > max) {
             throw new IllegalArgumentException(
