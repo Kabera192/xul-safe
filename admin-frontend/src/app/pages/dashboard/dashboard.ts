@@ -43,7 +43,7 @@ export class Dashboard implements OnInit {
     { label: 'Students', value: '0', sublabel: 'students', icon: 'students' },
     { label: 'Conductors', value: '0', sublabel: 'staff', icon: 'present' },
     { label: 'Incidents', value: '0', sublabel: 'today', icon: 'incidents' },
-    { label: 'Absent today', value: 'N/A', sublabel: 'students', icon: 'absent' },
+    { label: 'Absent today', value: '0', sublabel: 'students', icon: 'absent' },
   ];
 
   todayTrips = {
@@ -86,7 +86,8 @@ export class Dashboard implements OnInit {
     forkJoin({
       buses: this.busService.getAll().pipe(catchError(() => of([] as Bus[]))),
       students: this.studentService.getAllAdmin().pipe(catchError(() => of([] as Child[]))),
-      conductors: this.conductorService.getAll().pipe(catchError(() => of([] as Conductor[])))
+      conductors: this.conductorService.getAll().pipe(catchError(() => of([] as Conductor[]))),
+      absentToday: this.studentService.getAbsentTodayCount().pipe(catchError(() => of(null)))
     }).pipe(
       timeout(5000),
       finalize(() => {
@@ -94,7 +95,7 @@ export class Dashboard implements OnInit {
         window.clearTimeout(fallbackTimer);
         this.cdr.detectChanges();
       })
-    ).subscribe(({ buses, students, conductors }) => {
+    ).subscribe(({ buses, students, conductors, absentToday }) => {
       const activeBuses = buses.filter((bus) => bus.status === 'ACTIVE').length;
 
       this.stats = [
@@ -102,7 +103,7 @@ export class Dashboard implements OnInit {
         { label: 'Students', value: String(students.length), sublabel: 'students', icon: 'students' },
         { label: 'Conductors', value: String(conductors.length), sublabel: 'staff', icon: 'present' },
         { label: 'Incidents', value: String(this.unreadCount), sublabel: 'today', icon: 'incidents' },
-        { label: 'Absent today', value: 'N/A', sublabel: 'students', icon: 'absent' },
+        { label: 'Absent today', value: absentToday !== null ? String(absentToday) : 'N/A', sublabel: 'students', icon: 'absent' },
       ];
 
       this.schoolBuses = buses.slice(0, 3).map((bus) => ({

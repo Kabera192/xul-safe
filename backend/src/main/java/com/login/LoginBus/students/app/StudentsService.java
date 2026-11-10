@@ -30,6 +30,14 @@ public interface StudentsService {
     List<Child> getAllChildren();
 
     /**
+     * Count of distinct children marked absent (by a driver, for either
+     * session) in today's attendance records, across every bus.
+     *
+     * @return Number of children absent today
+     */
+    int getAbsentTodayCount();
+
+    /**
      * Get a specific child by ID.
      *
      * @param childId The child ID

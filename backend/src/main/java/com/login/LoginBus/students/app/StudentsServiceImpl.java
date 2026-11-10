@@ -14,8 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +32,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
 
     @Autowired
     private AbsenceRepository absenceRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     @Autowired
     private BusRepository busRepository;
@@ -64,6 +69,20 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         return entities.stream()
             .map(ChildJpaEntity::toDomain)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public int getAbsentTodayCount() {
+        LocalDate today = LocalDate.now();
+        // A child can have both a morning and an afternoon record for the
+        // same day — count distinct children, not raw records, so one
+        // child absent for both sessions isn't counted twice.
+        Set<String> absentChildIds = attendanceRepository.findByDateBetween(today, today)
+                .stream()
+                .filter(AttendanceJpaEntity::isAbsent)
+                .map(AttendanceJpaEntity::getChildId)
+                .collect(Collectors.toSet());
+        return absentChildIds.size();
     }
 
     @Override
