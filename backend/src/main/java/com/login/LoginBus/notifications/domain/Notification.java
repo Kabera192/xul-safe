@@ -1,5 +1,7 @@
 package com.login.LoginBus.notifications.domain;
 
+import java.util.Map;
+
 /**
  * Pure domain entity for Notification.
  * Contains NO framework annotations - only business logic.
@@ -13,6 +15,12 @@ public class Notification {
     private NotificationCategory category;
     private Long createdBy;
     private Long createdAt;
+    // Structured data the recipient's own app can use to render this
+    // notification in their chosen language (e.g. {"childName": "Amina"}),
+    // instead of relying solely on the English title/message above, which
+    // stay as a fallback for any category/client that doesn't know how to
+    // localize it.
+    private Map<String, String> params;
 
     public Notification() {
     }
@@ -100,5 +108,13 @@ public class Notification {
 
     public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, String> params) {
+        this.params = params;
     }
 }

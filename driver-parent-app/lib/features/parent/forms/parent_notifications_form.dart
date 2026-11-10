@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/notifications/notification_localizer.dart';
 import '../../../features/driver/models/notification_model.dart';
 import '../../../widgets/mobile_notification_card_template.dart';
 
@@ -46,7 +47,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
     super.dispose();
   }
 
-  List<NotificationModel> get _filtered {
+  List<NotificationModel> _filtered(AppLocalizations l10n) {
     final query = _searchCtrl.text.trim().toLowerCase();
     // Incidents are exclusively an Emergencies-tab concern — "All
     // notifications" means all the non-emergency ones, not literally all.
@@ -57,9 +58,11 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
         .toList();
     if (query.isEmpty) return list;
     return list
-        .where((n) =>
-            n.title.toLowerCase().contains(query) ||
-            n.message.toLowerCase().contains(query))
+        .where((n) {
+          final localized = localizeNotification(l10n, n);
+          return localized.title.toLowerCase().contains(query) ||
+              localized.message.toLowerCase().contains(query);
+        })
         .toList();
   }
 
@@ -71,7 +74,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
     final inputFill = isDark ? const Color(0xFF1A2530) : Colors.white;
     final borderColor = isDark ? const Color(0xFF2A3A50) : stroke;
 
-    final filtered = _filtered;
+    final filtered = _filtered(l10n);
     final newNotifs = filtered.where((n) => n.isUnread).toList();
     final oldNotifs = filtered.where((n) => !n.isUnread).toList();
 

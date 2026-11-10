@@ -157,7 +157,8 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
                             NotificationType.INFO,
                             NotificationCategory.JOURNEY_STARTED,
                             "Bus journey has started",
-                            "The " + tripLabel + " journey has started. The bus is now on the road."
+                            "The " + tripLabel + " journey has started. The bus is now on the road.",
+                            Map.of("tripType", tripTypeStr != null ? tripTypeStr : "")
                     );
                 }
             } catch (Exception e) {
@@ -236,7 +237,8 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
                             NotificationType.INFO,
                             NotificationCategory.JOURNEY_ENDED,
                             "Bus journey has ended",
-                            "The bus journey has come to an end. Your child should be home soon."
+                            "The bus journey has come to an end. Your child should be home soon.",
+                            Map.of()
                     );
                 }
             } catch (Exception e) {

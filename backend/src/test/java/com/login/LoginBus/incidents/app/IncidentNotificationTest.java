@@ -114,7 +114,8 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
                 eq(NotificationType.INFO),
                 eq(NotificationCategory.INCIDENT_REPORTED),
                 eq("Incident reported"),
-                eq("Timmy and Bob were involved in a fight")
+                eq("Timmy and Bob were involved in a fight"),
+                eq(Map.of("kind", "DETAILED"))
         );
 
         assertEquals(
@@ -162,7 +163,8 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
                 eq(NotificationType.WARNING),
                 eq(NotificationCategory.INCIDENT_REPORTED),
                 eq("Incident reported"),
-                eq("Rear tire punctured")
+                eq("Rear tire punctured"),
+                eq(Map.of("kind", "DETAILED"))
         );
 
         assertEquals(
@@ -207,7 +209,8 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
                 any(),
                 any(),
                 anyString(),
-                anyString()
+                anyString(),
+                anyMap()
         );
 
         List<Long> recipients = recipientsCaptor.getValue();
@@ -259,6 +262,9 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
         ArgumentCaptor<String> messageCaptor =
                 ArgumentCaptor.forClass(String.class);
 
+        ArgumentCaptor<Map> paramsCaptor =
+                ArgumentCaptor.forClass(Map.class);
+
         verify(notificationsService, times(2))
                 .sendNotificationToUsers(
                         recipientsCaptor.capture(),
@@ -266,7 +272,8 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
                         eq(NotificationType.URGENT),
                         eq(NotificationCategory.INCIDENT_REPORTED),
                         titleCaptor.capture(),
-                        messageCaptor.capture()
+                        messageCaptor.capture(),
+                        paramsCaptor.capture()
                 );
 
         List<List<Long>> recipientCalls =
@@ -277,6 +284,9 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
 
         List<String> messageCalls =
                 messageCaptor.getAllValues();
+
+        List<Map> paramsCalls =
+                paramsCaptor.getAllValues();
 
         int detailedIndex =
                 titleCalls.indexOf("Incident reported");
@@ -297,6 +307,13 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
                 messageCalls.get(detailedIndex)
         );
 
+        // The detailed variant's body is the reporter's own free text, not
+        // a translatable fixed phrase — only its "kind" is sent as a param.
+        assertEquals(
+                Map.of("kind", "DETAILED"),
+                paramsCalls.get(detailedIndex)
+        );
+
         assertEquals(
                 Set.of(103L),
                 Set.copyOf(recipientCalls.get(operationalIndex))
@@ -310,6 +327,13 @@ attachmentStorage = mock(IncidentAttachmentStorage.class);
         assertFalse(
                 messageCalls.get(operationalIndex)
                         .contains("Timmy")
+        );
+
+        // The operational variant is a fixed phrase the client can fully
+        // regenerate from kind + journeyImpact, for per-language rendering.
+        assertEquals(
+                Map.of("kind", "OPERATIONAL", "journeyImpact", "STOPPED"),
+                paramsCalls.get(operationalIndex)
         );
     }
 

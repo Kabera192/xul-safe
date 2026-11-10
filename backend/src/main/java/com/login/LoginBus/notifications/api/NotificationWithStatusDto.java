@@ -1,9 +1,11 @@
 package com.login.LoginBus.notifications.api;
 
+import java.util.Map;
+
 /**
  * Notification response enriched with the recipient's status fields.
  * Field names use camelCase to match Flutter NotificationModel.fromApiResponse:
- *   notificationId, title, message, type, category, createdBy, recipientUserId, status, sentAt, readAt
+ *   notificationId, title, message, type, category, params, createdBy, recipientUserId, status, sentAt, readAt
  */
 public class NotificationWithStatusDto {
 
@@ -12,6 +14,7 @@ public class NotificationWithStatusDto {
     private String message;
     private String type;
     private String category;
+    private Map<String, String> params;
     private Long createdBy;
     private Long recipientUserId;
     private String status;
@@ -27,6 +30,7 @@ public class NotificationWithStatusDto {
             String message,
             String type,
             String category,
+            Map<String, String> params,
             Long createdBy,
             Long recipientUserId,
             String status,
@@ -38,6 +42,7 @@ public class NotificationWithStatusDto {
         this.message = message;
         this.type = type;
         this.category = category;
+        this.params = params;
         this.createdBy = createdBy;
         this.recipientUserId = recipientUserId;
         this.status = status;
@@ -83,6 +88,14 @@ public class NotificationWithStatusDto {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, String> params) {
+        this.params = params;
     }
 
     public Long getCreatedBy() {
