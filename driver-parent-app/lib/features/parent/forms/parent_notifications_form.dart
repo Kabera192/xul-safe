@@ -103,7 +103,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
                     onChanged: (_) => setState(() {}),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search notifications',
+                      hintText: l10n.searchNotifications,
                       hintStyle: TextStyle(
                         color: onSurface.withValues(alpha: 0.4),
                         fontSize: 13,
@@ -132,7 +132,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
                   onTap: () => setState(() => _showAll = true),
                   child: Center(
                     child: Text(
-                      'All notifications',
+                      l10n.allNotifications,
                       style: TextStyle(
                         color:
                             _showAll ? green : onSurface.withValues(alpha: 0.7),
@@ -149,7 +149,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
                   onTap: () => setState(() => _showAll = false),
                   child: Center(
                     child: Text(
-                      'Emergencies',
+                      l10n.emergencies,
                       style: TextStyle(
                         color: !_showAll
                             ? green
@@ -211,7 +211,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Center(
                 child: Text(
-                  'You have no notifications',
+                  l10n.noNotifications,
                   style: TextStyle(
                     color: onSurface.withValues(alpha: 0.5),
                     fontSize: 15,
@@ -222,7 +222,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
             ),
           ] else ...[
             if (newNotifs.isNotEmpty) ...[
-              _SectionTitle('NEW', onSurface: onSurface),
+              _SectionTitle(l10n.sectionNew, onSurface: onSurface),
               const SizedBox(height: 10),
               ...newNotifs.asMap().entries.map(
                 (entry) => InkWell(
@@ -237,7 +237,7 @@ class _ParentNotificationsFormState extends State<ParentNotificationsForm> {
               const SizedBox(height: 16),
             ],
             if (oldNotifs.isNotEmpty) ...[
-              _SectionTitle('EARLIER', onSurface: onSurface),
+              _SectionTitle(l10n.sectionEarlier, onSurface: onSurface),
               const SizedBox(height: 10),
               ...oldNotifs.asMap().entries.map(
                 (entry) => InkWell(

@@ -63,8 +63,10 @@ public IncidentController(
      * Get all incidents.
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<IncidentResponse>>> getAllIncidents() {
-        List<IncidentResponse> incidents = incidentService.getAllIncidents()
+    public ResponseEntity<ApiResponse<List<IncidentResponse>>> getAllIncidents(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        List<IncidentResponse> incidents = incidentService.getAllIncidents(jwt)
                 .stream()
                 .map(IncidentResponse::fromDomain)
                 .toList();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../models/attendance_record_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class DriverAttendanceForm extends StatefulWidget {
   final bool loading;
@@ -141,7 +142,7 @@ class _SearchBox extends StatelessWidget {
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Search a name',
+                hintText: AppLocalizations.of(context).searchName,
                 hintStyle: TextStyle(
                   color: onSurface.withValues(alpha: 0.4),
                   fontSize: 13,
@@ -185,6 +186,7 @@ class _SessionTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final dividerColor = onSurface.withValues(alpha: 0.12);
 
@@ -206,7 +208,7 @@ class _SessionTabs extends StatelessWidget {
                               color: _isMorning ? blue : onSurface),
                           const SizedBox(width: 4),
                           Text(
-                            'Morning',
+                            l10n.morning,
                             style: TextStyle(
                               color: _isMorning ? blue : onSurface,
                               fontSize: 13,
@@ -220,7 +222,7 @@ class _SessionTabs extends StatelessWidget {
                       if (_isMorning) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '$confirmedCount / $totalCount completed',
+                          l10n.drvCompletedCount(confirmedCount, totalCount),
                           style: TextStyle(
                             color: blue.withValues(alpha: 0.7),
                             fontSize: 11,
@@ -247,7 +249,7 @@ class _SessionTabs extends StatelessWidget {
                               color: !_isMorning ? blue : onSurface),
                           const SizedBox(width: 4),
                           Text(
-                            'Afternoon',
+                            l10n.afternoon,
                             style: TextStyle(
                               color: !_isMorning ? blue : onSurface,
                               fontSize: 13,
@@ -261,7 +263,7 @@ class _SessionTabs extends StatelessWidget {
                       if (!_isMorning) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '$confirmedCount / $totalCount completed',
+                          l10n.drvCompletedCount(confirmedCount, totalCount),
                           style: TextStyle(
                             color: blue.withValues(alpha: 0.7),
                             fontSize: 11,
@@ -319,7 +321,8 @@ class _StudentList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (records.isEmpty) {
-      return const _MessageCard(text: 'No students on this bus');
+      return _MessageCard(
+          text: AppLocalizations.of(context).drvNoStudentsOnBus);
     }
 
     // Pin absent students to the top
@@ -385,13 +388,13 @@ class _StudentCard extends StatelessWidget {
   static const green = Color(0xFF21C260);
   static const blue = Color(0xFF0D4896);
 
-  String _statusLabel() {
-    if (record.isAbsent) return 'Absent today';
-    if (record.boarded && record.droppedOff) return 'Completed';
+  String _statusLabel(AppLocalizations l10n) {
+    if (record.isAbsent) return l10n.drvAbsentToday;
+    if (record.boarded && record.droppedOff) return l10n.drvCompletedStatus;
     if (record.boarded) {
-      return session == 'MORNING' ? 'On bus' : 'Heading home';
+      return session == 'MORNING' ? l10n.drvOnBusStatus : l10n.drvHeadingHomeStatus;
     }
-    return session == 'MORNING' ? 'Not yet boarded' : 'Not yet picked up';
+    return session == 'MORNING' ? l10n.drvNotYetBoarded : l10n.drvNotYetPickedUp;
   }
 
   Color _statusColor(Color onSurface) {
@@ -403,10 +406,11 @@ class _StudentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final name =
-        record.childName.isEmpty ? 'Unnamed student' : record.childName;
+        record.childName.isEmpty ? l10n.drvUnnamedStudent : record.childName;
     final dropoffIcon =
         session == 'MORNING' ? Icons.school_outlined : Icons.home_outlined;
 
@@ -447,7 +451,7 @@ class _StudentCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _statusLabel(),
+                      _statusLabel(l10n),
                       style: TextStyle(
                         color: _statusColor(onSurface),
                         fontSize: 11,
@@ -614,14 +618,14 @@ class _AbsentBadge extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.event_busy_rounded, color: _orange, size: 13),
-          SizedBox(width: 4),
+          const Icon(Icons.event_busy_rounded, color: _orange, size: 13),
+          const SizedBox(width: 4),
           Text(
-            'Absent',
-            style: TextStyle(
+            AppLocalizations.of(context).absent,
+            style: const TextStyle(
               color: _orange,
               fontSize: 11,
               fontWeight: FontWeight.w700,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../core/config/theme_service.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../models/parent_profile_edit_mode.dart';
 import '../models/parent_profile_model.dart';
 import '../../../main.dart';
@@ -28,6 +29,7 @@ class ParentProfileForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final infoAndSignoutBg = isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE6EDF6);
@@ -46,7 +48,7 @@ class ParentProfileForm extends StatelessWidget {
           const SizedBox(height: 4),
           Center(
             child: Text(
-              'Parent profile',
+              l10n.parentProfile,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w300,
@@ -128,13 +130,13 @@ class ParentProfileForm extends StatelessWidget {
             child: Column(
               children: [
                 _ProfileActionRow(
-                  text: 'Theme',
+                  text: l10n.theme,
                   rightWidget: const _ThemeDot(),
                   onTap: () => ThemeService.toggle(),
                 ),
                 const _PaddedDivider(),
                 _ProfileActionRow(
-                  text: 'Sign out',
+                  text: l10n.signOut,
                   rightIcon: IconsaxPlusLinear.logout,
                   onTap: () => _signOut(context),
                 ),
@@ -267,6 +269,7 @@ class _ThemeDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF0D4896);
+    final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeService.notifier,
       builder: (context, mode, _) {
@@ -275,7 +278,7 @@ class _ThemeDot extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isDark ? 'Dark' : 'Light',
+              isDark ? l10n.themeDark : l10n.themeLight,
               style: const TextStyle(
                 color: blue,
                 fontSize: 13,

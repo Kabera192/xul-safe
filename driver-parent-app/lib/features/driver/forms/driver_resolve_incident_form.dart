@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/driver_incident_model.dart';
 
 class DriverResolveIncidentForm extends StatelessWidget {
@@ -22,23 +23,23 @@ class DriverResolveIncidentForm extends StatelessWidget {
   static const _blue = Color(0xFF0D4896);
   static const _green = Color(0xFF21C260);
 
-  String get _incidentLabel {
+  String _incidentLabel(AppLocalizations l10n) {
     switch (incident.type.toUpperCase()) {
       case 'ACCIDENT':
-        return 'Bus accident or collision';
+        return l10n.drvIncidentOptionAccident;
       case 'MEDICAL':
-        return 'Sick / injured student';
+        return l10n.drvIncidentOptionMedical;
       case 'VEHICLE_BREAKDOWN':
-        return 'Bus mechanical issue';
+        return l10n.drvIncidentOptionBreakdown;
       case 'DELAY':
-        return 'Journey delay';
+        return l10n.drvIncidentOptionDelay;
       case 'ROAD_OBSTRUCTION':
-        return 'Road obstruction';
+        return l10n.drvIncidentOptionRoadObstruction;
       case 'CHILD_BEHAVIOR':
-        return 'Student behavior issue';
+        return l10n.drvIncidentOptionBehavior;
       case 'OTHER':
       default:
-        return 'Other incident';
+        return l10n.drvOtherIncidentSingular;
     }
   }
 
@@ -64,6 +65,7 @@ class DriverResolveIncidentForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
@@ -129,7 +131,7 @@ class DriverResolveIncidentForm extends StatelessWidget {
           const SizedBox(height: 18),
 
           Text(
-            'Resolve incident?',
+            l10n.drvResolveIncidentTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -143,8 +145,7 @@ class DriverResolveIncidentForm extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Text(
-              'Are you sure this incident has been resolved? '
-              'It will move to the resolved incidents section.',
+              l10n.drvResolveIncidentBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: onSurface.withValues(alpha: 0.55),
@@ -183,7 +184,7 @@ class DriverResolveIncidentForm extends StatelessWidget {
 
                 Expanded(
                   child: Text(
-                    _incidentLabel,
+                    _incidentLabel(l10n),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -229,9 +230,9 @@ class DriverResolveIncidentForm extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.cancel,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -266,9 +267,9 @@ class DriverResolveIncidentForm extends StatelessWidget {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Resolve',
-                            style: TextStyle(
+                        : Text(
+                            l10n.drvResolveBtn,
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),

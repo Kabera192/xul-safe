@@ -12,6 +12,7 @@ import '../../../widgets/mobile_form_controller.dart';
 import '../forms/driver_children_attendance_form.dart';
 import '../models/attendance_record_model.dart';
 import '../models/stop_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class DriverChildrenAttendancePage extends StatefulWidget {
   final bool isActive;
@@ -176,6 +177,7 @@ class _DriverChildrenAttendancePageState
   }
 
   void _notifyAbsenceRevocations(Set<String> revokedIds) {
+    final l10n = AppLocalizations.of(context);
     final nameMap = {
       for (final r in [
         ..._morningRecords.values,
@@ -188,7 +190,7 @@ class _DriverChildrenAttendancePageState
       if (name == null || name.isEmpty) continue;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$name is now available for pickup'),
+          content: Text(l10n.drvChildAvailableForPickup(name)),
           backgroundColor: const Color(0xFF21C260),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 6),
@@ -314,6 +316,7 @@ class _DriverChildrenAttendancePageState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -329,8 +332,8 @@ class _DriverChildrenAttendancePageState
                 child: Center(
                   child: Text(
                     _totalChildCount > 0
-                        ? 'Children($_totalChildCount)'
-                        : 'Children',
+                        ? l10n.drvChildrenCountTitle(_totalChildCount)
+                        : l10n.drvChildrenTitleNoCount,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -384,14 +387,29 @@ class _DatePickerCard extends StatelessWidget {
     if (picked != null) onChanged(picked);
   }
 
-  String _fmt(DateTime d) {
-    const days = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-      'Friday', 'Saturday', 'Sunday',
+  String _fmt(DateTime d, AppLocalizations l10n) {
+    final days = [
+      l10n.drvWeekdayMonday,
+      l10n.drvWeekdayTuesday,
+      l10n.drvWeekdayWednesday,
+      l10n.drvWeekdayThursday,
+      l10n.drvWeekdayFriday,
+      l10n.drvWeekdaySaturday,
+      l10n.drvWeekdaySunday,
     ];
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    final months = [
+      l10n.drvMonthJan,
+      l10n.drvMonthFeb,
+      l10n.drvMonthMar,
+      l10n.drvMonthApr,
+      l10n.drvMonthMay,
+      l10n.drvMonthJun,
+      l10n.drvMonthJul,
+      l10n.drvMonthAug,
+      l10n.drvMonthSep,
+      l10n.drvMonthOct,
+      l10n.drvMonthNov,
+      l10n.drvMonthDec,
     ];
     final dayName = days[d.weekday - 1];
     final dd = d.day.toString().padLeft(2, '0');
@@ -401,6 +419,7 @@ class _DatePickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -425,7 +444,7 @@ class _DatePickerCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                _fmt(selected),
+                _fmt(selected, l10n),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
