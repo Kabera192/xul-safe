@@ -70,7 +70,12 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         if (!isStrongPassword(user.getPassword())) {
             throw new IllegalArgumentException("Password must be at least 8 characters, contain no spaces, and include at least one number");
         }
-        Optional<UserJpaEntity> existing = userRepository.findByEmail(normalizeEmail(user.getEmail()));
+        // Normalize once, up front — every lookup below, and whatever gets
+        // persisted (here or in AccountsServiceImpl.createUser), must agree
+        // on the same casing, or verification/login lookups that normalize
+        // will never match a mixed-case stored value.
+        user.setEmail(normalizeEmail(user.getEmail()));
+        Optional<UserJpaEntity> existing = userRepository.findByEmail(user.getEmail());
         if (existing.isPresent()) {
             UserJpaEntity existingEntity = existing.get();
             if (existingEntity.isEmailVerified()) {

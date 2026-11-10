@@ -55,4 +55,11 @@ public interface UserRepository extends JpaRepository<UserJpaEntity, Long> {
     @Modifying
     @Query("UPDATE UserJpaEntity u SET u.otpAttempts = u.otpAttempts + 1 WHERE u.id = :id AND u.otpAttempts < :maxAttempts")
     int incrementOtpAttemptsIfBelowLimit(@Param("id") Long id, @Param("maxAttempts") int maxAttempts);
+
+    /**
+     * Users whose stored email isn't already lowercase — records left over
+     * from before email normalization was enforced on every write path.
+     */
+    @Query("SELECT u FROM UserJpaEntity u WHERE u.email <> LOWER(u.email)")
+    List<UserJpaEntity> findWithMixedCaseEmail();
 }

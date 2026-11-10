@@ -53,6 +53,13 @@ public class AccountsServiceImpl implements AccountsService, AccountsPublicServi
     @Override
     @Transactional
     public User createUser(User user) {
+        // Normalize before anything else touches it — storing it verbatim
+        // would let "Foo@Bar.com" and "foo@bar.com" be treated as different
+        // accounts by the unique check below, and would break every later
+        // lookup that normalizes (login, OTP verification, ...) since those
+        // would never match a mixed-case stored value.
+        user.setEmail(normalizeEmail(user.getEmail()));
+
         // Validate email is unique
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
@@ -329,5 +336,9 @@ public class AccountsServiceImpl implements AccountsService, AccountsPublicServi
                 .stream()
                 .map(UserJpaEntity::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
     }
 }
