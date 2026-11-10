@@ -8,6 +8,8 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverCreateStopForm extends StatefulWidget {
   final Future<void> Function({
     required String locationName,
@@ -109,6 +111,7 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
 
   Future<void> _searchPlaces(String query) async {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
 
     setState(() {
       _searching = true;
@@ -136,13 +139,13 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
       );
 
       if (res.statusCode != 200) {
-        throw Exception('Could not search location');
+        throw Exception(l10n.drvCouldNotSearchLocation);
       }
 
       final decoded = jsonDecode(res.body);
 
       if (decoded is! List) {
-        throw Exception('Unexpected search response');
+        throw Exception(l10n.drvUnexpectedSearchResponse);
       }
 
       final suggestions = decoded
@@ -163,12 +166,15 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
       setState(() {
         _suggestions = [];
         _searching = false;
-        _error = 'Could not search location';
+        _error = l10n.drvCouldNotSearchLocation;
       });
     }
   }
 
   Future<void> _captureCurrentLocation() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+
     setState(() {
       _capturing = true;
       _error = null;
@@ -196,7 +202,7 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
 
       setState(() {
         _capturing = false;
-        _error = 'Could not capture current location';
+        _error = l10n.drvCouldNotCaptureLocation;
       });
     }
   }
@@ -224,14 +230,14 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
 
     if (detail.isEmpty) {
       setState(() {
-        _error = 'Stop detail is required';
+        _error = AppLocalizations.of(context).drvStopDetailRequired;
       });
       return;
     }
 
     if (selected == null) {
       setState(() {
-        _error = 'Please capture or select a location first';
+        _error = AppLocalizations.of(context).drvPleaseCaptureOrSelectLocation;
       });
       return;
     }
@@ -259,6 +265,7 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final center = _selectedLocation ?? _currentLocation ?? _kigaliFallback;
 
     return Padding(
@@ -291,7 +298,7 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
 
           _InputBox(
             controller: _detailCtrl,
-            hintText: 'Enter a small detail',
+            hintText: l10n.drvEnterSmallDetailHint,
             icon: IconsaxPlusLinear.edit_2,
           ),
 
@@ -299,15 +306,15 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
 
           _InputBox(
             controller: _searchCtrl,
-            hintText: 'Search a place name',
+            hintText: l10n.drvSearchPlaceNameHint,
             icon: IconsaxPlusLinear.search_normal_1,
           ),
 
           if (_searching) ...[
             const SizedBox(height: 8),
-            const Text(
-              'Searching location…',
-              style: TextStyle(
+            Text(
+              l10n.drvSearchingLocation,
+              style: const TextStyle(
                 color: Colors.black45,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -395,7 +402,9 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
                 ),
               ),
               child: Text(
-                _capturing ? 'Capturing…' : 'Capture my current location',
+                _capturing
+                    ? l10n.drvCapturingEllipsis
+                    : l10n.drvCaptureCurrentLocationBtn,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -420,7 +429,7 @@ class _DriverCreateStopFormState extends State<DriverCreateStopForm> {
                 ),
               ),
               child: Text(
-                _saving ? 'Saving…' : 'Save bus stop',
+                _saving ? l10n.drvSavingEllipsis : l10n.drvSaveBusStopBtn,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/child_model.dart';
 
 class DriverChildProfileForm extends StatelessWidget {
@@ -21,18 +22,19 @@ class DriverChildProfileForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fullName = child?.fullName ?? 'Not available';
+    final l10n = AppLocalizations.of(context);
+    final fullName = child?.fullName ?? l10n.drvNotAvailable;
 
     final guardianPhone =
         (child?.guardianPhoneNumber == null ||
                 child!.guardianPhoneNumber!.isEmpty)
-            ? 'Not available'
+            ? l10n.drvNotAvailable
             : child!.guardianPhoneNumber!;
 
-    final stopName = child?.pickupStopName ?? 'Not assigned';
+    final stopName = child?.pickupStopName ?? l10n.drvNotAssigned;
     final stopCoordinates = child?.pickupStopId == null
-        ? 'No coordinates available'
-        : 'Coordinates not available yet';
+        ? l10n.drvNoCoordinatesAvailable
+        : l10n.drvCoordinatesNotAvailableYet;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -40,10 +42,10 @@ class DriverChildProfileForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 4),
-          const Center(
+          Center(
             child: Text(
-              'Student profile',
-              style: TextStyle(
+              l10n.drvStudentProfileTitle,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
@@ -64,18 +66,18 @@ class DriverChildProfileForm extends StatelessWidget {
           ] else ...[
             _InfoCard(
               rows: [
-                _InfoRow(label: 'Full names', value: fullName),
+                _InfoRow(label: l10n.drvFullNamesLabel, value: fullName),
               ],
             ),
 
             const SizedBox(height: 16),
 
-            const _SectionTitle('Parent/ Guardian contacts'),
+            _SectionTitle(l10n.drvParentGuardianContactsTitle),
             const SizedBox(height: 10),
             _InfoCard(
               rows: [
                 _InfoRow(
-                  label: "Guardian's number",
+                  label: l10n.drvGuardiansNumberLabel,
                   value: guardianPhone,
                 ),
               ],
@@ -181,7 +183,8 @@ class _InfoRow extends StatelessWidget {
             const Spacer(),
             Flexible(
               child: Text(
-                value.isEmpty ? 'Not available' : value,
+                value.isEmpty ? AppLocalizations.of(context).drvNotAvailable : value,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
                 style: const TextStyle(

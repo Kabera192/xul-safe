@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/child_model.dart';
 
 
@@ -65,28 +66,32 @@ class _DriverIncidentStudentSelectionFormState
   }
 
   String get _title {
+    final l10n = AppLocalizations.of(context);
+
     switch (widget.incidentType) {
       case 'MEDICAL':
-        return 'Select affected students';
+        return l10n.drvSelectAffectedStudentsTitle;
 
       case 'CHILD_BEHAVIOR':
-        return 'Select involved students';
+        return l10n.drvSelectInvolvedStudentsTitle;
 
       default:
-        return 'Select students';
+        return l10n.drvSelectStudentsTitle;
     }
   }
 
   String get _subtitle {
+    final l10n = AppLocalizations.of(context);
+
     switch (widget.incidentType) {
       case 'MEDICAL':
-        return 'Choose the student or students affected by the medical incident.';
+        return l10n.drvSelectAffectedStudentsMedicalSubtitle;
 
       case 'CHILD_BEHAVIOR':
-        return 'Choose the student or students involved in the behavior incident.';
+        return l10n.drvSelectInvolvedStudentsBehaviorSubtitle;
 
       default:
-        return 'Choose the affected students.';
+        return l10n.drvSelectAffectedStudentsSubtitle;
     }
   }
 
@@ -111,7 +116,9 @@ class _DriverIncidentStudentSelectionFormState
     final fallback =
         '${child.firstName} ${child.lastName}'.trim();
 
-    return fallback.isEmpty ? 'Unnamed child' : fallback;
+    return fallback.isEmpty
+        ? AppLocalizations.of(context).drvUnnamedChild
+        : fallback;
   }
 
   void _toggleChild(String childId) {
@@ -134,6 +141,8 @@ class _DriverIncidentStudentSelectionFormState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -222,6 +231,7 @@ class _DriverIncidentStudentSelectionFormState
           _SearchBox(
             controller: _searchCtrl,
             onChanged: (_) => setState(() {}),
+            hintText: l10n.drvSearchChildHint,
           ),
 
           const SizedBox(height: 12),
@@ -231,8 +241,8 @@ class _DriverIncidentStudentSelectionFormState
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Text(
               _selectedIds.isEmpty
-                  ? 'Select at least one student'
-                  : '${_selectedIds.length} selected',
+                  ? l10n.drvSelectAtLeastOneStudent
+                  : l10n.drvSelectedCount(_selectedIds.length),
               style: TextStyle(
                 color: _selectedIds.isEmpty
                     ? onSurface.withValues(alpha: 0.45)
@@ -273,8 +283,8 @@ class _DriverIncidentStudentSelectionFormState
               child: Center(
                 child: Text(
                   widget.children.isEmpty
-                      ? 'No children are assigned to this bus'
-                      : 'No matching children',
+                      ? l10n.drvNoChildrenAssignedToThisBus
+                      : l10n.drvNoMatchingChildren,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: onSurface.withValues(alpha: 0.45),
@@ -325,9 +335,9 @@ class _DriverIncidentStudentSelectionFormState
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Continue',
-                style: TextStyle(
+              child: Text(
+                l10n.drvContinueBtn,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -356,7 +366,7 @@ class _StudentRow extends StatelessWidget {
   static const _blue = Color(0xFF0D4896);
   static const _stroke = Color(0xFFDCE6F5);
 
-  String get _name {
+  String _name(AppLocalizations l10n) {
     if (child.fullName.trim().isNotEmpty) {
       return child.fullName.trim();
     }
@@ -364,11 +374,13 @@ class _StudentRow extends StatelessWidget {
     final fallback =
         '${child.firstName} ${child.lastName}'.trim();
 
-    return fallback.isEmpty ? 'Unnamed child' : fallback;
+    return fallback.isEmpty ? l10n.drvUnnamedChild : fallback;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -414,7 +426,7 @@ class _StudentRow extends StatelessWidget {
 
               Expanded(
                 child: Text(
-                  _name,
+                  _name(l10n),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -461,10 +473,12 @@ class _StudentRow extends StatelessWidget {
 class _SearchBox extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final String hintText;
 
   const _SearchBox({
     required this.controller,
     required this.onChanged,
+    required this.hintText,
   });
 
   static const _blue = Color(0xFF0D4896);
@@ -507,7 +521,7 @@ class _SearchBox extends StatelessWidget {
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Search a child',
+                hintText: hintText,
                 hintStyle: TextStyle(
                   color:
                       onSurface.withValues(alpha: 0.4),

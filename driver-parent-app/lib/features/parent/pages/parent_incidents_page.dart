@@ -9,6 +9,7 @@ import '../../../widgets/mobile_form_controller.dart';
 import '../forms/parent_incidents_form.dart';
 import '../models/parent_incident_model.dart';
 import 'parent_incident_details_page.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentIncidentsPage extends StatefulWidget {
   const ParentIncidentsPage({
@@ -134,6 +135,7 @@ class _ParentIncidentsPageState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -143,14 +145,14 @@ class _ParentIncidentsPageState
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Trip incidents',
-                    style: TextStyle(
+                    l10n.parTripIncidentsTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/profile_service.dart';
 import '../models/parent_profile_edit_mode.dart';
 import '../models/parent_profile_model.dart';
@@ -73,17 +74,18 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
   }
 
   String get _title {
+    final l10n = AppLocalizations.of(context);
     switch (widget.mode) {
       case ParentProfileEditMode.fullName:
-        return 'Edit Full Name';
+        return l10n.parEditFullName;
       case ParentProfileEditMode.email:
-        return 'Edit Email';
+        return l10n.parEditEmail;
       case ParentProfileEditMode.phoneNumber:
-        return 'Edit Phone Number';
+        return l10n.parEditPhoneNumber;
       case ParentProfileEditMode.photo:
-        return 'Edit Profile Picture';
+        return l10n.parEditProfilePicture;
       case ParentProfileEditMode.password:
-        return 'Change Password';
+        return l10n.parChangePassword;
     }
   }
 
@@ -98,7 +100,7 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
   Future<void> _submit() async {
     if (_isPhotoMode) {
       setState(() {
-        _error = 'Photo update will be connected later';
+        _error = AppLocalizations.of(context).parPhotoUpdateLater;
       });
       return;
     }
@@ -149,6 +151,7 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cancelBgColor = isDark ? const Color(0xFF1E3050) : cancelBg;
@@ -229,7 +232,7 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
 
                   if (_isPhotoMode)
                     Text(
-                      'Photo update will be connected later.',
+                      l10n.parPhotoUpdateLater,
                       style: TextStyle(
                         color: onSurface.withValues(alpha: 0.6),
                         fontSize: 15,
@@ -258,7 +261,7 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
                         ),
                       ),
                       child: Text(
-                        _saving ? 'Saving…' : 'Save changes',
+                        _saving ? l10n.parSaving : l10n.saveChanges,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -277,26 +280,27 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
   }
 
   List<Widget> _buildFields() {
+    final l10n = AppLocalizations.of(context);
     switch (widget.mode) {
       case ParentProfileEditMode.fullName:
         return [
           _EditInput(
-            label: 'First name',
+            label: l10n.firstName,
             controller: _firstNameCtrl,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'First name is required';
+                return l10n.firstNameRequired;
               }
               return null;
             },
           ),
           const SizedBox(height: 12),
           _EditInput(
-            label: 'Last name',
+            label: l10n.lastName,
             controller: _lastNameCtrl,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Last name is required';
+                return l10n.lastNameRequired;
               }
               return null;
             },
@@ -306,15 +310,15 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
       case ParentProfileEditMode.email:
         return [
           _EditInput(
-            label: 'Email',
+            label: l10n.parEmailLabel,
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Email is required';
+                return l10n.emailRequired;
               }
               if (!_isValidEmail(v.trim())) {
-                return 'Please enter a valid email';
+                return l10n.enterValidEmail;
               }
               return null;
             },
@@ -324,12 +328,12 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
       case ParentProfileEditMode.phoneNumber:
         return [
           _EditInput(
-            label: 'Phone number',
+            label: l10n.phoneNumber,
             controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Phone number is required';
+                return l10n.phoneRequired;
               }
               return null;
             },
@@ -342,7 +346,7 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
       case ParentProfileEditMode.password:
         return [
           _EditInput(
-            label: 'Current password',
+            label: l10n.parCurrentPassword,
             controller: _currentPasswordCtrl,
             obscureText: _obscureCurrent,
             suffixIcon: IconButton(
@@ -350,11 +354,11 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
               onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
             ),
             validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                (v == null || v.trim().isEmpty) ? l10n.required : null,
           ),
           const SizedBox(height: 12),
           _EditInput(
-            label: 'New password',
+            label: l10n.parNewPassword,
             controller: _newPasswordCtrl,
             obscureText: _obscureNew,
             suffixIcon: IconButton(
@@ -362,14 +366,14 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
               onPressed: () => setState(() => _obscureNew = !_obscureNew),
             ),
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              if (v.length < 6) return 'At least 6 characters';
+              if (v == null || v.trim().isEmpty) return l10n.required;
+              if (v.length < 6) return l10n.parAtLeast6Chars;
               return null;
             },
           ),
           const SizedBox(height: 12),
           _EditInput(
-            label: 'Confirm new password',
+            label: l10n.parConfirmNewPassword,
             controller: _confirmPasswordCtrl,
             obscureText: _obscureConfirm,
             suffixIcon: IconButton(
@@ -377,8 +381,8 @@ class _ParentProfileEditFormState extends State<ParentProfileEditForm> {
               onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
             ),
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              if (v != _newPasswordCtrl.text) return 'Passwords do not match';
+              if (v == null || v.trim().isEmpty) return l10n.required;
+              if (v != _newPasswordCtrl.text) return l10n.passwordsDoNotMatch;
               return null;
             },
           ),

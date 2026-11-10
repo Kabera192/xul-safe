@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverAssignStudentsSuccessForm extends StatelessWidget {
   final VoidCallback onDone;
 
@@ -13,6 +15,7 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -42,7 +45,7 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
 
           Center(
             child: Text(
-              'Students assigned',
+              l10n.drvStudentsAssignedTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
@@ -58,7 +61,7 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'You have successfully assigned the selected students to this bus stop.',
+                l10n.drvStudentsAssignedBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -82,8 +85,8 @@ class DriverAssignStudentsSuccessForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              child: const Text(
-                'Got it',
+              child: Text(
+                l10n.gotIt,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 13,

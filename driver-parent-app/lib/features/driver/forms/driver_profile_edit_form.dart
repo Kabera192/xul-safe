@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/driver_profile_edit_mode.dart';
 import '../models/driver_profile_model.dart';
 
@@ -59,16 +60,16 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
     super.dispose();
   }
 
-  String get _title {
+  String _title(AppLocalizations l10n) {
     switch (widget.mode) {
       case DriverProfileEditMode.fullName:
-        return 'Edit Full Name';
+        return l10n.drvEditFullNameTitle;
       case DriverProfileEditMode.email:
-        return 'Edit Email';
+        return l10n.drvEditEmailTitle;
       case DriverProfileEditMode.phoneNumber:
-        return 'Edit Phone Number';
+        return l10n.drvEditPhoneNumberTitle;
       case DriverProfileEditMode.photo:
-        return 'Edit Profile Picture';
+        return l10n.drvEditProfilePictureTitle;
     }
   }
 
@@ -121,6 +122,7 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cancelBgColor = isDark ? const Color(0xFF1E3050) : cancelBg;
@@ -174,7 +176,7 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
                   Text(
-                    _title,
+                    _title(l10n),
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w300,
@@ -198,7 +200,7 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
                   Form(
                     key: _formKey,
                     child: Column(
-                      children: _buildFields(),
+                      children: _buildFields(l10n),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -215,7 +217,7 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
                         ),
                       ),
                       child: Text(
-                        _saving ? 'Saving…' : 'Save changes',
+                        _saving ? l10n.drvSavingEllipsis : l10n.saveChanges,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -232,27 +234,27 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
     );
   }
 
-  List<Widget> _buildFields() {
+  List<Widget> _buildFields(AppLocalizations l10n) {
     switch (widget.mode) {
       case DriverProfileEditMode.fullName:
         return [
           _EditInput(
-            label: 'First name',
+            label: l10n.firstName,
             controller: _firstNameCtrl,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'First name is required';
+                return l10n.firstNameRequired;
               }
               return null;
             },
           ),
           const SizedBox(height: 12),
           _EditInput(
-            label: 'Last name',
+            label: l10n.lastName,
             controller: _lastNameCtrl,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Last name is required';
+                return l10n.lastNameRequired;
               }
               return null;
             },
@@ -262,15 +264,15 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
       case DriverProfileEditMode.email:
         return [
           _EditInput(
-            label: 'Email',
+            label: l10n.emailAddress,
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Email is required';
+                return l10n.emailRequired;
               }
               if (!_isValidEmail(v.trim())) {
-                return 'Please enter a valid email';
+                return l10n.enterValidEmail;
               }
               return null;
             },
@@ -280,12 +282,12 @@ class _DriverProfileEditFormState extends State<DriverProfileEditForm> {
       case DriverProfileEditMode.phoneNumber:
         return [
           _EditInput(
-            label: 'Phone number',
+            label: l10n.phoneNumber,
             controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Phone number is required';
+                return l10n.phoneRequired;
               }
               return null;
             },

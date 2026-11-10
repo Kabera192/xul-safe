@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverDeleteStopSuccessForm extends StatelessWidget {
   final VoidCallback onDone;
 
@@ -13,6 +15,7 @@ class DriverDeleteStopSuccessForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -39,7 +42,7 @@ class DriverDeleteStopSuccessForm extends StatelessWidget {
           const SizedBox(height: 16),
           Center(
             child: Text(
-              'Bus stop Deleted',
+              l10n.drvBusStopDeletedTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
@@ -53,7 +56,7 @@ class DriverDeleteStopSuccessForm extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'You have successfully deleted this bus stop. It will no longer appear in the route stops list.',
+                l10n.drvBusStopDeletedBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -75,9 +78,9 @@ class DriverDeleteStopSuccessForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              child: const Text(
-                'Got it',
-                style: TextStyle(
+              child: Text(
+                l10n.gotIt,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
