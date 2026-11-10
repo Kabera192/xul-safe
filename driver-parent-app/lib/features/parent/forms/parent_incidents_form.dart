@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/parent_incident_model.dart';
 
 class ParentIncidentsForm extends StatefulWidget {
@@ -38,6 +39,7 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
   }
 
   List<ParentIncidentModel> get _filtered {
+    final l10n = AppLocalizations.of(context);
     final query = _searchCtrl.text.trim().toLowerCase();
 
     if (query.isEmpty) {
@@ -45,10 +47,10 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
     }
 
     return widget.incidents.where((incident) {
-      return _typeLabel(incident.type)
+      return _typeLabel(incident.type, l10n)
               .toLowerCase()
               .contains(query) ||
-          _impactLabel(incident.journeyImpact)
+          _impactLabel(incident.journeyImpact, l10n)
               .toLowerCase()
               .contains(query) ||
           incident.description
@@ -59,6 +61,8 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -115,7 +119,7 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
           const SizedBox(height: 6),
 
           Text(
-            'Incidents',
+            l10n.parIncidentsTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -152,7 +156,7 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
                     onChanged: (_) => setState(() {}),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search incidents',
+                      hintText: l10n.parSearchIncidents,
                       hintStyle: TextStyle(
                         color:
                             onSurface.withValues(alpha: 0.4),
@@ -191,7 +195,7 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
             ),
           ] else if (filtered.isEmpty) ...[
             _MessageCard(
-              text: 'No incidents found',
+              text: l10n.parNoIncidentsFound,
               textColor:
                   onSurface.withValues(alpha: 0.5),
               bgColor: inputFill,
@@ -200,7 +204,7 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
           ] else ...[
             if (active.isNotEmpty) ...[
               _SectionTitle(
-                'ONGOING',
+                l10n.parOngoing,
                 onSurface: onSurface,
               ),
 
@@ -220,7 +224,7 @@ class _ParentIncidentsFormState extends State<ParentIncidentsForm> {
 
             if (resolved.isNotEmpty) ...[
               _SectionTitle(
-                'RESOLVED',
+                l10n.parResolved,
                 onSurface: onSurface,
               ),
 
@@ -263,6 +267,8 @@ class _IncidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -334,7 +340,7 @@ class _IncidentCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              _typeLabel(incident.type),
+                              _typeLabel(incident.type, l10n),
                               maxLines: 1,
                               overflow:
                                   TextOverflow.ellipsis,
@@ -358,7 +364,7 @@ class _IncidentCard extends StatelessWidget {
                       const SizedBox(height: 4),
 
                       Text(
-                        'Journey: ${_impactLabel(incident.journeyImpact)}',
+                        l10n.parJourneyColon(_impactLabel(incident.journeyImpact, l10n)),
                         style: TextStyle(
                           color: onSurface.withValues(
                             alpha: 0.55,
@@ -373,6 +379,7 @@ class _IncidentCard extends StatelessWidget {
                       Text(
                         _formatCreatedAt(
                           incident.createdAt,
+                          l10n,
                         ),
                         style: TextStyle(
                           color: onSurface.withValues(
@@ -420,8 +427,9 @@ class _StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Text(
-      resolved ? 'RESOLVED' : 'ACTIVE',
+      resolved ? l10n.parResolved : l10n.parActive,
       style: TextStyle(
         color: resolved
             ? const Color(0xFF21C260)
@@ -532,49 +540,49 @@ IconData _iconForType(String type) {
   }
 }
 
-String _typeLabel(String type) {
+String _typeLabel(String type, AppLocalizations l10n) {
   switch (type.toUpperCase()) {
     case 'ACCIDENT':
-      return 'Bus accident or collision';
+      return l10n.parIncidentTypeAccident;
 
     case 'MEDICAL':
-      return 'Sick / injured student';
+      return l10n.parIncidentTypeMedical;
 
     case 'VEHICLE_BREAKDOWN':
-      return 'Bus mechanical issue';
+      return l10n.parIncidentTypeBreakdown;
 
     case 'DELAY':
-      return 'Journey delay';
+      return l10n.parIncidentTypeDelay;
 
     case 'ROAD_OBSTRUCTION':
-      return 'Road obstruction';
+      return l10n.parIncidentTypeRoadObstruction;
 
     case 'CHILD_BEHAVIOR':
-      return 'Student behavior issue';
+      return l10n.parIncidentTypeChildBehavior;
 
     case 'OTHER':
     default:
-      return 'Other incident';
+      return l10n.parIncidentTypeOther;
   }
 }
 
-String _impactLabel(String impact) {
+String _impactLabel(String impact, AppLocalizations l10n) {
   switch (impact.toUpperCase()) {
     case 'NONE':
-      return 'No impact';
+      return l10n.parImpactNone;
 
     case 'DELAYED':
-      return 'Delayed';
+      return l10n.parImpactDelayed;
 
     case 'STOPPED':
-      return 'Stopped';
+      return l10n.parImpactStopped;
 
     default:
       return impact;
   }
 }
 
-String _formatCreatedAt(int milliseconds) {
+String _formatCreatedAt(int milliseconds, AppLocalizations l10n) {
   final date =
       DateTime.fromMillisecondsSinceEpoch(milliseconds);
 
@@ -592,7 +600,7 @@ String _formatCreatedAt(int milliseconds) {
       date.minute.toString().padLeft(2, '0');
 
   if (sameDay) {
-    return 'Today, $hour:$minute';
+    return l10n.parTodayAt('$hour:$minute');
   }
 
   final yesterday =
@@ -604,7 +612,7 @@ String _formatCreatedAt(int milliseconds) {
       date.day == yesterday.day;
 
   if (wasYesterday) {
-    return 'Yesterday, $hour:$minute';
+    return l10n.parYesterdayAt('$hour:$minute');
   }
 
   final day =

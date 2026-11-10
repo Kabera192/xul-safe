@@ -95,6 +95,7 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     @Override
     @Transactional
     public Child createChild(Child child) {
+        validateGrade(child.getGrade());
         validateSingleBusPerParent(child.getParentId(), child.getBusId(), null);
 
         // Set creation timestamp
@@ -136,6 +137,30 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         }
     }
 
+    /**
+     * "Nursery 1"-"Nursery 3" and "Grade 1"-"Grade 12" are the only valid
+     * grades — enforced server-side too since the mobile app isn't the only
+     * way to reach this endpoint.
+     */
+    private void validateGrade(String grade) {
+        if (grade == null) return;
+        java.util.regex.Matcher matcher =
+            java.util.regex.Pattern.compile("^(Nursery|Grade) (\\d{1,2})$")
+                .matcher(grade.trim());
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(
+                "Grade must be one of: Nursery 1-3, Grade 1-12");
+        }
+        boolean isNursery = matcher.group(1).equals("Nursery");
+        int n = Integer.parseInt(matcher.group(2));
+        int max = isNursery ? 3 : 12;
+        if (n < 1 || n > max) {
+            throw new IllegalArgumentException(
+                isNursery ? "Nursery must be between 1 and 3"
+                          : "Grade must be between 1 and 12");
+        }
+    }
+
     @Override
     @Transactional
     public Child updateChild(String childId, Child child) {
@@ -158,6 +183,7 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
             existing.setGender(child.getGender());
         }
         if (child.getGrade() != null) {
+            validateGrade(child.getGrade());
             existing.setGrade(child.getGrade());
         }
         if (child.getPhotoUrl() != null) {

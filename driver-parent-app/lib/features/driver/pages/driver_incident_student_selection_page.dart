@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/child_service.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
 import '../../../widgets/mobile_form_shell.dart';
@@ -147,6 +148,7 @@ class _DriverIncidentStudentSelectionPageState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return PopScope(
       canPop: false,
@@ -163,14 +165,14 @@ class _DriverIncidentStudentSelectionPageState
           child: SafeArea(
             child: Stack(
               children: [
-                const Positioned(
+                Positioned(
                   top: 18,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Text(
-                      'Trip incidents',
-                      style: TextStyle(
+                      l10n.drvTripIncidentsTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w500,

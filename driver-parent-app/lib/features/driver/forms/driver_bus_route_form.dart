@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../models/bus_model.dart';
 import '../models/route_model.dart';
 import '../models/stop_model.dart';
@@ -35,6 +36,7 @@ class DriverBusRouteForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cardBg = isDark ? const Color(0xFF1A2530) : detailsBg;
@@ -70,7 +72,7 @@ class DriverBusRouteForm extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Bus details',
+            l10n.drvBusDetailsTitle,
             style: TextStyle(
               color: onSurface,
               fontSize: 17,
@@ -99,7 +101,7 @@ class DriverBusRouteForm extends StatelessWidget {
                 children: [
                   Text(
                     (plateNumber == null || plateNumber.isEmpty)
-                        ? 'No bus assigned yet'
+                        ? l10n.drvNoBusAssignedYet
                         : plateNumber,
                     style: TextStyle(
                       color: (plateNumber == null || plateNumber.isEmpty)
@@ -114,7 +116,7 @@ class DriverBusRouteForm extends StatelessWidget {
                   const SizedBox(height: 14),
                   Text(
                     (routeName == null || routeName.isEmpty)
-                        ? 'No route assigned yet'
+                        ? l10n.drvNoRouteAssignedYet
                         : routeName,
                     style: TextStyle(
                       color: (routeName == null || routeName.isEmpty)
@@ -130,7 +132,7 @@ class DriverBusRouteForm extends StatelessWidget {
           ],
           const SizedBox(height: 16),
           Text(
-            'Bus stops',
+            l10n.drvBusStopsTitle,
             style: TextStyle(
               color: onSurface,
               fontSize: 17,
@@ -275,6 +277,7 @@ class _CreateStopButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1A2530) : createBg;
     return Material(
@@ -296,18 +299,18 @@ class _CreateStopButton extends StatelessWidget {
         child: Container(
           height: 54,
           alignment: Alignment.center,
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 IconsaxPlusLinear.add_circle,
                 size: 17,
                 color: blue,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Create new bus stop',
-                style: TextStyle(
+                l10n.drvCreateNewBusStopBtn,
+                style: const TextStyle(
                   color: blue,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -339,6 +342,7 @@ class _StopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
@@ -374,7 +378,7 @@ class _StopCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bus stop ${index + 1}',
+                      l10n.drvBusStopNumbered(index + 1),
                       style: TextStyle(
                         color: onSurface,
                         fontSize: 13,
@@ -384,8 +388,14 @@ class _StopCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       stop.locationName.isEmpty
-                          ? 'Unnamed bus stop'
+                          ? l10n.drvUnnamedBusStop
                           : stop.locationName,
+                      // The timeline connector next to this card assumes a
+                      // fixed card height — letting this wrap to 2+ lines
+                      // would grow the card and drift the connector out of
+                      // alignment with the dots it's meant to link.
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: onSurface.withValues(alpha: 0.65),
                         fontSize: 12,
@@ -394,7 +404,7 @@ class _StopCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '$studentCount ${studentCount == 1 ? 'student' : 'students'}',
+                      l10n.drvStudentCountLabel(studentCount),
                       style: const TextStyle(
                         color: blue,
                         fontSize: 12,
@@ -425,6 +435,7 @@ class _EmptyStopsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final cardBg = isDark ? const Color(0xFF1A2530) : Colors.white;
@@ -438,7 +449,7 @@ class _EmptyStopsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
-        'No bus stops created yet',
+        l10n.drvNoBusStopsYet,
         style: TextStyle(
           color: onSurface.withValues(alpha: 0.45),
           fontSize: 13,

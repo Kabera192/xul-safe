@@ -30,6 +30,10 @@ class StopAttendanceSheet extends StatefulWidget {
   /// When set, overrides the session-derived action ('BOARDED' or 'DROPPED_OFF').
   final String? forceAction;
 
+  /// Optional explanatory line shown under the title — e.g. to make clear
+  /// this is backfilling a *different* session than the one about to start.
+  final String? subtitle;
+
   /// Called after submission with the set of child IDs marked as present.
   final void Function(Set<String> presentChildIds)? onConfirmed;
 
@@ -41,6 +45,7 @@ class StopAttendanceSheet extends StatefulWidget {
     required this.session,
     this.confirmLabel = 'Confirm',
     this.forceAction,
+    this.subtitle,
     this.onConfirmed,
   });
 
@@ -506,6 +511,21 @@ class _FormView extends StatelessWidget {
           ),
         ),
 
+        if (widget.subtitle != null) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              widget.subtitle!,
+              style: TextStyle(
+                color: onSurface.withValues(alpha: 0.55),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+
         const SizedBox(height: 14),
 
         // Search bar
@@ -843,6 +863,8 @@ class _ChildRow extends StatelessWidget {
                 children: [
                   Text(
                     child.fullName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: onSurface,
                       fontSize: 14,

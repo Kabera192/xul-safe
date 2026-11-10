@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverEditStopSuccessForm extends StatelessWidget {
   final VoidCallback onDone;
 
@@ -13,6 +15,7 @@ class DriverEditStopSuccessForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -43,7 +46,7 @@ class DriverEditStopSuccessForm extends StatelessWidget {
 
           Center(
             child: Text(
-              'Bus stop Updated',
+              l10n.drvBusStopUpdatedTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
@@ -59,7 +62,7 @@ class DriverEditStopSuccessForm extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'You have successfully updated this bus stop. The changes will now appear in the route stops list.',
+                l10n.drvBusStopUpdatedBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -83,9 +86,9 @@ class DriverEditStopSuccessForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              child: const Text(
-                'Got it',
-                style: TextStyle(
+              child: Text(
+                l10n.gotIt,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

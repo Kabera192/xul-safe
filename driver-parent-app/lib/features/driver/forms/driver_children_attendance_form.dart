@@ -3,6 +3,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../models/attendance_record_model.dart';
 import '../models/stop_model.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class DriverChildrenAttendanceForm extends StatefulWidget {
   final bool loading;
@@ -99,6 +100,7 @@ class _DriverChildrenAttendanceFormState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final children = _filtered;
     final totalCount = children.length;
     final absentCount = children
@@ -130,7 +132,7 @@ class _DriverChildrenAttendanceFormState
             child: Row(
               children: [
                 Text(
-                  '$totalCount ${totalCount == 1 ? 'child' : 'children'}',
+                  l10n.drvChildCountLabel(totalCount),
                   style: const TextStyle(
                     color: Color(0xFF0D4896),
                     fontSize: 12,
@@ -143,7 +145,7 @@ class _DriverChildrenAttendanceFormState
                       style: TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(width: 8),
                   Text(
-                    '$absentCount absent',
+                    l10n.drvAbsentCountLabel(absentCount),
                     style: const TextStyle(
                       color: Color(0xFFE67E22),
                       fontSize: 12,
@@ -174,10 +176,10 @@ class _DriverChildrenAttendanceFormState
           ] else if (children.isEmpty) ...[
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.55,
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'No children on this bus',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                  l10n.drvNoChildrenOnThisBus,
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ),
             ),
@@ -284,15 +286,16 @@ class _ChildRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final name = entry.childName.isEmpty ? 'Unnamed child' : entry.childName;
+    final name = entry.childName.isEmpty ? l10n.drvUnnamedChild : entry.childName;
     final isAbsentAny = isAbsentMorning || isAbsentAfternoon;
 
     String absentLabel() {
-      if (isAbsentMorning && isAbsentAfternoon) return 'Absent';
-      if (isAbsentMorning) return 'AM';
-      return 'PM';
+      if (isAbsentMorning && isAbsentAfternoon) return l10n.absent;
+      if (isAbsentMorning) return l10n.drvAbbrevAM;
+      return l10n.drvAbbrevPM;
     }
 
     return AnimatedContainer(
@@ -337,12 +340,16 @@ class _ChildRow extends StatelessWidget {
                     const SizedBox(width: 8),
                     if (entry.stopName != null &&
                         entry.stopName!.isNotEmpty) ...[
-                      Text(
-                        entry.stopName!,
-                        style: const TextStyle(
-                          color: blue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          entry.stopName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: blue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -444,6 +451,7 @@ class _AttendanceExpanded extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dividerColor = isDark ? const Color(0xFF2A3A50) : stroke;
     final id = entry.childId;
@@ -475,7 +483,7 @@ class _AttendanceExpanded extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'Morning',
+                        l10n.morning,
                         style: TextStyle(
                           color: isAbsentMorning ? orange : blue,
                           fontSize: 11,
@@ -497,7 +505,7 @@ class _AttendanceExpanded extends StatelessWidget {
                     )
                   else
                     _ActionToggle(
-                      label: 'Boarded',
+                      label: l10n.drvBoardedLabel,
                       active: morningRec?.boarded ?? false,
                       toggling: togglingKeys.contains('$id:MORNING:BOARDED'),
                       disabled: morningRec == null,
@@ -539,7 +547,7 @@ class _AttendanceExpanded extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'Afternoon',
+                        l10n.afternoon,
                         style: TextStyle(
                           color: isAbsentAfternoon ? orange : blue,
                           fontSize: 11,
@@ -561,7 +569,7 @@ class _AttendanceExpanded extends StatelessWidget {
                     )
                   else ...[
                     _ActionToggle(
-                      label: 'Boarded',
+                      label: l10n.drvBoardedLabel,
                       active: afternoonRec?.boarded ?? false,
                       toggling: togglingKeys.contains('$id:AFTERNOON:BOARDED'),
                       disabled: afternoonRec == null,
@@ -576,7 +584,7 @@ class _AttendanceExpanded extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     _ActionToggle(
-                      label: 'Dropped off',
+                      label: l10n.droppedOff,
                       active: afternoonRec?.droppedOff ?? false,
                       toggling: togglingKeys.contains('$id:AFTERNOON:DROPPED_OFF'),
                       disabled: afternoonRec == null,
@@ -616,10 +624,11 @@ class _AbsentLockedLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Text(
-          'Absent — locked',
+          l10n.drvAbsentLockedLabel,
           style: TextStyle(
             color: orange.withValues(alpha: 0.8),
             fontSize: 10,
@@ -637,9 +646,9 @@ class _AbsentLockedLabel extends StatelessWidget {
           else
             GestureDetector(
               onTap: onUndo,
-              child: const Text(
-                'Undo',
-                style: TextStyle(
+              child: Text(
+                l10n.drvUndoBtn,
+                style: const TextStyle(
                   color: orange,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -801,13 +810,14 @@ class _StopFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 36,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           _StopChip(
-            label: 'All',
+            label: l10n.allStops,
             selected: selectedStopId == null,
             onTap: () => onSelected(null),
           ),
@@ -916,7 +926,7 @@ class _SearchBox extends StatelessWidget {
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Search a child',
+                hintText: AppLocalizations.of(context).drvSearchChildHint,
                 hintStyle: TextStyle(
                   color: onSurface.withValues(alpha: 0.4),
                   fontSize: 13,
