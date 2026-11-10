@@ -17,6 +17,7 @@ import '../../../services/incident_service.dart';
 import '../models/child_model.dart';
 import 'parent_incidents_page.dart';
 import '../../../widgets/mobile_location_gate.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentHomePage extends StatefulWidget {
   const ParentHomePage({super.key});
@@ -55,7 +56,25 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   // Parent incident state
   bool _hasActiveIncident = false;
-  
+
+  // Bottom panel — the kids-chip row can be collapsed by the user, and the
+  // recenter/incident buttons float just above whatever height the panel
+  // ends up at (it varies with children/conductor/plate content), instead
+  // of a fixed offset that the panel could grow tall enough to cover.
+  bool _childrenRowExpanded = true;
+  final GlobalKey _bottomPanelKey = GlobalKey();
+  double _panelHeight = 190;
+
+  void _measurePanelHeight() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final height = _bottomPanelKey.currentContext?.size?.height;
+      if (height != null && (height - _panelHeight).abs() > 1) {
+        setState(() => _panelHeight = height);
+      }
+    });
+  }
+
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -83,9 +102,10 @@ class _ParentHomePageState extends State<ParentHomePage> {
   String get _etaText {
     final eta = _tracking?['estimatedArrival']?.toString() ?? '';
     if (eta.isEmpty) return '';
+    final l10n = AppLocalizations.of(context);
     final asNum = int.tryParse(eta.trim());
-    if (asNum != null) return '$asNum min to reach home';
-    return '$eta to reach home';
+    if (asNum != null) return l10n.minToReachHome(asNum);
+    return l10n.etaToReachHome(eta);
   }
 
   // Prefer live tracking conductor when journey is active
@@ -293,7 +313,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   Widget build(BuildContext context) {
     final center = _busLatLng ?? _parentLatLng ?? _kigali;
 
-    return MobileLocationGate(
+    final content = MobileLocationGate(
       child: Scaffold(
         body: Stack(
           children: [
@@ -364,7 +384,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
             // ── Recenter button ───────────────────────────────────────────────
             Positioned(
               right: 14,
-              bottom: 190,
+              bottom: _panelHeight + 12,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -405,16 +425,25 @@ class _ParentHomePageState extends State<ParentHomePage> {
               right: 0,
               bottom: 0,
               child: _BottomPanel(
+                key: _bottomPanelKey,
                 conductor: _conductor,
                 bus: _bus,
                 journeyActive: _journeyActive,
                 children: _busChildren,
+                childrenRowExpanded: _childrenRowExpanded,
+                onToggleChildrenRow: () => setState(
+                  () => _childrenRowExpanded = !_childrenRowExpanded,
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+
+    _measurePanelHeight();
+
+    return content;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -448,16 +477,18 @@ class _StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = arrived ? const Color(0xFF21C260) : const Color(0xFF0D4896);
     final icon = arrived
         ? IconsaxPlusBold.shield_tick
         : IconsaxPlusLinear.clock;
     final label = arrived
-        ? 'Bus has arrived'
-        : (etaText.isNotEmpty ? etaText : 'Bus is on its way');
+        ? l10n.busHasArrived
+        : (etaText.isNotEmpty ? etaText : l10n.busOnItsWay);
 
     return Container(
       height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(14),
@@ -474,12 +505,16 @@ class _StatusBanner extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white, size: 20),
           const SizedBox(width: 10),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -595,25 +630,31 @@ class _BottomPanel extends StatelessWidget {
   final Map<String, dynamic>? bus;
   final bool journeyActive;
   final List<ChildModel> children;
+  final bool childrenRowExpanded;
+  final VoidCallback onToggleChildrenRow;
 
   const _BottomPanel({
+    super.key,
     required this.conductor,
     required this.bus,
     required this.journeyActive,
     required this.children,
+    required this.childrenRowExpanded,
+    required this.onToggleChildrenRow,
   });
 
   static const _blue = Color(0xFF0D4896);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF111C2B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF1E2D40) : const Color(0xFFDCE6F5);
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
     final conductorName =
-        conductor?['fullName']?.toString() ?? 'No conductor assigned';
+        conductor?['fullName']?.toString() ?? l10n.noConductorAssigned;
     final conductorPhone = conductor?['phoneNumber']?.toString() ?? '—';
     final conductorPhoto = resolvePhotoProvider(
       conductor?['photoUrl']?.toString(),
@@ -636,30 +677,57 @@ class _BottomPanel extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
-          Container(
-            width: 36,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 14),
-            decoration: BoxDecoration(
-              color: onSurface.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(2),
+          // Drag handle — tap or swipe to collapse/expand the kids row
+          // below, so it can be hidden instead of just sitting there.
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: children.isEmpty ? null : onToggleChildrenRow,
+            onVerticalDragEnd: children.isEmpty
+                ? null
+                : (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity > 100 && childrenRowExpanded) {
+                      onToggleChildrenRow();
+                    } else if (velocity < -100 && !childrenRowExpanded) {
+                      onToggleChildrenRow();
+                    }
+                  },
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: onSurface.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
 
           // Children row — whose bus this is
-          if (children.isNotEmpty) ...[
-            SizedBox(
-              height: 72,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: children.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, i) => _ChildChip(child: children[i]),
-              ),
+          if (children.isNotEmpty)
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              child: !childrenRowExpanded
+                  ? const SizedBox(width: double.infinity, height: 0)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 72,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: children.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, i) =>
+                                _ChildChip(child: children[i]),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
             ),
-            const SizedBox(height: 10),
-          ],
 
           // Conductor card
           Container(
@@ -688,7 +756,7 @@ class _BottomPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your conductor',
+                        l10n.yourConductor,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.5),
                           fontSize: 11,
@@ -697,6 +765,8 @@ class _BottomPanel extends StatelessWidget {
                       ),
                       Text(
                         conductorName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: onSurface,
                           fontSize: 15,
@@ -858,6 +928,7 @@ class _BusArrivedDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
@@ -880,14 +951,14 @@ class _BusArrivedDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
-              'Bus has reached the bus stop',
+            Text(
+              l10n.busReachedStop,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 10),
             Text(
-              'The bus has arrived at the bus stop, pick up your kids from the bus stop as soon as possible.',
+              l10n.busReachedStopBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade600,
@@ -909,9 +980,9 @@ class _BusArrivedDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Got it',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                child: Text(
+                  l10n.gotIt,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
             ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../widgets/mobile_splash_gradient.dart';
 import '../../../widgets/mobile_form_shell.dart';
 import '../../../widgets/mobile_animated_form_host.dart';
@@ -73,6 +74,8 @@ class _DriverIncidentDetailsPageState
   }) async {
     if (_submitting) return;
 
+    final l10n = AppLocalizations.of(context);
+
     setState(() {
       _submitting = true;
       _submitError = null;
@@ -91,7 +94,7 @@ class _DriverIncidentDetailsPageState
 
       if (busId == null || busId <= 0) {
         throw Exception(
-          'Could not determine the bus assigned to this driver',
+          l10n.drvCouldNotDetermineBus,
         );
       }
 
@@ -130,7 +133,7 @@ class _DriverIncidentDetailsPageState
             type: 'IMAGE',
           );
         } catch (_) {
-          failedAttachments.add('photo');
+          failedAttachments.add(l10n.drvAttachmentFailedPhoto);
         }
       }
 
@@ -142,7 +145,7 @@ class _DriverIncidentDetailsPageState
             type: 'AUDIO',
           );
         } catch (_) {
-          failedAttachments.add('voice note');
+          failedAttachments.add(l10n.drvAttachmentFailedVoiceNote);
         }
       }
 
@@ -153,8 +156,12 @@ class _DriverIncidentDetailsPageState
         _success = true;
         _attachmentWarning = failedAttachments.isEmpty
             ? null
-            : 'The incident was reported, but the ${failedAttachments.join(' and ')} '
-                'could not be attached. Please try adding ${failedAttachments.length > 1 ? 'them' : 'it'} again later.';
+            : l10n.drvAttachmentWarningBody(
+                failedAttachments.join(' ${l10n.drvAttachmentAnd} '),
+                failedAttachments.length > 1
+                    ? l10n.drvThemPronoun
+                    : l10n.drvItPronoun,
+              );
       });
 
       _showCurrentForm();
@@ -212,6 +219,7 @@ class _DriverIncidentDetailsPageState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
 
     return PopScope(
       canPop: false,
@@ -228,14 +236,14 @@ class _DriverIncidentDetailsPageState
           child: SafeArea(
             child: Stack(
               children: [
-                const Positioned(
+                Positioned(
                   top: 18,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Text(
-                      'Trip incidents',
-                      style: TextStyle(
+                      l10n.drvTripIncidentsTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w500,

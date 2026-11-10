@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class DriverIncidentSuccessForm extends StatelessWidget {
   final String incidentType;
   final VoidCallback onDone;
@@ -21,64 +23,65 @@ class DriverIncidentSuccessForm extends StatelessWidget {
 
   static const blue = Color(0xFF0D4896);
 
-  String get _title {
+  String _title(AppLocalizations l10n) {
     switch (incidentType) {
       case 'ACCIDENT':
-        return 'Accident report sent';
+        return l10n.drvAccidentReportSentTitle;
 
       case 'VEHICLE_BREAKDOWN':
-        return 'Mechanical issue reported';
+        return l10n.drvBreakdownReportedTitle;
 
       case 'DELAY':
-        return 'Delay report sent';
+        return l10n.drvDelayReportSentTitle;
 
       case 'ROAD_OBSTRUCTION':
-        return 'Road obstruction reported';
+        return l10n.drvRoadObstructionReportedTitle;
 
       case 'MEDICAL':
-        return 'Medical report sent';
+        return l10n.drvMedicalReportSentTitle;
 
       case 'CHILD_BEHAVIOR':
-        return 'Behavior incident reported';
+        return l10n.drvBehaviorIncidentReportedTitle;
 
       case 'OTHER':
-        return 'Incident report sent';
+        return l10n.drvIncidentReportSentTitle;
 
       default:
-        return 'Incident reported';
+        return l10n.drvIncidentReportedTitle;
     }
   }
 
-  String get _description {
+  String _description(AppLocalizations l10n) {
     switch (incidentType) {
       case 'ACCIDENT':
-        return 'The accident has been reported successfully. The relevant people can now be informed about the incident.';
+        return l10n.drvAccidentReportedBody;
 
       case 'VEHICLE_BREAKDOWN':
-        return 'The mechanical issue has been reported successfully. The relevant people can now be informed about the incident.';
+        return l10n.drvBreakdownReportedBody;
 
       case 'DELAY':
-        return 'The journey delay has been reported successfully. The relevant people can now be informed about the delay.';
+        return l10n.drvDelayReportedBody;
 
       case 'ROAD_OBSTRUCTION':
-        return 'The road obstruction has been reported successfully. The relevant people can now be informed about the incident.';
+        return l10n.drvRoadObstructionReportedBody;
 
       case 'MEDICAL':
-        return 'The medical incident has been reported successfully. The relevant people can now be informed about the affected student.';
+        return l10n.drvMedicalReportedBody;
 
       case 'CHILD_BEHAVIOR':
-        return 'The student behavior incident has been reported successfully. The relevant people can now be informed about the incident.';
+        return l10n.drvBehaviorReportedBody;
 
       case 'OTHER':
-        return 'The incident has been reported successfully. The relevant people can now be informed about it.';
+        return l10n.drvOtherIncidentReportedBody;
 
       default:
-        return 'The incident has been reported successfully.';
+        return l10n.drvIncidentReportedBodyDefault;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -110,7 +113,7 @@ class DriverIncidentSuccessForm extends StatelessWidget {
           // ── Dynamic success title ─────────────────────────────────────
           Center(
             child: Text(
-              _title,
+              _title(l10n),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
@@ -127,7 +130,7 @@ class DriverIncidentSuccessForm extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                _description,
+                _description(l10n),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context)
@@ -197,9 +200,9 @@ class DriverIncidentSuccessForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              child: const Text(
-                'Got it',
-                style: TextStyle(
+              child: Text(
+                l10n.gotIt,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
