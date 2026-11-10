@@ -487,4 +487,18 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         entity.setBusStopId(busStopId);
         childRepository.save(entity);
     }
+
+    @Override
+    @Transactional
+    public void assignBus(String childId, Long busId) {
+        ChildJpaEntity entity = childRepository.findById(childId)
+            .orElseThrow(() -> new IllegalArgumentException("Child not found with ID: " + childId));
+        if (!Objects.equals(entity.getBusId(), busId)) {
+            validateSingleBusPerParent(entity.getParentId(), busId, childId);
+            validateBusCapacity(busId, childId);
+        }
+        entity.setBusId(busId);
+        childRepository.save(entity);
+    }
+
 }

@@ -1,10 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+import '../../../services/child_service.dart';
 import '../../../services/emergency_contact_service.dart';
+import '../../../services/transport_service.dart';
 import '../../../widgets/language_picker_sheet.dart';
-import '../pages/parent_request_stop_page.dart';
-import '../../../widgets/language_picker_sheet.dart';
+import '../pages/parent_choose_stop_page.dart';
 
 class ParentMoreSettingsForm extends StatefulWidget {
   const ParentMoreSettingsForm({super.key});
@@ -18,10 +20,36 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
   bool _loadingContacts = true;
   String? _contactsError;
 
+  List<Map<String, dynamic>> _routeDetails = [];
+  bool _loadingRoutes = true;
+
   @override
   void initState() {
     super.initState();
     _loadContacts();
+    _loadRouteDetails();
+  }
+
+  Future<void> _loadRouteDetails() async {
+    setState(() => _loadingRoutes = true);
+    try {
+      final children = await ChildService.getMyChildren();
+      final details = <Map<String, dynamic>>[];
+      for (final child in children) {
+        try {
+          final detail = await TransportService.getChildRouteDetails(child.id);
+          detail['childName'] = child.fullName;
+          details.add(detail);
+        } catch (_) {
+          // Skip a child whose details fail to load rather than blocking the rest
+        }
+      }
+      if (mounted) setState(() => _routeDetails = details);
+    } catch (_) {
+      // Leave the section empty on failure — not critical to the rest of the page
+    } finally {
+      if (mounted) setState(() => _loadingRoutes = false);
+    }
   }
 
   Future<void> _loadContacts() async {
@@ -135,6 +163,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -160,17 +189,95 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           const SizedBox(height: 22),
 
           // SECTION 2 — My route details
-          const _SectionTitle('My route details'),
+          _SectionTitle(l10n.myRouteDetails),
           const SizedBox(height: 8),
-          const SizedBox(height: 8),
-          Center(child: Text('No routes/stops', style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 14.5, fontWeight: FontWeight.w500))),
+          if (_loadingRoutes)
+            const SizedBox(
+              height: 40,
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else if (_routeDetails.isEmpty)
+            Center(
+              child: Text(
+                l10n.noChildrenYet,
+                style: TextStyle(
+                    color: onSurface.withOpacity(0.6),
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500),
+              ),
+            )
+          else
+            ..._routeDetails.map((detail) {
+              final routeName = detail['routeName'] as String?;
+              final stopName = detail['assignedBusStopName'] as String?;
+              final message = detail['assignmentMessage'] as String?;
+              final childName = detail['childName'] as String? ?? l10n.parChildLabel;
+              final hasPending = detail['hasPendingRouteRequest'] == true;
+
+              final subtitle = routeName != null
+                  ? '$routeName${stopName != null && stopName != "Not assigned" ? " — $stopName" : ""}'
+                  : (message ?? l10n.parNoRouteAssignedYet);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(IconsaxPlusLinear.location, size: 16, color: Color(0xFF0D4896)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(childName,
+                              style: TextStyle(color: onSurface, fontWeight: FontWeight.w600, fontSize: 14)),
+                          Text(subtitle,
+                              style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 13)),
+                          if (hasPending) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(IconsaxPlusLinear.clock, size: 12, color: Color(0xFFCC8A00)),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    l10n.parStopRequestPending,
+                                    style: const TextStyle(
+                                      color: Color(0xFFCC8A00),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           const SizedBox(height: 10),
           _SoftActionButton(
             icon: IconsaxPlusLinear.add_circle,
-            text: 'Request a custom bus stop',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ParentRequestStopPage()),
-            ),
+            text: l10n.parChooseOrRequestBusStop,
+            onTap: () async {
+              final changed = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const ParentChooseStopPage()),
+              );
+              if (changed == true) _loadRouteDetails();
+            },
           ),
 
           const SizedBox(height: 22),
