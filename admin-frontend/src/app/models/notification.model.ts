@@ -15,7 +15,10 @@ export type NotificationCategory =
   | 'PARENT_REGISTERED'
   | 'STUDENT_ADDED'
   | 'BUS_CAPACITY_EXCEEDED'
-  | 'ABSENCE_REPORTED_BY_PARENT';
+  | 'ABSENCE_REPORTED_BY_PARENT'
+  | 'ROUTE_REQUEST_SUBMITTED'
+  | 'ROUTE_REQUEST_APPROVED'
+  | 'ROUTE_REQUEST_REJECTED';
 
 export interface Notification {
   id?: number;

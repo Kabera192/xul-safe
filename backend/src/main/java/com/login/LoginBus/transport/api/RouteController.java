@@ -110,12 +110,11 @@ public class RouteController {
             request.setDescription("");
         }
 
-        RouteRequestJpaEntity entity = RouteRequestJpaEntity.fromDomain(request);
-        RouteRequestJpaEntity saved = routeRequestRepository.save(entity);
+        RouteRequest saved = transportService.createRouteRequest(request);
 
         return ResponseEntity.ok(new ApiResponse<>(
             "Route request submitted successfully. Pending admin approval.",
-            saved.toDomain()
+            saved
         ));
     }
 
@@ -194,6 +193,14 @@ public class RouteController {
             RouteRequest result = transportService.approveRouteRequest(requestId, routeId);
             return ResponseEntity.ok(new ApiResponse<>(
                 "Route request approved, bus stop created and assigned to child",
+                result
+            ));
+        }
+
+        if (nextStatus == RouteRequestStatus.REJECTED) {
+            RouteRequest result = transportService.rejectRouteRequest(requestId);
+            return ResponseEntity.ok(new ApiResponse<>(
+                "Route request declined",
                 result
             ));
         }

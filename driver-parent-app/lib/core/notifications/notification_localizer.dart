@@ -27,6 +27,22 @@ LocalizedNotification localizeNotification(
   String? name(String key) => p[key];
 
   switch (notification.category) {
+    case 'ROUTE_REQUEST_APPROVED':
+      final childName = name('childName');
+      if (childName == null) return fallback;
+      return LocalizedNotification(
+        l10n.notifRouteRequestApprovedTitle,
+        l10n.notifRouteRequestApprovedBody(childName),
+      );
+
+    case 'ROUTE_REQUEST_REJECTED':
+      final childName = name('childName');
+      if (childName == null) return fallback;
+      return LocalizedNotification(
+        l10n.notifRouteRequestRejectedTitle,
+        l10n.notifRouteRequestRejectedBody(childName),
+      );
+
     case 'ABSENCE_CREATED':
       final childName = name('childName');
       final session = p['session'];
