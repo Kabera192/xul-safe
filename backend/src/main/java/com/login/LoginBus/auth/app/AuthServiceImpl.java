@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -37,6 +38,7 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     private static final String UPLOAD_DIR = "uploads/profile-photos/";
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final long OTP_VALIDITY_MS = 10 * 60 * 1000; // 10 minutes
+    private static final int MAX_OTP_ATTEMPTS = 5;
 
     public AuthServiceImpl(AccountsPublicService accountsService,
                            UserRepository userRepository,
@@ -61,8 +63,23 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         if (!isStrongPassword(user.getPassword())) {
             throw new IllegalArgumentException("Password must be at least 8 characters, contain no spaces, and include at least one number");
         }
-        if (accountsService.userExists(user.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+        Optional<UserJpaEntity> existing = userRepository.findByEmail(normalizeEmail(user.getEmail()));
+        if (existing.isPresent()) {
+            UserJpaEntity existingEntity = existing.get();
+            if (existingEntity.isEmailVerified()) {
+                throw new IllegalArgumentException("Email already registered");
+            }
+            // An abandoned registration (closed the app, backed out, etc.)
+            // before verifying — update their details in case they're
+            // correcting something and resend the code, rather than leaving
+            // them permanently stuck on "Email already registered".
+            existingEntity.setFirstName(user.getFirstName());
+            existingEntity.setLastName(user.getLastName());
+            existingEntity.setPhoneNumber(user.getPhoneNumber());
+            existingEntity.setPassword(passwordEncoder.encode(user.getPassword()));
+            userRepository.save(existingEntity);
+            sendOtpToUser(existingEntity, "Account verification");
+            return;
         }
 
         // Hash password before storing
@@ -243,7 +260,7 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void verifyOtp(String email, String otp) {
         UserJpaEntity user = userRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new IllegalArgumentException("No account found with this email"));
@@ -276,18 +293,34 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         String otp = String.format("%06d", new SecureRandom().nextInt(1_000_000));
         user.setOtpCode(otp);
         user.setOtpExpiresAt(System.currentTimeMillis() + OTP_VALIDITY_MS);
+        user.setOtpAttempts(0);
         userRepository.save(user);
 
         emailService.sendOtp(user.getEmail(), otp, purpose);
     }
 
+    /**
+     * Caller must run in a writable transaction — this persists the
+     * attempt counter on every call, not just on success, so repeated
+     * wrong guesses against the same code get locked out rather than
+     * being retried indefinitely within its validity window.
+     */
     private void checkOtp(UserJpaEntity user, String otp) {
-        if (user.getOtpCode() == null || !user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
+        if (user.getOtpCode() == null) {
             throw new IllegalArgumentException("Invalid OTP code");
         }
         if (user.getOtpExpiresAt() == null || System.currentTimeMillis() > user.getOtpExpiresAt()) {
             throw new IllegalArgumentException("OTP has expired. Please request a new one.");
         }
+        if (user.getOtpAttempts() >= MAX_OTP_ATTEMPTS) {
+            throw new IllegalArgumentException("Too many incorrect attempts. Please request a new code.");
+        }
+        if (!user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
+            user.setOtpAttempts(user.getOtpAttempts() + 1);
+            userRepository.save(user);
+            throw new IllegalArgumentException("Invalid OTP code");
+        }
+        user.setOtpAttempts(0);
     }
 
     // AuthPublicService methods
