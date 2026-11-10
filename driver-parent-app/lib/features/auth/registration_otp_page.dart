@@ -13,7 +13,13 @@ import '../navigation/parent_nav.dart';
 /// activates+signs in on success instead of moving to a password screen).
 class RegistrationOtpPage extends StatefulWidget {
   final String email;
-  const RegistrationOtpPage({super.key, required this.email});
+  // The password the user chose on the signup screen. Carried through here
+  // and sent alongside the OTP so the account's credential is set at the
+  // moment inbox ownership is actually proven, not from the earlier,
+  // unauthenticated /register submission.
+  final String password;
+  const RegistrationOtpPage(
+      {super.key, required this.email, required this.password});
 
   @override
   State<RegistrationOtpPage> createState() => _RegistrationOtpPageState();
@@ -72,6 +78,7 @@ class _RegistrationOtpPageState extends State<RegistrationOtpPage> {
       final result = await AuthApiService.verifyRegistrationOtp(
         email: widget.email,
         otp: otp,
+        password: widget.password,
       );
 
       await SessionStorage.saveSession(

@@ -157,6 +157,7 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
         String title;
         String message;
         NotificationCategory category;
+        String sessionParam = sess == AttendanceSession.MORNING ? "MORNING" : "AFTERNOON";
 
         if ("ABSENT".equals(action)) {
             title = "Your child has been marked absent";
@@ -194,7 +195,8 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
                     NotificationType.INFO,
                     category,
                     title,
-                    message
+                    message,
+                    Map.of("childName", childName, "session", sessionParam)
             );
             System.out.println("[NOTIF] SUCCESS: notification sent to userId=" + parentUserId);
         } catch (Exception e) {
@@ -232,7 +234,12 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
                         NotificationType.INFO,
                         NotificationCategory.BUS_REACHED_STOP,
                         title,
-                        message
+                        message,
+                        Map.of(
+                                "childName", child.getFullName(),
+                                "stopName", stopName,
+                                "session", sess == AttendanceSession.MORNING ? "MORNING" : "AFTERNOON"
+                        )
                 );
             } catch (Exception e) {
                 System.err.println("[NOTIF] Arrival notification failed for child " + child.getId() + ": " + e.getMessage());

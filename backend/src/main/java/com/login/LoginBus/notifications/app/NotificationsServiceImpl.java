@@ -95,6 +95,7 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
                             not.getMessage(),
                             not.getType() != null ? not.getType().name() : "INFO",
                             not.getCategory() != null ? not.getCategory().name() : "GENERAL",
+                            not.toDomain().getParams(),
                             not.getCreatedBy(),
                             recipient.getUserId(),
                             recipient.getStatus() != null ? recipient.getStatus().name() : "SENT",
@@ -140,6 +141,7 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
                             not.getMessage(),
                             not.getType() != null ? not.getType().name() : "INFO",
                             not.getCategory() != null ? not.getCategory().name() : "GENERAL",
+                            not.toDomain().getParams(),
                             not.getCreatedBy(),
                             recipient.getUserId(),
                             recipient.getStatus() != null ? recipient.getStatus().name() : "SENT",
@@ -208,6 +210,20 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
             String title,
             String message
     ) {
+        sendNotification(recipientUserId, createdBy, type, category, title, message, java.util.Map.of());
+    }
+
+    @Override
+    @Transactional
+    public void sendNotification(
+            Long recipientUserId,
+            Long createdBy,
+            NotificationType type,
+            NotificationCategory category,
+            String title,
+            String message,
+            java.util.Map<String, String> params
+    ) {
         if (recipientUserId == null) {
             return;
         }
@@ -221,7 +237,8 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
                 type,
                 category,
                 title,
-                message
+                message,
+                params
         );
     }
 
@@ -235,6 +252,20 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
             String title,
             String message
     ) {
+        sendNotificationToUsers(recipientUserIds, createdBy, type, category, title, message, java.util.Map.of());
+    }
+
+    @Override
+    @Transactional
+    public void sendNotificationToUsers(
+            List<Long> recipientUserIds,
+            Long createdBy,
+            NotificationType type,
+            NotificationCategory category,
+            String title,
+            String message,
+            java.util.Map<String, String> params
+    ) {
         if (recipientUserIds == null || recipientUserIds.isEmpty()) {
             return;
         }
@@ -245,6 +276,7 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
         notification.setType(type != null ? type : NotificationType.INFO);
         notification.setCategory(category != null ? category : NotificationCategory.GENERAL);
         notification.setCreatedBy(createdBy);
+        notification.setParams(params);
 
         Notification created = createNotification(notification);
         sendNotificationToUsers(created.getId(), recipientUserIds);

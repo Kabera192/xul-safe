@@ -64,7 +64,10 @@ class _SignupFormState extends State<SignupForm> {
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => RegistrationOtpPage(email: _emailCtrl.text.trim()),
+          builder: (_) => RegistrationOtpPage(
+            email: _emailCtrl.text.trim(),
+            password: _passwordCtrl.text,
+          ),
         ),
       );
     } catch (e) {

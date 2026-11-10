@@ -13,7 +13,7 @@ public interface AuthService {
 
     void resendRegistrationOtp(String email);
 
-    AuthResponse verifyRegistrationOtp(String email, String otp);
+    AuthResponse verifyRegistrationOtp(String email, String otp, String password);
 
     AuthResponse authenticateUser(String email, String password);
 

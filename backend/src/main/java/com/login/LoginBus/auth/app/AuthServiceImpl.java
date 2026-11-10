@@ -81,12 +81,14 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
             // correcting something and resend the code, rather than leaving
             // them permanently stuck on "Email already registered".
             //
-            // The password is deliberately NOT touched here: this endpoint is
-            // unauthenticated, so anyone can "re-register" an email they
-            // don't own. Resetting the password on this path would let an
-            // attacker set a password the real owner would then unknowingly
-            // verify (by entering the OTP sent to their own inbox). Only an
-            // OTP-verified flow may change credentials for an existing account.
+            // The password submitted here is deliberately NOT stored as the
+            // account's credential: this endpoint is unauthenticated, so
+            // anyone can submit a password for an email they don't own,
+            // whether that's a first registration or a "retry". Trusting
+            // either event would leave a window where an uninvited party's
+            // password choice can end up active. The only point this flow
+            // proves inbox ownership is OTP verification, so that's where
+            // the real password gets set — see verifyRegistrationOtp().
             existingEntity.setFirstName(user.getFirstName());
             existingEntity.setLastName(user.getLastName());
             existingEntity.setPhoneNumber(user.getPhoneNumber());
@@ -121,12 +123,24 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
 
     @Override
     @Transactional
-    public AuthResponse verifyRegistrationOtp(String email, String otp) {
+    public AuthResponse verifyRegistrationOtp(String email, String otp, String password) {
         UserJpaEntity user = userRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new IllegalArgumentException("No account found with this email"));
 
         checkOtp(user, otp);
 
+        if (!isStrongPassword(password)) {
+            throw new IllegalArgumentException("Password must be at least 8 characters, contain no spaces, and include at least one number");
+        }
+
+        // The password submitted at /register time is from an unauthenticated
+        // caller — anyone can submit a password for any email address at that
+        // step, whether or not they own it. This OTP verification is the
+        // first point this flow actually proves inbox ownership, so the
+        // credential that ends up active must be bound to THIS call, not to
+        // whatever an earlier (possibly uninvited) /register submission
+        // chose. See registerUser()'s comment for the other half of this.
+        user.setPassword(passwordEncoder.encode(password));
         user.setEmailVerified(true);
         user.setOtpCode(null);
         user.setOtpExpiresAt(null);
@@ -313,10 +327,16 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     }
 
     /**
-     * Caller must run in a writable transaction — this persists the
-     * attempt counter on every call, not just on success, so repeated
-     * wrong guesses against the same code get locked out rather than
-     * being retried indefinitely within its validity window.
+     * Caller must run in a writable transaction. The attempt budget is
+     * consumed atomically at the DB level (one row-level UPDATE, not a
+     * Java-side read-modify-write) BEFORE the guess is even compared,
+     * regardless of whether it turns out right or wrong — this is what
+     * makes the lockout race-proof: concurrent requests can't all read the
+     * same starting count and all "succeed" at incrementing, because the
+     * conditional UPDATE's WHERE clause is evaluated by the database as
+     * part of the same statement that does the increment. The increment
+     * runs in its own REQUIRES_NEW transaction so it survives the throw
+     * below rolling back the caller's transaction.
      */
     private void checkOtp(UserJpaEntity user, String otp) {
         if (user.getOtpCode() == null) {
@@ -325,22 +345,15 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         if (user.getOtpExpiresAt() == null || System.currentTimeMillis() > user.getOtpExpiresAt()) {
             throw new IllegalArgumentException("OTP has expired. Please request a new one.");
         }
-        if (user.getOtpAttempts() >= MAX_OTP_ATTEMPTS) {
+
+        Long userId = user.getId();
+        int rowsUpdated = requiresNewTransactionTemplate.execute(status ->
+                userRepository.incrementOtpAttemptsIfBelowLimit(userId, MAX_OTP_ATTEMPTS));
+        if (rowsUpdated == 0) {
             throw new IllegalArgumentException("Too many incorrect attempts. Please request a new code.");
         }
+
         if (!user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
-            // Persisted in its own transaction (REQUIRES_NEW) so the increment
-            // survives the exception below rolling back the caller's
-            // transaction — otherwise the attempt counter never commits and
-            // the lockout above never triggers.
-            int attemptsSoFar = user.getOtpAttempts();
-            Long userId = user.getId();
-            requiresNewTransactionTemplate.executeWithoutResult(status -> {
-                userRepository.findById(userId).ifPresent(managed -> {
-                    managed.setOtpAttempts(attemptsSoFar + 1);
-                    userRepository.save(managed);
-                });
-            });
             throw new IllegalArgumentException("Invalid OTP code");
         }
         user.setOtpAttempts(0);
