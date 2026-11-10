@@ -196,9 +196,8 @@ class AppLocalizations {
   String get male => _t({'en': 'Male', 'fr': 'Masculin', 'rw': 'Gabo'});
   String get female => _t({'en': 'Female', 'fr': 'Féminin', 'rw': 'Gore'});
   String get gradeField => _t({'en': 'Grade *', 'fr': 'Classe *', 'rw': 'Icyiciro *'});
-  String get gradeHint => _t({'en': 'e.g. Grade 3', 'fr': 'ex. Grade 3', 'rw': 'urugero: Icyiciro 3'});
-  String get gradeFormat => _t({'en': 'Use format: Grade 3', 'fr': 'Utilisez le format : Grade 3', 'rw': 'Koresha uburyo: Icyiciro 3'});
-  String get gradeRange => _t({'en': 'Grade must be between 1 and 13', 'fr': 'La classe doit être entre 1 et 13', 'rw': 'Icyiciro kigomba kuba hagati ya 1 na 13'});
+  String gradeOptionLabel(String n) => _t({'en': 'Grade $n', 'fr': 'Classe $n', 'rw': 'Icyiciro $n'});
+  String nurseryOptionLabel(String n) => _t({'en': 'Nursery $n', 'fr': 'Maternelle $n', 'rw': 'Incuke $n'});
   String get addChild => _t({'en': 'Add child', 'fr': 'Ajouter l\'enfant', 'rw': 'Ongeraho umwana'});
 
   // ── Parent profile form ────────────────────────────────────────────────────
