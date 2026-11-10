@@ -4,12 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
+import '../../core/l10n/app_localizations.dart';
 import '../../widgets/mobile_splash_gradient.dart';
 import 'new_password_page.dart';
 
 class OtpVerificationPage extends StatefulWidget {
-  final String phoneNumber;
-  const OtpVerificationPage({super.key, required this.phoneNumber});
+  final String email;
+  const OtpVerificationPage({super.key, required this.email});
 
   @override
   State<OtpVerificationPage> createState() => _OtpVerificationPageState();
@@ -41,9 +42,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   String get _otp => _controllers.map((c) => c.text).join();
 
   Future<void> _verify() async {
+    final l10n = AppLocalizations.of(context);
     final otp = _otp;
     if (otp.length < _digitCount) {
-      setState(() => _error = 'Please enter all 6 digits');
+      setState(() => _error = l10n.appEnterAll6Digits);
       return;
     }
 
@@ -57,7 +59,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/verify-otp'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'phoneNumber': widget.phoneNumber,
+          'email': widget.email,
           'otp': otp,
         }),
       );
@@ -68,7 +70,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => NewPasswordPage(
-              phoneNumber: widget.phoneNumber,
+              email: widget.email,
               otp: otp,
             ),
           ),
@@ -77,18 +79,19 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         final decoded = res.body.isNotEmpty ? jsonDecode(res.body) : null;
         setState(() {
           _error = (decoded is Map ? decoded['message'] : null) ??
-              'Invalid or expired code. Please try again.';
+              l10n.appInvalidOrExpiredCode;
         });
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Could not reach server');
+      setState(() => _error = l10n.couldNotReachServer);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _resend() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _resending = true;
       _error = null;
@@ -102,7 +105,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       final res = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/forgot-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phoneNumber': widget.phoneNumber}),
+        body: jsonEncode({'email': widget.email}),
       );
 
       if (!mounted) return;
@@ -111,12 +114,12 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         final decoded = res.body.isNotEmpty ? jsonDecode(res.body) : null;
         setState(() {
           _error = (decoded is Map ? decoded['message'] : null) ??
-              'Could not resend code';
+              l10n.appCouldNotResendCode;
         });
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Could not reach server');
+      setState(() => _error = l10n.couldNotReachServer);
     } finally {
       if (mounted) setState(() => _resending = false);
     }
@@ -133,17 +136,32 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       body: GradientBackground(
         svgAsset: 'assests/backgrounds/mobile/mobile_background_login.svg',
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _buildCard(context, l10n, onSurface, surface, isDark),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
@@ -152,8 +170,16 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              const Spacer(),
-              Container(
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, AppLocalizations l10n,
+      Color onSurface, Color surface, bool isDark) {
+    return Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 24)
                     .copyWith(top: 32, bottom: 32),
@@ -169,7 +195,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Enter verification code',
+                      l10n.appEnterVerificationCode,
                       style: TextStyle(
                         color: onSurface,
                         fontSize: 24,
@@ -178,7 +204,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'We sent a 6-digit code to ${widget.phoneNumber}. Enter it below.',
+                      l10n.appOtpSentToEmail(widget.email),
                       style: TextStyle(
                         color: onSurface.withValues(alpha: 0.6),
                         fontSize: 14,
@@ -210,13 +236,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    // 6 digit boxes
+                    // 6 digit boxes — each one is Expanded (not a fixed
+                    // width) with small fixed gaps between, so the row
+                    // always fits even on a narrow phone screen instead of
+                    // overflowing at a fixed 44px-per-box width.
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List.generate(_digitCount, (i) {
                         final filled = _controllers[i].text.isNotEmpty;
-                        return SizedBox(
-                          width: 44,
+                        final box = SizedBox(
                           height: 52,
                           child: TextFormField(
                             controller: _controllers[i],
@@ -265,6 +292,15 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                             ),
                           ),
                         );
+
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: i < _digitCount - 1 ? 8 : 0,
+                            ),
+                            child: box,
+                          ),
+                        );
                       }),
                     ),
                     const SizedBox(height: 28),
@@ -289,9 +325,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Verify code',
-                                style: TextStyle(
+                            : Text(
+                                l10n.appVerifyCode,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
@@ -310,9 +346,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                             )
                           : TextButton(
                               onPressed: _resend,
-                              child: const Text(
-                                'Resend code',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.appResendCode,
+                                style: const TextStyle(
                                   color: blue,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -321,11 +357,6 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

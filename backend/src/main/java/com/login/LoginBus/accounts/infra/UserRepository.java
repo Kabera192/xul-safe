@@ -1,6 +1,9 @@
 package com.login.LoginBus.accounts.infra;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.login.LoginBus.accounts.domain.UserRole;
@@ -39,4 +42,24 @@ public interface UserRepository extends JpaRepository<UserJpaEntity, Long> {
     boolean existsByRole(UserRole role);
 
     List<UserJpaEntity> findByRole(UserRole role);
+
+    /**
+     * Atomically consumes one OTP attempt, only if the user is still under
+     * the attempt limit. The WHERE clause and the increment happen in the
+     * same database statement, so concurrent calls can't all read the same
+     * starting count and all "succeed" — the DB serializes the UPDATE.
+     *
+     * @return number of rows updated: 1 if the attempt was consumed, 0 if
+     *         the limit was already reached
+     */
+    @Modifying
+    @Query("UPDATE UserJpaEntity u SET u.otpAttempts = u.otpAttempts + 1 WHERE u.id = :id AND u.otpAttempts < :maxAttempts")
+    int incrementOtpAttemptsIfBelowLimit(@Param("id") Long id, @Param("maxAttempts") int maxAttempts);
+
+    /**
+     * Users whose stored email isn't already lowercase — records left over
+     * from before email normalization was enforced on every write path.
+     */
+    @Query("SELECT u FROM UserJpaEntity u WHERE u.email <> LOWER(u.email)")
+    List<UserJpaEntity> findWithMixedCaseEmail();
 }
