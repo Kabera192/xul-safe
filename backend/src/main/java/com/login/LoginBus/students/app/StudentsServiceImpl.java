@@ -97,6 +97,7 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     public Child createChild(Child child) {
         validateGrade(child.getGrade());
         validateSingleBusPerParent(child.getParentId(), child.getBusId(), null);
+        validateBusCapacity(child.getBusId(), null);
 
         // Set creation timestamp
         if (child.getCreatedAt() == null) {
@@ -111,7 +112,96 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         ChildJpaEntity entity = ChildJpaEntity.fromDomain(child);
         ChildJpaEntity saved = childRepository.save(entity);
 
+        notifyAdminsStudentAdded(saved);
+
         return saved.toDomain();
+    }
+
+    /**
+     * Blocks the assignment outright when the bus is already at capacity —
+     * per product decision, parents/admins see a clear error rather than
+     * silently overbooking the bus. Also pings admins so they know a seat
+     * was requested and refused.
+     */
+    private void validateBusCapacity(Long busId, String excludeChildId) {
+        if (busId == null) return;
+
+        // Locks the bus row for the rest of this transaction so a second,
+        // concurrent assignment to the same bus can't also read "one seat
+        // left" before this one commits.
+        BusJpaEntity bus = busRepository.findByIdForUpdate(busId).orElse(null);
+        if (bus == null || bus.getCapacity() == null) return;
+
+        long currentCount = childRepository.findByBusId(busId).stream()
+                .filter(c -> excludeChildId == null || !excludeChildId.equals(c.getId()))
+                .count();
+
+        if (currentCount >= bus.getCapacity()) {
+            notifyAdminsBusFull(bus);
+            throw new IllegalStateException(
+                    "This bus is full (" + bus.getCapacity() + " seats) — choose a different bus"
+                            + " or ask the admin to free up a seat before trying again.");
+        }
+    }
+
+    private void notifyAdminsStudentAdded(ChildJpaEntity child) {
+        try {
+            List<Long> adminIds = adminUserIds();
+            if (adminIds.isEmpty()) return;
+
+            notificationsPublicService.sendNotificationToUsers(
+                    adminIds,
+                    child.getParentId(),
+                    NotificationType.INFO,
+                    NotificationCategory.STUDENT_ADDED,
+                    "New student added",
+                    child.getFullName() + " was added as a student.",
+                    Map.of("childName", child.getFullName())
+            );
+        } catch (Exception e) {
+            // Don't fail student creation if notification delivery fails
+        }
+    }
+
+    /**
+     * Sent in its own REQUIRES_NEW transaction — the caller (validateBusCapacity)
+     * always throws right after this to block the assignment, which would
+     * otherwise roll back this notification along with it.
+     */
+    private void notifyAdminsBusFull(BusJpaEntity bus) {
+        try {
+            List<Long> adminIds = adminUserIds();
+            if (adminIds.isEmpty()) return;
+
+            String plateNumber = bus.getPlateNumber();
+            Integer capacity = bus.getCapacity();
+
+            requiresNewTransaction().executeWithoutResult(status ->
+                    notificationsPublicService.sendNotificationToUsers(
+                            adminIds,
+                            null,
+                            NotificationType.WARNING,
+                            NotificationCategory.BUS_CAPACITY_EXCEEDED,
+                            "Bus at full capacity",
+                            "Bus " + plateNumber + " is full (" + capacity
+                                    + " seats) — a student assignment to this bus was blocked.",
+                            Map.of(
+                                    "plateNumber", plateNumber != null ? plateNumber : "",
+                                    "capacity", String.valueOf(capacity)
+                            )
+                    )
+            );
+        } catch (Exception e) {
+            // Don't fail the assignment flow if notification delivery fails
+        }
+    }
+
+    private List<Long> adminUserIds() {
+        return accountsService.getUsersByRole(UserRole.ADMIN)
+                .stream()
+                .map(User::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -195,6 +285,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         // Update bus and bus stop assignment. Route lives only on the bus —
         // a child has no independent route of their own.
         validateSingleBusPerParent(existing.getParentId(), child.getBusId(), childId);
+        if (!Objects.equals(existing.getBusId(), child.getBusId())) {
+            validateBusCapacity(child.getBusId(), childId);
+        }
         existing.setBusId(child.getBusId());
         existing.setBusStopId(child.getBusStopId());
 
@@ -312,9 +405,15 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
                     conductor.getUserId(),
                     absence.getParentId(),
                     NotificationType.INFO,
-                    NotificationCategory.ABSENCE_CREATED,
+                    NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
                     "Absence: " + childName,
-                    childName + " will not be attending " + absenceTypeLabel + "."
+                    childName + " will not be attending " + absenceTypeLabel + ".",
+                    Map.of(
+                            "childName", childName,
+                            "absenceType", absence.getAbsenceType().name(),
+                            "startDate", absence.getStartDate() != null ? absence.getStartDate().toString() : "",
+                            "endDate", absence.getEndDate() != null ? absence.getEndDate().toString() : ""
+                    )
             );
         } catch (Exception e) {
             // Don't fail the absence creation if notification delivery fails
@@ -402,71 +501,4 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         childRepository.save(entity);
     }
 
-    /**
-     * Blocks the assignment outright when the bus is already at capacity —
-     * per product decision, parents/admins see a clear error rather than
-     * silently overbooking the bus. Also pings admins so they know a seat
-     * was requested and refused.
-     */
-    private void validateBusCapacity(Long busId, String excludeChildId) {
-        if (busId == null) return;
-
-        // Locks the bus row for the rest of this transaction so a second,
-        // concurrent assignment to the same bus can't also read "one seat
-        // left" before this one commits.
-        BusJpaEntity bus = busRepository.findByIdForUpdate(busId).orElse(null);
-        if (bus == null || bus.getCapacity() == null) return;
-
-        long currentCount = childRepository.findByBusId(busId).stream()
-                .filter(c -> excludeChildId == null || !excludeChildId.equals(c.getId()))
-                .count();
-
-        if (currentCount >= bus.getCapacity()) {
-            notifyAdminsBusFull(bus);
-            throw new IllegalStateException(
-                    "This bus is full (" + bus.getCapacity() + " seats) — choose a different bus"
-                            + " or ask the admin to free up a seat before trying again.");
-        }
-    }
-
-    /**
-     * Sent in its own REQUIRES_NEW transaction — the caller (validateBusCapacity)
-     * always throws right after this to block the assignment, which would
-     * otherwise roll back this notification along with it.
-     */
-    private void notifyAdminsBusFull(BusJpaEntity bus) {
-        try {
-            List<Long> adminIds = adminUserIds();
-            if (adminIds.isEmpty()) return;
-
-            String plateNumber = bus.getPlateNumber();
-            Integer capacity = bus.getCapacity();
-
-            requiresNewTransaction().executeWithoutResult(status ->
-                    notificationsPublicService.sendNotificationToUsers(
-                            adminIds,
-                            null,
-                            NotificationType.WARNING,
-                            NotificationCategory.BUS_CAPACITY_EXCEEDED,
-                            "Bus at full capacity",
-                            "Bus " + plateNumber + " is full (" + capacity
-                                    + " seats) — a student assignment to this bus was blocked.",
-                            Map.of(
-                                    "plateNumber", plateNumber != null ? plateNumber : "",
-                                    "capacity", String.valueOf(capacity)
-                            )
-                    )
-            );
-        } catch (Exception e) {
-            // Don't fail the assignment flow if notification delivery fails
-        }
-    }
-
-    private List<Long> adminUserIds() {
-        return accountsService.getUsersByRole(UserRole.ADMIN)
-                .stream()
-                .map(User::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
 }
