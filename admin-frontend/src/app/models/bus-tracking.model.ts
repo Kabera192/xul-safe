@@ -33,3 +33,21 @@ export interface LocationUpdate {
 export interface StatusUpdate {
   status: BusTrackingStatus;
 }
+
+export type TodayTripStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface BusTripStatusToday {
+  busId: number;
+  status: TodayTripStatus;
+}
+
+export interface BusAttendanceToday {
+  busId: number;
+  plateNumber: string;
+  routeName: string | null;
+  date: string;
+  /** Null until the trip starts — no one could truthfully be marked present/absent yet. */
+  present: number | null;
+  absent: number | null;
+  tripStatus: TodayTripStatus;
+}
