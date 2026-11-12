@@ -15,6 +15,7 @@ public class User {
     private String photoUrl;
     private Long createdAt;
     private UserRole role;
+    private boolean emailVerified = true;
 
     // No-arg constructor
     public User() {
@@ -118,5 +119,13 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }

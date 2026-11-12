@@ -40,6 +40,15 @@ public interface NotificationRecipientRepository extends JpaRepository<Notificat
     List<NotificationRecipientJpaEntity> findByUserIdAndStatus(Long userId, NotificationStatus status);
 
     /**
+     * Find unread notifications for a user, newest first.
+     *
+     * @param userId User ID
+     * @param status Notification status
+     * @return List of unread notification recipients, newest first
+     */
+    List<NotificationRecipientJpaEntity> findByUserIdAndStatusOrderBySentAtDesc(Long userId, NotificationStatus status);
+
+    /**
      * Count unread notifications for a user.
      *
      * @param userId User ID

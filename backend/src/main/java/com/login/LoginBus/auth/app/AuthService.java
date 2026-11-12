@@ -9,7 +9,11 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface AuthService {
 
-    AuthResponse registerUser(User user);
+    void registerUser(User user);
+
+    void resendRegistrationOtp(String email);
+
+    AuthResponse verifyRegistrationOtp(String email, String otp);
 
     AuthResponse authenticateUser(String email, String password);
 
@@ -24,5 +28,11 @@ public interface AuthService {
     boolean isValidEmail(String email);
 
     boolean isStrongPassword(String password);
+
+    void sendPasswordResetOtp(String email);
+
+    void verifyOtp(String email, String otp);
+
+    void resetPassword(String email, String otp, String newPassword);
 }
 

@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -171,7 +172,18 @@ private final IncidentAttachmentStorage attachmentStorage;
 
     @Override
     @Transactional(readOnly = true)
-    public List<Incident> getAllIncidents() {
+    public List<Incident> getAllIncidents(Jwt jwt) {
+        Long userId = getAuthenticatedUserId(jwt);
+        User requester = accountsService.getUserById(userId);
+
+        // The unfiltered list has no per-parent redaction — restrict it to
+        // admins so a non-admin JWT can never see incidents outside the
+        // scoped views (getMyIncidents / getParentIncidents).
+        if (requester == null || requester.getRole() != UserRole.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Admin access required");
+        }
+
         return incidentRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(IncidentJpaEntity::toDomain)
@@ -1033,7 +1045,12 @@ private void validateTransportUserCreatedIncident(
                         notificationTypeFor(incident),
                         NotificationCategory.INCIDENT_REPORTED,
                         "Incident reported",
-                        incident.getDescription()
+                        incident.getDescription(),
+                        // "kind" distinguishes this (detailed, free-text description —
+                        // not translatable, shown as-is) from the operational variant
+                        // below. The description itself stays in whatever language the
+                        // reporter wrote it in.
+                        Map.of("kind", "DETAILED")
                 );
             }
 
@@ -1073,7 +1090,14 @@ private void validateTransportUserCreatedIncident(
                             notificationTypeFor(incident),
                             NotificationCategory.INCIDENT_REPORTED,
                             "Journey affected by incident",
-                            operationalMessage
+                            operationalMessage,
+                            // "kind"=OPERATIONAL + the journey impact is enough for the
+                            // client to fully regenerate this (fixed, non-free-text)
+                            // message in the viewer's own language.
+                            Map.of(
+                                    "kind", "OPERATIONAL",
+                                    "journeyImpact", incident.getJourneyImpact().name()
+                            )
                     );
                 }
             }

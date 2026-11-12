@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.login.LoginBus.accounts.domain.User;
 import com.login.LoginBus.accounts.domain.UserRole;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * JPA Entity for User persistence.
@@ -49,6 +50,19 @@ public class UserJpaEntity {
     @JsonProperty("role")
     private UserRole role;
 
+    @Column(name = "otp_code")
+    private String otpCode;
+
+    @Column(name = "otp_expires_at")
+    private Long otpExpiresAt;
+
+    // Existing rows are grandfathered in as verified — only self-registration
+    // (AuthServiceImpl.registerUser) explicitly sets this false.
+    @Column(name = "email_verified", nullable = false)
+    @ColumnDefault("true")
+    @JsonProperty("emailVerified")
+    private boolean emailVerified = true;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -66,7 +80,7 @@ public class UserJpaEntity {
      * @return Domain User entity
      */
     public User toDomain() {
-        return new User(
+        User user = new User(
             this.id,
             this.firstName,
             this.lastName,
@@ -77,6 +91,8 @@ public class UserJpaEntity {
             this.createdAt,
             this.role
         );
+        user.setEmailVerified(this.emailVerified);
+        return user;
     }
 
     /**
@@ -96,6 +112,7 @@ public class UserJpaEntity {
         entity.setPhotoUrl(user.getPhotoUrl());
         entity.createdAt = user.getCreatedAt();
         entity.setRole(user.getRole());
+        entity.setEmailVerified(user.isEmailVerified());
         return entity;
     }
 
@@ -166,5 +183,29 @@ public class UserJpaEntity {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public String getOtpCode() {
+        return otpCode;
+    }
+
+    public void setOtpCode(String otpCode) {
+        this.otpCode = otpCode;
+    }
+
+    public Long getOtpExpiresAt() {
+        return otpExpiresAt;
+    }
+
+    public void setOtpExpiresAt(Long otpExpiresAt) {
+        this.otpExpiresAt = otpExpiresAt;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }

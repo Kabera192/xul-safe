@@ -1,6 +1,7 @@
 package com.login.LoginBus.incidents.api;
 
 import com.login.LoginBus.shared.api.ApiResponse;
+import com.login.LoginBus.shared.infra.ErrorSanitizer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,7 +24,7 @@ public class IncidentExceptionHandler {
     ) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse<>(
-                        exception.getMessage(),
+                        ErrorSanitizer.sanitize(exception.getMessage()),
                         null
                 ));
     }
@@ -37,7 +38,7 @@ public class IncidentExceptionHandler {
     ) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(
-                        exception.getMessage(),
+                        ErrorSanitizer.sanitize(exception.getMessage()),
                         null
                 ));
     }

@@ -20,7 +20,7 @@ public interface IncidentService {
 
     Incident getIncidentById(Long incidentId);
 
-    List<Incident> getAllIncidents();
+    List<Incident> getAllIncidents(Jwt jwt);
 
     /**
      * Get incidents related to the authenticated transport user.

@@ -51,8 +51,15 @@ public class DriverAdminServiceImpl implements DriverAdminService {
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new IllegalArgumentException("Email is required");
         }
+        if (!dto.getEmail().trim().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
         if (dto.getPassword() == null || dto.getPassword().isBlank()) {
             throw new IllegalArgumentException("Password is required");
+        }
+        if (dto.getPassword().length() < 8 || dto.getPassword().contains(" ") || !dto.getPassword().matches(".*[0-9].*")) {
+            throw new IllegalArgumentException(
+                    "Password must be at least 8 characters, contain no spaces, and include at least one number");
         }
         if (dto.getPhoneNumber() == null || dto.getPhoneNumber().isBlank()) {
             throw new IllegalArgumentException("Phone number is required");
