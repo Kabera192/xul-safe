@@ -1,6 +1,8 @@
 package com.login.LoginBus.transport.app;
 
 import com.login.LoginBus.accounts.domain.User;
+import com.login.LoginBus.transport.api.dto.BusAttendanceTodayDto;
+import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.domain.*;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,22 @@ public interface TransportService {
      * @return The active tracking, or null if no active tracking
      */
     BusTracking getActiveBusTrackingForRoute(Long routeId);
+
+    /**
+     * Today's trip status (SCHEDULED / IN_PROGRESS / COMPLETED) for every
+     * bus, derived from whether each bus has a tracking record touched
+     * today and, if so, whether it's still active.
+     *
+     * @return One entry per bus with a route assigned
+     */
+    List<BusTripStatusDto> getTodayBusTripStatuses();
+
+    /**
+     * Today's attendance summary (route, present/absent counts, trip status)
+     * for every bus with a route assigned — everything the admin dashboard's
+     * bus attendance table needs, scoped to today only.
+     */
+    List<BusAttendanceTodayDto> getTodayBusAttendanceSummary();
 
     /**
      * Start a new journey/tracking session.

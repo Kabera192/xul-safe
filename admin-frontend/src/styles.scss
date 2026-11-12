@@ -515,7 +515,9 @@ html.dark-theme {
   .newpass-container,
   .newpass-right,
   .otp-container,
-  .otp-right {
+  .otp-right,
+  .session-expired-container,
+  .session-expired-right {
     background-color: #1E293B !important;
     border-color: #334155 !important;
     color: #E2E8F0 !important;
@@ -553,6 +555,13 @@ html.dark-theme {
   .map-card {
     background-color: #273449 !important;
     color: #64748B !important;
+  }
+
+  // Session-expired's warning icon chip — a light red tint in
+  // light mode, kept legible as the same muted red on dark.
+  .icon-circle {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #F87171 !important;
   }
 
   .avatar {

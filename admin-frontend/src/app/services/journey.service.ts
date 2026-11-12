@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { ApiResponse, Journey, JourneySummary, WeeklyAttendance } from '../models';
+import { ApiResponse, BusAttendanceToday, Journey, JourneySummary, WeeklyAttendance } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -48,6 +48,13 @@ export class JourneyService {
   getWeeklyAttendance(weekStart: string): Observable<WeeklyAttendance[]> {
     const params = new HttpParams().set('weekStart', weekStart);
     return this.http.get<ApiResponse<WeeklyAttendance[]>>(`${this.basePath}/attendance/weekly`, { params }).pipe(
+      map(response => response.data)
+    );
+  }
+
+  /** Today's bus attendance summary — route, present/absent counts, trip status per bus. */
+  getTodayAttendanceSummary(): Observable<BusAttendanceToday[]> {
+    return this.http.get<ApiResponse<BusAttendanceToday[]>>(`${this.basePath}/attendance/today`).pipe(
       map(response => response.data)
     );
   }

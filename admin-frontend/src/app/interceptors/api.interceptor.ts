@@ -48,7 +48,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
               localStorage.removeItem('token');
               localStorage.removeItem('refreshToken');
               localStorage.removeItem('user');
-              router.navigate(['/login']);
+              router.navigate(['/session-expired']);
             }
             break;
           case 403:

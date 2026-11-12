@@ -20,10 +20,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +41,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
 
     @Autowired
     private AbsenceRepository absenceRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     @Autowired
     private BusRepository busRepository;
@@ -309,6 +315,26 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         return childRepository.existsById(childId);
     }
 
+    @Override
+    public int getAbsentTodayCount() {
+        LocalDate today = LocalDate.now();
+
+        // A child can be "absent" two ways that don't overlap in storage:
+        // driver-confirmed (attendance_records.absent, per session) or
+        // parent-reported in advance (an active Absence covering today).
+        // Union by child ID so one child isn't double-counted.
+        Set<String> absentChildIds = new HashSet<>();
+
+        attendanceRepository.findByDateBetween(today, today).stream()
+                .filter(AttendanceJpaEntity::isAbsent)
+                .map(AttendanceJpaEntity::getChildId)
+                .forEach(absentChildIds::add);
+
+        absentChildIds.addAll(absenceRepository.findChildIdsWithActiveAbsenceOn(today));
+
+        return absentChildIds.size();
+    }
+
     // ========== Absence Operations ==========
 
     @Override
@@ -377,47 +403,115 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         AbsenceJpaEntity entity = AbsenceJpaEntity.fromDomain(absence);
         AbsenceJpaEntity saved = absenceRepository.save(entity);
 
-        // Notify the driver assigned to this child's bus
-        sendAbsenceNotificationToDriver(absence);
+        // Notify the driver assigned to this child's bus, and the admins
+        notifyAbsenceCreated(absence);
 
         return saved.toDomain();
     }
 
-    private void sendAbsenceNotificationToDriver(Absence absence) {
+    private String absenceTypeLabel(Absence absence) {
+        return switch (absence.getAbsenceType()) {
+            case MORNING -> "this morning";
+            case EVENING -> "this evening";
+            case MULTIPLE_DAYS -> "from " + absence.getStartDate() + " to " + absence.getEndDate();
+        };
+    }
+
+    private Map<String, String> absenceNotificationParams(Absence absence, String childName) {
+        return Map.of(
+                "childName", childName,
+                "absenceType", absence.getAbsenceType().name(),
+                "startDate", absence.getStartDate() != null ? absence.getStartDate().toString() : "",
+                "endDate", absence.getEndDate() != null ? absence.getEndDate().toString() : ""
+        );
+    }
+
+    private void notifyAbsenceCreated(Absence absence) {
         try {
             ChildJpaEntity child = childRepository.findById(absence.getChildId()).orElse(null);
-            if (child == null || child.getBusId() == null) return;
-
-            BusJpaEntity bus = busRepository.findById(child.getBusId()).orElse(null);
-            if (bus == null || bus.getConductorId() == null) return;
-
-            ConductorJpaEntity conductor = conductorRepository.findById(bus.getConductorId()).orElse(null);
-            if (conductor == null || conductor.getUserId() == null) return;
+            if (child == null) return;
 
             String childName = child.getFullName();
-            String absenceTypeLabel = switch (absence.getAbsenceType()) {
-                case MORNING -> "this morning";
-                case EVENING -> "this evening";
-                case MULTIPLE_DAYS -> "from " + absence.getStartDate() + " to " + absence.getEndDate();
-            };
+            String title = "Absence: " + childName;
+            String message = childName + " will not be attending " + absenceTypeLabel(absence) + ".";
+            Map<String, String> params = absenceNotificationParams(absence, childName);
 
-            notificationsPublicService.sendNotification(
-                    conductor.getUserId(),
-                    absence.getParentId(),
-                    NotificationType.INFO,
-                    NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
-                    "Absence: " + childName,
-                    childName + " will not be attending " + absenceTypeLabel + ".",
-                    Map.of(
-                            "childName", childName,
-                            "absenceType", absence.getAbsenceType().name(),
-                            "startDate", absence.getStartDate() != null ? absence.getStartDate().toString() : "",
-                            "endDate", absence.getEndDate() != null ? absence.getEndDate().toString() : ""
-                    )
-            );
+            Long driverUserId = driverUserIdForChild(child);
+            if (driverUserId != null) {
+                notificationsPublicService.sendNotification(
+                        driverUserId,
+                        absence.getParentId(),
+                        NotificationType.INFO,
+                        NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
+                        title,
+                        message,
+                        params
+                );
+            }
+
+            List<Long> adminIds = adminUserIds();
+            if (!adminIds.isEmpty()) {
+                notificationsPublicService.sendNotificationToUsers(
+                        adminIds,
+                        absence.getParentId(),
+                        NotificationType.INFO,
+                        NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
+                        title,
+                        message,
+                        params
+                );
+            }
         } catch (Exception e) {
             // Don't fail the absence creation if notification delivery fails
         }
+    }
+
+    private void notifyAbsenceCancelled(Absence absence) {
+        try {
+            ChildJpaEntity child = childRepository.findById(absence.getChildId()).orElse(null);
+            if (child == null) return;
+
+            String childName = child.getFullName();
+            String title = "Absence cancelled: " + childName;
+            String message = childName + "'s absence " + absenceTypeLabel(absence) + " has been cancelled.";
+            Map<String, String> params = absenceNotificationParams(absence, childName);
+
+            Long driverUserId = driverUserIdForChild(child);
+            if (driverUserId != null) {
+                notificationsPublicService.sendNotification(
+                        driverUserId,
+                        absence.getParentId(),
+                        NotificationType.INFO,
+                        NotificationCategory.ABSENCE_CANCELLED,
+                        title,
+                        message,
+                        params
+                );
+            }
+
+            List<Long> adminIds = adminUserIds();
+            if (!adminIds.isEmpty()) {
+                notificationsPublicService.sendNotificationToUsers(
+                        adminIds,
+                        absence.getParentId(),
+                        NotificationType.INFO,
+                        NotificationCategory.ABSENCE_CANCELLED,
+                        title,
+                        message,
+                        params
+                );
+            }
+        } catch (Exception e) {
+            // Don't fail the absence cancellation if notification delivery fails
+        }
+    }
+
+    private Long driverUserIdForChild(ChildJpaEntity child) {
+        if (child.getBusId() == null) return null;
+        BusJpaEntity bus = busRepository.findById(child.getBusId()).orElse(null);
+        if (bus == null || bus.getConductorId() == null) return null;
+        ConductorJpaEntity conductor = conductorRepository.findById(bus.getConductorId()).orElse(null);
+        return conductor != null ? conductor.getUserId() : null;
     }
 
     @Override
@@ -444,10 +538,13 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     @Override
     @Transactional
     public void deleteAbsence(Long absenceId) {
-        if (!absenceRepository.existsById(absenceId)) {
-            throw new IllegalArgumentException("Absence not found with ID: " + absenceId);
-        }
+        AbsenceJpaEntity existing = absenceRepository.findById(absenceId)
+                .orElseThrow(() -> new IllegalArgumentException("Absence not found with ID: " + absenceId));
+
         absenceRepository.deleteById(absenceId);
+
+        // Notify the driver assigned to this child's bus, and the admins
+        notifyAbsenceCancelled(existing.toDomain());
     }
 
     @Override
@@ -500,5 +597,4 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
         entity.setBusId(busId);
         childRepository.save(entity);
     }
-
 }

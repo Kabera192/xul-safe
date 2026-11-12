@@ -50,14 +50,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
             IllegalArgumentException ex, HttpServletRequest req) {
-        return build(req, HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", ex.getMessage(),
+        return build(req, HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", ErrorSanitizer.sanitize(ex.getMessage()),
                 Map.of("path", req.getRequestURI()));
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalStateException(
             IllegalStateException ex, HttpServletRequest req) {
-        return build(req, HttpStatus.CONFLICT, "INVALID_STATE", ex.getMessage(),
+        return build(req, HttpStatus.CONFLICT, "INVALID_STATE", ErrorSanitizer.sanitize(ex.getMessage()),
                 Map.of("path", req.getRequestURI()));
     }
 
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
         details.put("path", req.getRequestURI());
         details.put("exception_type", ex.getClass().getSimpleName());
         return build(req, HttpStatus.INTERNAL_SERVER_ERROR, "RUNTIME_ERROR",
-                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred", details);
+                ex.getMessage() != null ? ErrorSanitizer.sanitize(ex.getMessage()) : "An unexpected error occurred", details);
     }
 
     @ExceptionHandler(Exception.class)
@@ -78,7 +78,7 @@ public class GlobalExceptionHandler {
         details.put("path", req.getRequestURI());
         details.put("exception_type", ex.getClass().getSimpleName());
         return build(req, HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
-                ex.getMessage() != null ? ex.getMessage() : "An internal server error occurred", details);
+                ex.getMessage() != null ? ErrorSanitizer.sanitize(ex.getMessage()) : "An internal server error occurred", details);
     }
 
     /**
@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex, HttpServletRequest req) {
-        return build(req, HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ex.getMessage(),
+        return build(req, HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ErrorSanitizer.sanitize(ex.getMessage()),
                 Map.of("path", req.getRequestURI()));
     }
 

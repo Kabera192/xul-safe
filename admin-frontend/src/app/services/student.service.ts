@@ -31,6 +31,16 @@ export class StudentService {
   }
 
   /**
+   * Count of children marked absent today, across every bus (admin dashboard).
+   * GET /children/absent-today-count
+   */
+  getAbsentTodayCount(): Observable<number> {
+    return this.http.get<ApiResponse<number>>(`${this.basePath}/absent-today-count`).pipe(
+      map(response => response.data)
+    );
+  }
+
+  /**
    * Get all children with enriched data (admin endpoint).
    * Returns bus, route, and bus stop names.
    * GET /children/admin/details

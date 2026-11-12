@@ -27,22 +27,6 @@ LocalizedNotification localizeNotification(
   String? name(String key) => p[key];
 
   switch (notification.category) {
-    case 'ROUTE_REQUEST_APPROVED':
-      final childName = name('childName');
-      if (childName == null) return fallback;
-      return LocalizedNotification(
-        l10n.notifRouteRequestApprovedTitle,
-        l10n.notifRouteRequestApprovedBody(childName),
-      );
-
-    case 'ROUTE_REQUEST_REJECTED':
-      final childName = name('childName');
-      if (childName == null) return fallback;
-      return LocalizedNotification(
-        l10n.notifRouteRequestRejectedTitle,
-        l10n.notifRouteRequestRejectedBody(childName),
-      );
-
     case 'ABSENCE_CREATED':
       final childName = name('childName');
       final session = p['session'];
@@ -70,6 +54,31 @@ LocalizedNotification localizeNotification(
           return LocalizedNotification(
             title,
             l10n.notifAbsenceReportedRange(
+              childName,
+              p['startDate'] ?? '',
+              p['endDate'] ?? '',
+            ),
+          );
+        default:
+          return fallback;
+      }
+
+    case 'ABSENCE_CANCELLED':
+      final childName = name('childName');
+      final absenceType = p['absenceType'];
+      if (childName == null || absenceType == null) return fallback;
+      final title = l10n.notifAbsenceCancelledTitle(childName);
+      switch (absenceType) {
+        case 'MORNING':
+          return LocalizedNotification(
+              title, l10n.notifAbsenceCancelledMorning(childName));
+        case 'EVENING':
+          return LocalizedNotification(
+              title, l10n.notifAbsenceCancelledEvening(childName));
+        case 'MULTIPLE_DAYS':
+          return LocalizedNotification(
+            title,
+            l10n.notifAbsenceCancelledRange(
               childName,
               p['startDate'] ?? '',
               p['endDate'] ?? '',
@@ -184,6 +193,22 @@ LocalizedNotification localizeNotification(
       return LocalizedNotification(
         l10n.notifBusCapacityExceededTitle,
         l10n.notifBusCapacityExceededBody(plate, capacity),
+      );
+
+    case 'ROUTE_REQUEST_APPROVED':
+      final childName = name('childName');
+      if (childName == null) return fallback;
+      return LocalizedNotification(
+        l10n.notifRouteRequestApprovedTitle,
+        l10n.notifRouteRequestApprovedBody(childName),
+      );
+
+    case 'ROUTE_REQUEST_REJECTED':
+      final childName = name('childName');
+      if (childName == null) return fallback;
+      return LocalizedNotification(
+        l10n.notifRouteRequestRejectedTitle,
+        l10n.notifRouteRequestRejectedBody(childName),
       );
 
     default:

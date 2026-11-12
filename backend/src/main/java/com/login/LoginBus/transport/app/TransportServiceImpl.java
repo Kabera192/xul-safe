@@ -10,10 +10,13 @@ import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.students.app.StudentsPublicService;
 import com.login.LoginBus.students.domain.Child;
+import com.login.LoginBus.students.domain.AttendanceSession;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
 import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
+import com.login.LoginBus.transport.api.dto.BusAttendanceTodayDto;
+import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.domain.*;
 import com.login.LoginBus.transport.infra.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +91,83 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
     }
 
     @Override
+    public List<BusTripStatusDto> getTodayBusTripStatuses() {
+        long startOfDay = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault())
+                .toInstant().toEpochMilli();
+
+        // Latest record per bus among everything touched today (most-recent-first).
+        Map<Long, BusTrackingJpaEntity> latestByBus = new HashMap<>();
+        for (BusTrackingJpaEntity record : busTrackingRepository.findAllUpdatedSince(startOfDay)) {
+            latestByBus.putIfAbsent(record.getBusId(), record);
+        }
+
+        List<BusTripStatusDto> result = new ArrayList<>();
+        for (BusJpaEntity bus : busRepository.findAll()) {
+            if (bus.getRouteId() == null) continue;
+
+            BusTrackingJpaEntity latest = latestByBus.get(bus.getId());
+            String status;
+            if (latest == null) {
+                status = "SCHEDULED";
+            } else if (latest.getStatus() == BusTrackingStatus.NOT_IN_ROUTE) {
+                // Touched today, but back to idle — the trip ran and ended.
+                status = "COMPLETED";
+            } else {
+                status = "IN_PROGRESS";
+            }
+            result.add(new BusTripStatusDto(bus.getId(), status));
+        }
+        return result;
+    }
+
+    @Override
+    public List<BusAttendanceTodayDto> getTodayBusAttendanceSummary() {
+        LocalDate today = LocalDate.now();
+
+        Map<String, List<AttendanceJpaEntity>> recordsByChild = attendanceRepository
+                .findByDateBetween(today, today)
+                .stream()
+                .collect(Collectors.groupingBy(AttendanceJpaEntity::getChildId));
+
+        Map<Long, String> tripStatusByBus = getTodayBusTripStatuses().stream()
+                .collect(Collectors.toMap(BusTripStatusDto::getBusId, BusTripStatusDto::getStatus));
+
+        List<BusAttendanceTodayDto> result = new ArrayList<>();
+        for (BusJpaEntity bus : busRepository.findAll()) {
+            if (bus.getRouteId() == null) continue;
+
+            String routeName = routeRepository.findById(bus.getRouteId())
+                    .map(RouteJpaEntity::getName).orElse(null);
+            String tripStatus = tripStatusByBus.getOrDefault(bus.getId(), "SCHEDULED");
+
+            Integer present = null;
+            Integer absent = null;
+            // Before the trip starts, no child has had a chance to board yet —
+            // counting them as "absent" this early would be a false reading.
+            if (!"SCHEDULED".equals(tripStatus)) {
+                present = 0;
+                absent = 0;
+                for (ChildJpaEntity child : childRepository.findByBusId(bus.getId())) {
+                    List<AttendanceJpaEntity> childRecords = recordsByChild.getOrDefault(child.getId(), List.of());
+                    boolean isPresent = childRecords.stream().anyMatch(r -> r.isBoarded() || r.isDroppedOff());
+                    if (isPresent) present++; else absent++;
+                }
+            }
+
+            result.add(new BusAttendanceTodayDto(
+                    bus.getId(),
+                    bus.getPlateNumber(),
+                    routeName,
+                    today.toString(),
+                    present,
+                    absent,
+                    tripStatus
+            ));
+        }
+        return result;
+    }
+
+    @Override
     @Transactional
     public BusTracking startJourney(Map<String, Object> journeyData) {
         // Create domain entity
@@ -119,6 +199,12 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         // Set bus ID
         if (journeyData.containsKey("busId")) {
             tracking.setBusId(Long.valueOf(journeyData.get("busId").toString()));
+        }
+
+        // The afternoon drop-off can't start until every child on this bus
+        // has a resolved morning record (dropped off, or marked absent).
+        if (tracking.getTripType() == TripType.AFTERNOON_DROPOFF) {
+            assertMorningAttendanceComplete(tracking.getBusId());
         }
 
         // Set initial location
@@ -168,6 +254,30 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         }
 
         return saved.toDomain();
+    }
+
+    private void assertMorningAttendanceComplete(Long busId) {
+        if (busId == null) return;
+
+        List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
+        if (busChildren.isEmpty()) return;
+
+        Map<String, AttendanceJpaEntity> morningRecords = attendanceRepository
+                .findByBusIdAndDateAndSession(busId, LocalDate.now(), AttendanceSession.MORNING)
+                .stream()
+                .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
+
+        long pending = busChildren.stream().filter(child -> {
+            AttendanceJpaEntity rec = morningRecords.get(child.getId());
+            return rec == null || !(rec.isDroppedOff() || rec.isAbsent());
+        }).count();
+
+        if (pending > 0) {
+            String childWord = pending == 1 ? "child" : "children";
+            throw new IllegalStateException(
+                    "Afternoon journey can't start yet — " + pending + " " + childWord
+                            + " still need this morning's attendance confirmed (dropped off or marked absent)");
+        }
     }
 
     @Override

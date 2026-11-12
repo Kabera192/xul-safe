@@ -69,6 +69,15 @@ public interface StudentsService {
      */
     boolean childExists(String childId);
 
+    /**
+     * Count of distinct children absent today, across every bus —
+     * driver-confirmed attendance records or active parent-reported
+     * absences covering today.
+     *
+     * @return Number of children absent today
+     */
+    int getAbsentTodayCount();
+
     // ========== Absence Operations ==========
 
     /**

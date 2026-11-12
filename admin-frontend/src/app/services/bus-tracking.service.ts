@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { ApiResponse, BusTracking, StartJourneyRequest, LocationUpdate, StatusUpdate, BusTrackingStatus } from '../models';
+import { ApiResponse, BusTracking, StartJourneyRequest, LocationUpdate, StatusUpdate, BusTrackingStatus, BusTripStatusToday } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +18,13 @@ export class BusTrackingService {
 
   getForRoute(routeId: number): Observable<BusTracking | null> {
     return this.http.get<ApiResponse<BusTracking>>(`${this.basePath}/route/${routeId}`).pipe(
+      map(response => response.data)
+    );
+  }
+
+  /** Today's trip status (SCHEDULED / IN_PROGRESS / COMPLETED) for every bus with a route assigned. */
+  getTodayStatuses(): Observable<BusTripStatusToday[]> {
+    return this.http.get<ApiResponse<BusTripStatusToday[]>>(`${this.basePath}/today-status`).pipe(
       map(response => response.data)
     );
   }

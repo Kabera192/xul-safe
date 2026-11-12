@@ -277,6 +277,9 @@ class AppLocalizations {
   String get appVerifyYourEmail => _t({'en': 'Verify your email', 'fr': 'Vérifiez votre e-mail', 'rw': 'Genzura imeyili yawe'});
   String appOtpSentToEmailActivate(String email) => _t({'en': 'We sent a 6-digit code to $email. Enter it below to activate your account.', 'fr': 'Nous avons envoyé un code à 6 chiffres à $email. Entrez-le ci-dessous pour activer votre compte.', 'rw': 'Twohereje kode y\'imibare 6 kuri $email. Yinjize hepfo kugira ngo wemeze konti yawe.'});
   String get appVerifyAndContinue => _t({'en': 'Verify & continue', 'fr': 'Vérifier et continuer', 'rw': 'Genzura maze ukomeze'});
+  String get appLocationOff => _t({'en': 'Location is off', 'fr': 'La localisation est désactivée', 'rw': 'Aho uri (GPS) birafunze'});
+  String get appSessionExpiredTitle => _t({'en': 'Session expired', 'fr': 'Session expirée', 'rw': 'Igihe cyarangiye'});
+  String get appSessionExpiredBody => _t({'en': 'Your session has timed out for your security. Please log in again to continue.', 'fr': 'Votre session a expiré pour votre sécurité. Veuillez vous reconnecter pour continuer.', 'rw': 'Igihe cyawe cyarangiye kugira ngo urinde umutekano wawe. Nyamuneka ongera winjire kugira ngo ukomeze.'});
 
   String get parAddChildFirstChooseStop => _t({'en': 'Add a child first to choose a bus stop for them.', 'fr': 'Ajoutez d\'abord un enfant pour choisir un arrêt de bus pour lui.', 'rw': 'Banza wongere umwana kugira ngo uhitemo ahagarara ha bisi kuri we.'});
   String get parChooseStopTitle => _t({'en': 'Choose a bus stop', 'fr': 'Choisir un arrêt de bus', 'rw': 'Hitamo ahagarara ha bisi'});
@@ -624,6 +627,10 @@ class AppLocalizations {
   String get drvBoardedLabel => _t({'en': 'Boarded', 'fr': 'Monté', 'rw': 'Yinjiye'});
   String get drvAbsentLockedLabel => _t({'en': 'Absent — locked', 'fr': 'Absent — verrouillé', 'rw': 'Ntahari — birafunze'});
   String get drvUndoBtn => _t({'en': 'Undo', 'fr': 'Annuler', 'rw': 'Garuka inyuma'});
+  String notifAbsenceCancelledTitle(String name) => _t({'en': 'Absence cancelled: $name', 'fr': 'Absence annulée : $name', 'rw': 'Ubuze bwahagaritswe: $name'});
+  String notifAbsenceCancelledMorning(String name) => _t({'en': '$name\'s absence this morning has been cancelled.', 'fr': 'L\'absence de $name ce matin a été annulée.', 'rw': 'Ubuze bwa $name mu gitondo bwahagaritswe.'});
+  String notifAbsenceCancelledEvening(String name) => _t({'en': '$name\'s absence this evening has been cancelled.', 'fr': 'L\'absence de $name ce soir a été annulée.', 'rw': 'Ubuze bwa $name nimugoroba bwahagaritswe.'});
+  String notifAbsenceCancelledRange(String name, String start, String end) => _t({'en': '$name\'s absence from $start to $end has been cancelled.', 'fr': 'L\'absence de $name du $start au $end a été annulée.', 'rw': 'Ubuze bwa $name kuva $start kugeza $end bwahagaritswe.'});
 }
 
 // ── Delegate ──────────────────────────────────────────────────────────────────

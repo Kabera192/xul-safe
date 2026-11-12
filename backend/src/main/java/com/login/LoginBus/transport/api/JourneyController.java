@@ -1,6 +1,7 @@
 package com.login.LoginBus.transport.api;
 
 import com.login.LoginBus.shared.api.ApiResponse;
+import com.login.LoginBus.transport.api.dto.BusAttendanceTodayDto;
 import com.login.LoginBus.transport.app.TransportService;
 import com.login.LoginBus.transport.domain.Journey;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -175,6 +176,19 @@ public class JourneyController {
         return ResponseEntity.ok(new ApiResponse<>(
             "Weekly attendance retrieved successfully",
             attendance
+        ));
+    }
+
+    /**
+     * Today's bus attendance summary (admin dashboard). Scoped to today only —
+     * route, present/absent counts, and trip status per bus.
+     * GET /api/v1/journeys/attendance/today
+     */
+    @GetMapping("/attendance/today")
+    public ResponseEntity<ApiResponse<List<BusAttendanceTodayDto>>> getTodayBusAttendanceSummary() {
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Today's bus attendance summary retrieved successfully",
+            transportService.getTodayBusAttendanceSummary()
         ));
     }
 }
