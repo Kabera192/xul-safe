@@ -81,6 +81,7 @@ class AuthApiService {
   static Future<AuthResultModel> verifyRegistrationOtp({
     required String email,
     required String otp,
+    required String password,
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/verify-registration');
 
@@ -89,7 +90,11 @@ class AuthApiService {
       res = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email.trim(), 'otp': otp.trim()}),
+        body: jsonEncode({
+          'email': email.trim(),
+          'otp': otp.trim(),
+          'password': password,
+        }),
       );
     } catch (_) {
       throw Exception('Could not reach server. Check your connection.');

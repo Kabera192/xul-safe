@@ -41,8 +41,13 @@ public class EmailServiceImpl implements EmailService {
             message.setText(body);
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("[EMAIL] Send failed, falling back to console: " + e.getMessage());
-            System.out.println("[EMAIL-DEV] To: " + toEmail + " | Subject: " + subject + " | OTP: " + otp);
+            // Mail IS configured here, so this is a real delivery failure, not
+            // the local-dev case above — don't swallow it and tell the caller
+            // "sent" when the user will never receive a code. Let it fail the
+            // request (and roll back whatever DB state went with it) instead.
+            System.err.println("[EMAIL] Send failed: " + e.getMessage());
+            throw new IllegalStateException(
+                    "Failed to send email. Please try again in a moment.", e);
         }
     }
 }

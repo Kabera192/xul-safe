@@ -13,7 +13,13 @@ import '../navigation/parent_nav.dart';
 /// activates+signs in on success instead of moving to a password screen).
 class RegistrationOtpPage extends StatefulWidget {
   final String email;
-  const RegistrationOtpPage({super.key, required this.email});
+  // The password the user chose on the signup screen. Carried through here
+  // and sent alongside the OTP so the account's credential is set at the
+  // moment inbox ownership is actually proven, not from the earlier,
+  // unauthenticated /register submission.
+  final String password;
+  const RegistrationOtpPage(
+      {super.key, required this.email, required this.password});
 
   @override
   State<RegistrationOtpPage> createState() => _RegistrationOtpPageState();
@@ -72,6 +78,7 @@ class _RegistrationOtpPageState extends State<RegistrationOtpPage> {
       final result = await AuthApiService.verifyRegistrationOtp(
         email: widget.email,
         otp: otp,
+        password: widget.password,
       );
 
       await SessionStorage.saveSession(
@@ -128,15 +135,28 @@ class _RegistrationOtpPageState extends State<RegistrationOtpPage> {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final keyboard = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       body: GradientBackground(
         svgAsset: 'assests/backgrounds/mobile/mobile_background_login.svg',
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _buildCard(context, l10n, onSurface, surface, isDark),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
@@ -145,11 +165,16 @@ class _RegistrationOtpPageState extends State<RegistrationOtpPage> {
                   onPressed: _loading ? null : () => Navigator.of(context).pop(),
                 ),
               ),
-              const Spacer(),
-              AnimatedPadding(
-                duration: const Duration(milliseconds: 150),
-                padding: EdgeInsets.only(bottom: keyboard),
-                child: Container(
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, AppLocalizations l10n,
+      Color onSurface, Color surface, bool isDark) {
+    return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 24)
                       .copyWith(top: 32, bottom: 32),
@@ -320,12 +345,6 @@ class _RegistrationOtpPageState extends State<RegistrationOtpPage> {
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

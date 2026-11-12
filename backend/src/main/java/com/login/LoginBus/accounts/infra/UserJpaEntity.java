@@ -56,6 +56,12 @@ public class UserJpaEntity {
     @Column(name = "otp_expires_at")
     private Long otpExpiresAt;
 
+    // Failed-guess counter for the current OTP — reset to 0 whenever a new
+    // code is issued, invalidated once it hits the attempt limit.
+    @Column(name = "otp_attempts")
+    @ColumnDefault("0")
+    private int otpAttempts = 0;
+
     // Existing rows are grandfathered in as verified — only self-registration
     // (AuthServiceImpl.registerUser) explicitly sets this false.
     @Column(name = "email_verified", nullable = false)
@@ -199,6 +205,14 @@ public class UserJpaEntity {
 
     public void setOtpExpiresAt(Long otpExpiresAt) {
         this.otpExpiresAt = otpExpiresAt;
+    }
+
+    public int getOtpAttempts() {
+        return otpAttempts;
+    }
+
+    public void setOtpAttempts(int otpAttempts) {
+        this.otpAttempts = otpAttempts;
     }
 
     public boolean isEmailVerified() {

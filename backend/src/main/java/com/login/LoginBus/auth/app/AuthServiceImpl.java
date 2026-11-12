@@ -11,7 +11,10 @@ import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -22,7 +25,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -34,23 +37,28 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     private final JwtService jwtService;
     private final EmailService emailService;
     private final NotificationsPublicService notificationsPublicService;
+    private final TransactionTemplate requiresNewTransactionTemplate;
 
     private static final String UPLOAD_DIR = "uploads/profile-photos/";
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final long OTP_VALIDITY_MS = 10 * 60 * 1000; // 10 minutes
+    private static final int MAX_OTP_ATTEMPTS = 5;
 
     public AuthServiceImpl(AccountsPublicService accountsService,
                            UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            JwtService jwtService,
                            EmailService emailService,
-                           NotificationsPublicService notificationsPublicService) {
+                           NotificationsPublicService notificationsPublicService,
+                           PlatformTransactionManager transactionManager) {
         this.accountsService = accountsService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailService = emailService;
         this.notificationsPublicService = notificationsPublicService;
+        this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.requiresNewTransactionTemplate.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
     }
 
     @Override
@@ -62,8 +70,36 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         if (!isStrongPassword(user.getPassword())) {
             throw new IllegalArgumentException("Password must be at least 8 characters, contain no spaces, and include at least one number");
         }
-        if (accountsService.userExists(user.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+        // Normalize once, up front — every lookup below, and whatever gets
+        // persisted (here or in AccountsServiceImpl.createUser), must agree
+        // on the same casing, or verification/login lookups that normalize
+        // will never match a mixed-case stored value.
+        user.setEmail(normalizeEmail(user.getEmail()));
+        Optional<UserJpaEntity> existing = userRepository.findByEmail(user.getEmail());
+        if (existing.isPresent()) {
+            UserJpaEntity existingEntity = existing.get();
+            if (existingEntity.isEmailVerified()) {
+                throw new IllegalArgumentException("Email already registered");
+            }
+            // An abandoned registration (closed the app, backed out, etc.)
+            // before verifying — update their details in case they're
+            // correcting something and resend the code, rather than leaving
+            // them permanently stuck on "Email already registered".
+            //
+            // The password submitted here is deliberately NOT stored as the
+            // account's credential: this endpoint is unauthenticated, so
+            // anyone can submit a password for an email they don't own,
+            // whether that's a first registration or a "retry". Trusting
+            // either event would leave a window where an uninvited party's
+            // password choice can end up active. The only point this flow
+            // proves inbox ownership is OTP verification, so that's where
+            // the real password gets set — see verifyRegistrationOtp().
+            existingEntity.setFirstName(user.getFirstName());
+            existingEntity.setLastName(user.getLastName());
+            existingEntity.setPhoneNumber(user.getPhoneNumber());
+            userRepository.save(existingEntity);
+            sendOtpToUser(existingEntity, "Account verification");
+            return;
         }
 
         // Hash password before storing
@@ -92,12 +128,24 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
 
     @Override
     @Transactional
-    public AuthResponse verifyRegistrationOtp(String email, String otp) {
+    public AuthResponse verifyRegistrationOtp(String email, String otp, String password) {
         UserJpaEntity user = userRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new IllegalArgumentException("No account found with this email"));
 
         checkOtp(user, otp);
 
+        if (!isStrongPassword(password)) {
+            throw new IllegalArgumentException("Password must be at least 8 characters, contain no spaces, and include at least one number");
+        }
+
+        // The password submitted at /register time is from an unauthenticated
+        // caller — anyone can submit a password for any email address at that
+        // step, whether or not they own it. This OTP verification is the
+        // first point this flow actually proves inbox ownership, so the
+        // credential that ends up active must be bound to THIS call, not to
+        // whatever an earlier (possibly uninvited) /register submission
+        // chose. See registerUser()'s comment for the other half of this.
+        user.setPassword(passwordEncoder.encode(password));
         user.setEmailVerified(true);
         user.setOtpCode(null);
         user.setOtpExpiresAt(null);
@@ -126,8 +174,7 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
                     NotificationType.INFO,
                     NotificationCategory.PARENT_REGISTERED,
                     "New parent registered",
-                    user.getFirstName() + " " + user.getLastName() + " verified their account and joined as a parent.",
-                    Map.of("firstName", user.getFirstName(), "lastName", user.getLastName())
+                    user.getFirstName() + " " + user.getLastName() + " verified their account and joined as a parent."
             );
         } catch (Exception e) {
             // Don't fail account verification if notification delivery fails
@@ -137,13 +184,7 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     @Override
     @Transactional(readOnly = true)
     public AuthResponse authenticateUser(String email, String password) {
-        String identifier = email == null ? "" : email.trim();
-
-        // The login field accepts either an email or a phone number — try
-        // email first (lower-cased, since emails are stored lower-cased),
-        // then fall back to an exact phone number match.
-        UserJpaEntity userEntity = userRepository.findByEmail(identifier.toLowerCase())
-                .or(() -> userRepository.findByPhoneNumber(identifier))
+        UserJpaEntity userEntity = userRepository.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!passwordEncoder.matches(password, userEntity.getPassword())) {
@@ -251,7 +292,7 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void verifyOtp(String email, String otp) {
         UserJpaEntity user = userRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new IllegalArgumentException("No account found with this email"));
@@ -284,18 +325,43 @@ public class AuthServiceImpl implements AuthService, AuthPublicService {
         String otp = String.format("%06d", new SecureRandom().nextInt(1_000_000));
         user.setOtpCode(otp);
         user.setOtpExpiresAt(System.currentTimeMillis() + OTP_VALIDITY_MS);
+        user.setOtpAttempts(0);
         userRepository.save(user);
 
         emailService.sendOtp(user.getEmail(), otp, purpose);
     }
 
+    /**
+     * Caller must run in a writable transaction. The attempt budget is
+     * consumed atomically at the DB level (one row-level UPDATE, not a
+     * Java-side read-modify-write) BEFORE the guess is even compared,
+     * regardless of whether it turns out right or wrong — this is what
+     * makes the lockout race-proof: concurrent requests can't all read the
+     * same starting count and all "succeed" at incrementing, because the
+     * conditional UPDATE's WHERE clause is evaluated by the database as
+     * part of the same statement that does the increment. The increment
+     * runs in its own REQUIRES_NEW transaction so it survives the throw
+     * below rolling back the caller's transaction.
+     */
     private void checkOtp(UserJpaEntity user, String otp) {
-        if (user.getOtpCode() == null || !user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
+        if (user.getOtpCode() == null) {
             throw new IllegalArgumentException("Invalid OTP code");
         }
         if (user.getOtpExpiresAt() == null || System.currentTimeMillis() > user.getOtpExpiresAt()) {
             throw new IllegalArgumentException("OTP has expired. Please request a new one.");
         }
+
+        Long userId = user.getId();
+        int rowsUpdated = requiresNewTransactionTemplate.execute(status ->
+                userRepository.incrementOtpAttemptsIfBelowLimit(userId, MAX_OTP_ATTEMPTS));
+        if (rowsUpdated == 0) {
+            throw new IllegalArgumentException("Too many incorrect attempts. Please request a new code.");
+        }
+
+        if (!user.getOtpCode().equals(otp == null ? "" : otp.trim())) {
+            throw new IllegalArgumentException("Invalid OTP code");
+        }
+        user.setOtpAttempts(0);
     }
 
     // AuthPublicService methods

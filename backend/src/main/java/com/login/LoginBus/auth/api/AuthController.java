@@ -62,9 +62,11 @@ public class AuthController {
             throw new IllegalArgumentException("Email is required");
         if (request.getOtp() == null || request.getOtp().trim().isEmpty())
             throw new IllegalArgumentException("OTP is required");
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty())
+            throw new IllegalArgumentException("Password is required");
 
         AuthResponse response = authService.verifyRegistrationOtp(
-                request.getEmail().trim(), request.getOtp().trim());
+                request.getEmail().trim(), request.getOtp().trim(), request.getPassword());
         return ResponseEntity.ok(response);
     }
 
