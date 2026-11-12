@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/app_localizations.dart';
 import '../mobile_authentication.dart';
 import 'mobile_splash_gradient.dart';
 
@@ -17,6 +18,7 @@ class SessionExpiredPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: GradientBackground(
         svgAsset: 'assests/backgrounds/mobile/mobile_background_login.svg',
@@ -50,20 +52,19 @@ class SessionExpiredPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Session expired',
-                      style: TextStyle(
+                    Text(
+                      l10n.appSessionExpiredTitle,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF111827),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Your session has timed out for your security. '
-                      'Please log in again to continue.',
+                    Text(
+                      l10n.appSessionExpiredBody,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6B7280),
                         height: 1.4,
@@ -82,9 +83,9 @@ class SessionExpiredPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Return to Login',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.appReturnToLogin,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),

@@ -1,10 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+import '../../../services/child_service.dart';
 import '../../../services/emergency_contact_service.dart';
+import '../../../services/transport_service.dart';
 import '../../../widgets/language_picker_sheet.dart';
-import '../pages/parent_request_stop_page.dart';
-import '../../../widgets/language_picker_sheet.dart';
+import '../pages/parent_choose_stop_page.dart';
 
 class ParentMoreSettingsForm extends StatefulWidget {
   const ParentMoreSettingsForm({super.key});
@@ -18,10 +20,36 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
   bool _loadingContacts = true;
   String? _contactsError;
 
+  List<Map<String, dynamic>> _routeDetails = [];
+  bool _loadingRoutes = true;
+
   @override
   void initState() {
     super.initState();
     _loadContacts();
+    _loadRouteDetails();
+  }
+
+  Future<void> _loadRouteDetails() async {
+    setState(() => _loadingRoutes = true);
+    try {
+      final children = await ChildService.getMyChildren();
+      final details = <Map<String, dynamic>>[];
+      for (final child in children) {
+        try {
+          final detail = await TransportService.getChildRouteDetails(child.id);
+          detail['childName'] = child.fullName;
+          details.add(detail);
+        } catch (_) {
+          // Skip a child whose details fail to load rather than blocking the rest
+        }
+      }
+      if (mounted) setState(() => _routeDetails = details);
+    } catch (_) {
+      // Leave the section empty on failure — not critical to the rest of the page
+    } finally {
+      if (mounted) setState(() => _loadingRoutes = false);
+    }
   }
 
   Future<void> _loadContacts() async {
@@ -37,6 +65,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
   }
 
   Future<void> _showAddContactDialog() async {
+    final l10n = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
     final phoneCtrl = TextEditingController();
     final labelCtrl = TextEditingController();
@@ -48,7 +77,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, set) => AlertDialog(
-          title: const Text('New Emergency Contact'),
+          title: Text(l10n.newEmergencyContact),
           content: Form(
             key: formKey,
             child: Column(
@@ -57,14 +86,14 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
                 TextFormField(
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Phone number *'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  decoration: InputDecoration(labelText: l10n.phoneNumberField),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: labelCtrl,
-                  decoration: const InputDecoration(labelText: 'Label *', hintText: 'e.g. Aunt, Uncle'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  decoration: InputDecoration(labelText: l10n.labelField, hintText: l10n.labelHint),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 if (dialogError != null) ...[
                   const SizedBox(height: 10),
@@ -76,7 +105,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           actions: [
             TextButton(
               onPressed: saving ? null : () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: saving ? null : () async {
@@ -95,7 +124,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
               },
               child: saving
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Save'),
+                  : Text(l10n.save),
             ),
           ],
         ),
@@ -104,17 +133,21 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
   }
 
   Future<void> _deleteContact(Map<String, dynamic> contact) async {
+    final l10n = AppLocalizations.of(context);
     final id = contact['id'];
     if (id == null) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove contact?'),
-        content: Text('${contact['label'] ?? ''} (${contact['phoneNumber'] ?? ''}) will be removed.'),
+        title: Text(l10n.removeContactTitle),
+        content: Text(l10n.removeContactBody(
+          contact['label']?.toString() ?? '',
+          contact['phoneNumber']?.toString() ?? '',
+        )),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(l10n.remove)),
         ],
       ),
     );
@@ -135,6 +168,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -142,7 +176,7 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // SECTION 1 — Emergency Contacts
-          const _SectionTitle('Emergency Contacts'),
+          _SectionTitle(l10n.emergencyContacts),
           const SizedBox(height: 8),
 
           if (_loadingContacts)
@@ -150,46 +184,124 @@ class _ParentMoreSettingsFormState extends State<ParentMoreSettingsForm> {
           else if (_contactsError != null)
             SizedBox(height: 60, child: Center(child: Text(_contactsError!, style: const TextStyle(color: Colors.red, fontSize: 13))))
           else if (_contacts.isEmpty)
-            const SizedBox(height: 40, child: Center(child: Text('No emergency contact yet')))
+            SizedBox(height: 40, child: Center(child: Text(l10n.noEmergencyContact)))
           else
             ...(_contacts.map((c) => _ContactTile(contact: c, onDelete: () => _deleteContact(c)))),
 
           const SizedBox(height: 10),
-          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: 'New contact', onTap: _showAddContactDialog),
+          _SoftActionButton(icon: IconsaxPlusLinear.add_circle, text: l10n.newContact, onTap: _showAddContactDialog),
 
           const SizedBox(height: 22),
 
           // SECTION 2 — My route details
-          const _SectionTitle('My route details'),
+          _SectionTitle(l10n.myRouteDetails),
           const SizedBox(height: 8),
-          const SizedBox(height: 8),
-          Center(child: Text('No routes/stops', style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 14.5, fontWeight: FontWeight.w500))),
+          if (_loadingRoutes)
+            const SizedBox(
+              height: 40,
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else if (_routeDetails.isEmpty)
+            Center(
+              child: Text(
+                l10n.noChildrenYet,
+                style: TextStyle(
+                    color: onSurface.withOpacity(0.6),
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500),
+              ),
+            )
+          else
+            ..._routeDetails.map((detail) {
+              final routeName = detail['routeName'] as String?;
+              final stopName = detail['assignedBusStopName'] as String?;
+              final message = detail['assignmentMessage'] as String?;
+              final childName = detail['childName'] as String? ?? l10n.parChildLabel;
+              final hasPending = detail['hasPendingRouteRequest'] == true;
+
+              final subtitle = routeName != null
+                  ? '$routeName${stopName != null && stopName != "Not assigned" ? " — $stopName" : ""}'
+                  : (message ?? l10n.parNoRouteAssignedYet);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(IconsaxPlusLinear.location, size: 16, color: Color(0xFF0D4896)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(childName,
+                              style: TextStyle(color: onSurface, fontWeight: FontWeight.w600, fontSize: 14)),
+                          Text(subtitle,
+                              style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 13)),
+                          if (hasPending) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(IconsaxPlusLinear.clock, size: 12, color: Color(0xFFCC8A00)),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    l10n.parStopRequestPending,
+                                    style: const TextStyle(
+                                      color: Color(0xFFCC8A00),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           const SizedBox(height: 10),
           _SoftActionButton(
             icon: IconsaxPlusLinear.add_circle,
-            text: 'Request a custom bus stop',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ParentRequestStopPage()),
-            ),
+            text: l10n.parChooseOrRequestBusStop,
+            onTap: () async {
+              final changed = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const ParentChooseStopPage()),
+              );
+              if (changed == true) _loadRouteDetails();
+            },
           ),
 
           const SizedBox(height: 22),
 
           // SECTION 3 — Journey logs
-          const _SectionTitle('Journey logs'),
+          _SectionTitle(l10n.journeyLogs),
           const SizedBox(height: 8),
-          _SoftCardButton(icon: IconsaxPlusLinear.refresh_left_square, title: "View all your kids' journeys", onTap: null),
+          _SoftCardButton(icon: IconsaxPlusLinear.refresh_left_square, title: l10n.viewAllJourneys, onTap: null),
 
           const SizedBox(height: 22),
 
           // SECTION 4 — Language & support
-          const _SectionTitle('Language & support'),
+          _SectionTitle(l10n.languageAndSupport),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.global, text: 'Language', onTap: () => showLanguagePicker(context)),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.global, text: l10n.language, onTap: () => showLanguagePicker(context)),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.message_question, text: 'Contact support', onTap: null),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.message_question, text: l10n.contactSupport, onTap: null),
           const SizedBox(height: 8),
-          _WhiteOptionTile(icon: IconsaxPlusLinear.document_text, text: 'Send a claim', onTap: null),
+          _WhiteOptionTile(icon: IconsaxPlusLinear.document_text, text: l10n.sendClaim, onTap: null),
 
           const SizedBox(height: 10),
         ],
@@ -260,15 +372,23 @@ class _SoftActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          height: 50,
-          alignment: Alignment.center,
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: borderColor, width: 1)),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 18, color: blue),
               const SizedBox(width: 8),
-              Text(text, style: const TextStyle(color: blue, fontSize: 14.5, fontWeight: FontWeight.w500)),
+              Flexible(
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: blue, fontSize: 14.5, fontWeight: FontWeight.w500),
+                ),
+              ),
             ],
           ),
         ),

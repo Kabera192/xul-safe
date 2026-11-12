@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../pages/driver_child_profile_page.dart';
 import '../models/child_model.dart';
 import '../models/stop_model.dart';
@@ -33,13 +34,13 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
     super.dispose();
   }
 
-  String _stopLabel(String? stopId) {
-    if (stopId == null) return 'Not assigned';
+  String _stopLabel(AppLocalizations l10n, String? stopId) {
+    if (stopId == null) return l10n.drvNotAssigned;
 
     final index = widget.stops.indexWhere((s) => s.id == stopId);
-    if (index == -1) return 'Unknown stop';
+    if (index == -1) return l10n.drvUnknownStop;
 
-    return 'Bus stop ${index + 1}';
+    return l10n.drvBusStopNumbered(index + 1);
   }
 
   List<ChildModel> get _filteredChildren {
@@ -60,6 +61,7 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final children = _filteredChildren;
 
     return Padding(
@@ -96,8 +98,8 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
               color: Colors.red,
             ),
           ] else if (children.isEmpty) ...[
-            const _MessageCard(
-              text: 'No children found',
+            _MessageCard(
+              text: l10n.drvNoChildrenFound,
               color: Colors.black54,
             ),
           ] else ...[
@@ -112,7 +114,7 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
 
       return _ChildCard(
         child: child,
-        stopLabel: _stopLabel(child.pickupStopId),
+        stopLabel: _stopLabel(l10n, child.pickupStopId),
       );
     },
   ),
@@ -158,9 +160,9 @@ class _SearchBox extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                hintText: 'Search a name',
-                hintStyle: TextStyle(
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context).searchName,
+                hintStyle: const TextStyle(
                   color: Colors.black45,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -193,19 +195,20 @@ class _StopFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 42,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           _FilterChip(
-            label: 'All',
+            label: l10n.allStops,
             selected: selectedStopId == null,
             onTap: () => onSelected(null),
           ),
           ...stops.asMap().entries.map((entry) {
             return _FilterChip(
-              label: 'Bus stop ${entry.key + 1}',
+              label: l10n.drvBusStopNumbered(entry.key + 1),
               selected: selectedStopId == entry.value.id,
               onTap: () => onSelected(entry.value.id),
             );
@@ -280,7 +283,7 @@ class _ChildCard extends StatelessWidget {
   @override
   @override
 Widget build(BuildContext context) {
-  final name = child.fullName.isEmpty ? 'Unnamed child' : child.fullName;
+  final name = child.fullName.isEmpty ? AppLocalizations.of(context).drvUnnamedChild : child.fullName;
 
   return Material(
     color: Colors.transparent,
@@ -318,12 +321,16 @@ Widget build(BuildContext context) {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              stopLabel,
-              style: const TextStyle(
-                color: blue,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                stopLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: blue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

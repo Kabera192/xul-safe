@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+
 class ParentRequestStopSuccessForm extends StatelessWidget {
   final VoidCallback onDone;
 
@@ -13,6 +15,7 @@ class ParentRequestStopSuccessForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -40,7 +43,7 @@ class ParentRequestStopSuccessForm extends StatelessWidget {
           ),
           Center(
             child: Text(
-              'Request submitted',
+              l10n.parRequestSubmitted,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
@@ -54,7 +57,7 @@ class ParentRequestStopSuccessForm extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'Your custom bus stop request has been sent to the school admin for approval. You\'ll be notified once it\'s reviewed.',
+                l10n.parRequestSubmittedBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -76,9 +79,9 @@ class ParentRequestStopSuccessForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              child: const Text(
-                'Got it',
-                style: TextStyle(
+              child: Text(
+                l10n.gotIt,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

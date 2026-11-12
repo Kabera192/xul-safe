@@ -21,6 +21,7 @@ class SheetShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
 
     final content = Padding(
       padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
@@ -34,7 +35,14 @@ class SheetShell extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: scrollable ? SingleChildScrollView(child: content) : content,
+        // showModalBottomSheet doesn't lift its content above the keyboard
+        // on its own — without this, a field near the bottom of the sheet
+        // (e.g. Grade on the add/edit child forms) ends up hidden behind it.
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.only(bottom: keyboard),
+          child: scrollable ? SingleChildScrollView(child: content) : content,
+        ),
       ),
     );
   }
@@ -205,6 +213,7 @@ class SheetInput extends StatelessWidget {
   final Color border;
   final Color textColor;
   final String? Function(String?)? validator;
+  final TextInputType? keyboardType;
 
   const SheetInput({
     super.key,
@@ -215,6 +224,7 @@ class SheetInput extends StatelessWidget {
     required this.border,
     required this.textColor,
     this.validator,
+    this.keyboardType,
   });
 
   @override
@@ -235,6 +245,7 @@ class SheetInput extends StatelessWidget {
           controller: controller,
           style: TextStyle(color: textColor, fontSize: 15),
           validator: validator,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -424,6 +435,106 @@ class GenderPicker extends StatelessWidget {
               ),
             ),
           ],
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+/// Grade dropdown covering Nursery 1–3 followed by Grade 1–12, so a nursery
+/// child isn't forced into the numbered-grade scheme.
+class GradePicker extends StatelessWidget {
+  final String? value;
+  final String label;
+  final Color fill;
+  final Color border;
+  final Color textColor;
+  final ValueChanged<String?> onChanged;
+  final String? Function(String?)? validator;
+
+  const GradePicker({
+    super.key,
+    required this.value,
+    required this.label,
+    required this.fill,
+    required this.border,
+    required this.textColor,
+    required this.onChanged,
+    this.validator,
+  });
+
+  static const List<String> options = [
+    'Nursery 1',
+    'Nursery 2',
+    'Nursery 3',
+    'Grade 1',
+    'Grade 2',
+    'Grade 3',
+    'Grade 4',
+    'Grade 5',
+    'Grade 6',
+    'Grade 7',
+    'Grade 8',
+    'Grade 9',
+    'Grade 10',
+    'Grade 11',
+    'Grade 12',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: textColor.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue: options.contains(value) ? value : null,
+          style: TextStyle(color: textColor, fontSize: 15),
+          dropdownColor: fill,
+          isExpanded: true,
+          validator: validator,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: fill,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Color(0xFF0D4896),
+                width: 1.3,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+          ),
+          items: options
+              .map((o) => DropdownMenuItem(
+                    value: o,
+                    child: Text(o, style: TextStyle(color: textColor)),
+                  ))
+              .toList(),
           onChanged: onChanged,
         ),
       ],

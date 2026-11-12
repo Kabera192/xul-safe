@@ -70,7 +70,7 @@ class _MyAppState extends State<MyApp> {
             return MaterialApp(
               navigatorKey: appNavigatorKey,
               debugShowCheckedModeBanner: false,
-              title: 'Bus App',
+              title: AppLocalizations(locale).appTitle,
               themeMode: themeMode,
               locale: locale,
               supportedLocales: const [

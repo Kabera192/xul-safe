@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/session/session_storage.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../services/auth_api_service.dart';
-import '../../navigation/driver_nav.dart';
-import '../../navigation/parent_nav.dart';
+import '../registration_otp_page.dart';
 import '../widgets/auth_field_input.dart';
 import '../widgets/auth_form_shell.dart';
 
@@ -45,17 +44,6 @@ class _SignupFormState extends State<SignupForm> {
     return emailRegex.hasMatch(value);
   }
 
-  void _goToHomeByRole(String role) {
-    final normalizedRole = role.toUpperCase();
-
-    final page =
-        normalizedRole == 'DRIVER' ? const DriverNav() : const ParentNav();
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => page),
-    );
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -65,7 +53,7 @@ class _SignupFormState extends State<SignupForm> {
     });
 
     try {
-      final result = await AuthApiService.register(
+      await AuthApiService.register(
         firstName: _firstNameCtrl.text,
         lastName: _lastNameCtrl.text,
         phoneNumber: _phoneCtrl.text,
@@ -73,17 +61,12 @@ class _SignupFormState extends State<SignupForm> {
         password: _passwordCtrl.text,
       );
 
-      await SessionStorage.saveSession(
-        token: result.token,
-        refreshToken: result.refreshToken,
-        tokenExpiresAt: result.tokenExpiresAt,
-        refreshTokenExpiresAt: result.refreshTokenExpiresAt,
-        userId: result.userId,
-        role: result.role,
-      );
-
       if (!mounted) return;
-      _goToHomeByRole(result.role);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RegistrationOtpPage(email: _emailCtrl.text.trim()),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -95,10 +78,10 @@ class _SignupFormState extends State<SignupForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AuthFormShell(
-      title: 'Create your account',
-      subtitle:
-          'We are happy to have you! Please fill in the details below to create your account.',
+      title: l10n.createYourAccount,
+      subtitle: l10n.registerSubtitle,
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 380),
@@ -108,47 +91,47 @@ class _SignupFormState extends State<SignupForm> {
               child: Column(
                 children: [
                   AuthFieldInput(
-                    label: 'First name',
+                    label: l10n.firstName,
                     controller: _firstNameCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'First name is required';
+                        return l10n.firstNameRequired;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   AuthFieldInput(
-                    label: 'Last name',
+                    label: l10n.lastName,
                     controller: _lastNameCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Last name is required';
+                        return l10n.lastNameRequired;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   AuthFieldInput(
-                    label: 'Phone number',
+                    label: l10n.phoneNumber,
                     controller: _phoneCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Phone number is required';
+                        return l10n.phoneRequired;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   AuthFieldInput(
-                    label: 'Email address',
+                    label: l10n.emailAddress,
                     controller: _emailCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Email is required';
+                        return l10n.emailRequired;
                       }
                       if (!_isValidEmail(v.trim())) {
-                        return 'Please enter a valid email';
+                        return l10n.enterValidEmail;
                       }
                       return null;
                     },
@@ -157,7 +140,7 @@ class _SignupFormState extends State<SignupForm> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'More fields below ↓',
+                      l10n.moreFieldsBelow,
                       style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -169,35 +152,38 @@ class _SignupFormState extends State<SignupForm> {
                   ),
                   const SizedBox(height: 10),
                   AuthFieldInput(
-                    label: 'Password',
+                    label: l10n.password,
                     controller: _passwordCtrl,
                     obscure: true,
                     showEye: true,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
-                        return 'Password is required';
+                        return l10n.passwordRequired;
                       }
                       if (v.length < 8) {
-                        return 'Password must be at least 8 characters';
+                        return l10n.passwordMin8;
                       }
-                      if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(v)) {
-                        return 'Password must contain at least one symbol';
+                      if (v.contains(' ')) {
+                        return l10n.appPasswordNoSpaces;
+                      }
+                      if (!RegExp(r'[0-9]').hasMatch(v)) {
+                        return l10n.appPasswordNeedsNumber;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   AuthFieldInput(
-                    label: 'Confirm password',
+                    label: l10n.confirmPassword,
                     controller: _confirmCtrl,
                     obscure: true,
                     showEye: true,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
-                        return 'Please confirm your password';
+                        return l10n.pleaseConfirmPassword;
                       }
                       if (v != _passwordCtrl.text) {
-                        return 'Passwords do not match';
+                        return l10n.passwordsDoNotMatch;
                       }
                       return null;
                     },
@@ -224,9 +210,9 @@ class _SignupFormState extends State<SignupForm> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              'Create account',
-                              style: TextStyle(
+                          : Text(
+                              l10n.createAccount,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -246,9 +232,9 @@ class _SignupFormState extends State<SignupForm> {
                   Center(
                     child: TextButton(
                       onPressed: widget.onSwitch,
-                      child: const Text(
-                        'Already have an account? Sign in',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.alreadyHaveAccount,
+                        style: const TextStyle(
                           color: Color(0xFF0D4896),
                           fontWeight: FontWeight.w500,
                         ),

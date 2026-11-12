@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../core/l10n/app_localizations.dart';
 import 'mobile_gps_banner.dart';
 
 class MobileLocationGate extends StatefulWidget {
@@ -79,6 +80,7 @@ class _MobileLocationGateState extends State<MobileLocationGate> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isBad = !_gpsOk;
 
     Widget content = Stack(
@@ -110,10 +112,10 @@ class _MobileLocationGateState extends State<MobileLocationGate> {
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               opacity: isBad ? 1.0 : 0.0,
-              child: const Padding(
-                padding: EdgeInsets.all(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: MobileGpsBanner(
-                  text: 'Location is off',
+                  text: l10n.appLocationOff,
                 ),
               ),
             ),

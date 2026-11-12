@@ -6,7 +6,9 @@ class MobileNotificationVisualTemplate {
   static Widget iconForCategory(String category, {required Color iconColor}) {
     final normalized = category.trim().toUpperCase();
 
-    if (normalized == 'ABSENCE_CREATED') {
+    if (normalized == 'ABSENCE_CREATED' ||
+        normalized == 'ABSENCE_REPORTED_BY_PARENT' ||
+        normalized == 'ABSENCE_CANCELLED') {
       return SvgPicture.asset(
         'assests/backgrounds/mobile/abscence_icon.svg',
         width: 30,

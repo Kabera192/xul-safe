@@ -9,6 +9,7 @@ import '../../../widgets/mobile_form_controller.dart';
 
 import '../../../features/driver/models/notification_model.dart';
 import '../forms/parent_notifications_form.dart';
+import '../../../core/l10n/app_localizations.dart';
 
 class ParentNotificationsPage extends StatefulWidget {
   final bool isActive;
@@ -128,6 +129,7 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GradientBackground(
@@ -135,14 +137,14 @@ class _ParentNotificationsPageState extends State<ParentNotificationsPage> {
         child: SafeArea(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 top: 18,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Text(
-                    'Notifications',
-                    style: TextStyle(
+                    l10n.notifications,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,
