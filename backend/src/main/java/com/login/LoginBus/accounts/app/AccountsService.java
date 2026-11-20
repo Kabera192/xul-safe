@@ -3,6 +3,7 @@ package com.login.LoginBus.accounts.app;
 import com.login.LoginBus.accounts.domain.Conductor;
 import com.login.LoginBus.accounts.domain.EmergencyContact;
 import com.login.LoginBus.accounts.domain.User;
+import com.login.LoginBus.accounts.domain.UserRole;
 
 import java.util.List;
 
@@ -21,6 +22,14 @@ public interface AccountsService {
      * @return The user, or null if not found
      */
     User getUserById(Long userId);
+
+    /**
+     * Get all users with a given role (e.g. every registered parent).
+     *
+     * @param role The role to filter by
+     * @return Matching users
+     */
+    List<User> getUsersByRole(UserRole role);
 
     /**
      * Get user by email.
