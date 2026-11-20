@@ -25,7 +25,7 @@
       </div>
       <div class="overview-content">
         <span class="overview-value">{{ todayTrips.scheduled }}</span>
-        <span class="overview-label">Scheduled</span>
+        <span class="overview-label">Scheduled Bus Journeys</span>
       </div>
       <div class="overview-indicator"></div>
     </div>
@@ -39,7 +39,7 @@
       </div>
       <div class="overview-content">
         <span class="overview-value">{{ todayTrips.inProgress }}</span>
-        <span class="overview-label">In Progress</span>
+        <span class="overview-label">Bus Journeys In Progress</span>
       </div>
       <div class="overview-indicator pulse"></div>
     </div>
@@ -53,7 +53,7 @@
       </div>
       <div class="overview-content">
         <span class="overview-value">{{ todayTrips.completed }}</span>
-        <span class="overview-label">Completed</span>
+        <span class="overview-label">Completed Bus Journeys</span>
       </div>
       <div class="overview-indicator"></div>
     </div>
@@ -69,7 +69,7 @@
       </div>
       <div class="overview-content">
         <span class="overview-value">{{ todayTrips.studentsTransported }}</span>
-        <span class="overview-label">Students Today</span>
+        <span class="overview-label">Students Present Today</span>
       </div>
       <div class="overview-indicator"></div>
     </div>
@@ -180,61 +180,8 @@
             </div>
           </div>
         </div>
-        <button type="button" class="view-all-link" (click)="openEmergencyPanel()">View more</button>
+        <a class="view-all-link" routerLink="/notifications">View more</a>
       </div>
     </div>
   </div>
-</div>
-
-<div class="side-overlay" *ngIf="showEmergencyPanel">
-  <div class="overlay-backdrop" (click)="closeEmergencyPanel()"></div>
-  <aside class="emergency-panel">
-    <div class="emergency-header">
-      <div class="alert-icon">!</div>
-      <h3>Bus Accident</h3>
-    </div>
-
-    <div class="emergency-image">
-      <div class="image-placeholder">Accident photo</div>
-    </div>
-
-    <div class="emergency-section">
-      <h4>Bus</h4>
-      <div class="emergency-card">
-        <div class="bus-thumb"></div>
-        <div>
-          <div class="label">Bus</div>
-          <div class="value">RAE 183B</div>
-        </div>
-        <div>
-          <div class="label">Current location</div>
-          <div class="value">KN 654 ST</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="emergency-section">
-      <div class="emergency-card conductor">
-        <div class="avatar">MA</div>
-        <div>
-          <div class="label">Bus conductor</div>
-          <div class="value">Mugenzi Albert</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="emergency-section">
-      <h4>Message</h4>
-      <div class="message-box">
-        Wouorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur consectetur aliquam pulvinar. Sed hendrerit
-        pretium ultrices ipsum dolor sit amet, consectetur adipiscing elit.
-      </div>
-      <div class="audio-bar">
-        <span class="audio-icon"></span>
-        <div class="audio-wave"></div>
-      </div>
-    </div>
-
-    <button class="close-btn" type="button" (click)="closeEmergencyPanel()">Close</button>
-  </aside>
 </div>

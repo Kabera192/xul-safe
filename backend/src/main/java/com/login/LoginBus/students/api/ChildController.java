@@ -78,6 +78,22 @@ public class ChildController {
     }
 
     /**
+     * Count of children marked absent today, across every bus (admin dashboard).
+     * GET /api/v1/children/absent-today-count
+     *
+     * @return The count
+     */
+    @GetMapping("/absent-today-count")
+    public ResponseEntity<ApiResponse<Integer>> getAbsentTodayCount() {
+        int count = studentsService.getAbsentTodayCount();
+
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Absent-today count retrieved successfully",
+            count
+        ));
+    }
+
+    /**
      * Get all children with enriched data (admin).
      * GET /api/v1/children/admin/details
      *

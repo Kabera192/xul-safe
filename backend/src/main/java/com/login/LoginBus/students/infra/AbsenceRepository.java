@@ -29,5 +29,12 @@ public interface AbsenceRepository extends JpaRepository<AbsenceJpaEntity, Long>
             @Param("childIds") List<String> childIds,
             @Param("date") LocalDate date,
             @Param("types") List<AbsenceType> types);
+
+    /** Distinct child IDs with an active, parent-reported absence covering the given date. */
+    @Query("SELECT DISTINCT a.childId FROM AbsenceJpaEntity a " +
+           "WHERE a.status = 'ACTIVE' " +
+           "AND a.startDate <= :date " +
+           "AND a.endDate >= :date")
+    List<String> findChildIdsWithActiveAbsenceOn(@Param("date") LocalDate date);
 }
 
