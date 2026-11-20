@@ -47,9 +47,22 @@ class _ParentHomePageState extends State<ParentHomePage> {
   List<ChildModel> _children = [];
   Map<String, dynamic>? _tracking;
 
+  // The active child's registered stop — "arrived" is measured against this
+  // fixed point, not the parent's own live location (which could be
+  // anywhere — home, work — and has nothing to do with where the child
+  // actually boards).
+  LatLng? _childStopLatLng;
+
   // Dialog guard
   bool _arrivedDialogShown = false;
+  bool _childDoneDialogShown = false;
   String? _lastTrackingId;
+
+  // Tracks whether we've actually observed an active journey in this
+  // session, so the "journey ended" dialog only fires on a real
+  // active-to-inactive transition — not on first load when there's simply
+  // no journey running yet.
+  bool _sawActiveJourney = false;
 
   Timer? _pollTimer;
   Timer? _incidentPollTimer;
@@ -87,16 +100,30 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return LatLng(lat, lng);
   }
 
-  bool get _journeyActive {
+  // Whether the bus's own tracking row is active, regardless of this one
+  // child — used to detect a genuine journey-ended transition. The absence
+  // flag is a separate, per-child reason to hide the map/popups, not a sign
+  // the journey itself ended.
+  bool get _busStatusActive {
     final status = (_tracking?['status'] ?? '').toString().toUpperCase();
     return status.isNotEmpty && status != 'NOT_IN_ROUTE';
   }
 
+  bool get _childAbsent => _tracking?['childAbsent'] == true;
+
+  // True once this child's own afternoon drop-off is confirmed — the bus
+  // may still be running for other children, but this child's part of the
+  // journey is over.
+  bool get _childDone => _tracking?['childDone'] == true;
+
+  bool get _journeyActive => _busStatusActive && !_childAbsent && !_childDone;
+
   bool get _busArrived {
+    if (_childAbsent || _childDone) return false;
     final bus = _busLatLng;
-    final parent = _parentLatLng;
-    if (bus == null || parent == null) return false;
-    return _distanceMeters(bus, parent) < 200;
+    final stop = _childStopLatLng;
+    if (bus == null || stop == null) return false;
+    return _distanceMeters(bus, stop) < 200;
   }
 
   String get _etaText {
@@ -191,6 +218,25 @@ class _ParentHomePageState extends State<ParentHomePage> {
           _activeChildId = children.first.id;
         }
       });
+      _loadActiveChildStopLocation();
+    } catch (_) {}
+  }
+
+  Future<void> _loadActiveChildStopLocation() async {
+    final childId = _activeChildId;
+    if (childId == null) return;
+    final matches = _children.where((c) => c.id == childId);
+    final stopId = matches.isEmpty ? null : matches.first.busStopId;
+    if (stopId == null) {
+      if (mounted) setState(() => _childStopLatLng = null);
+      return;
+    }
+    try {
+      final stop = await TransportService.getBusStopById(stopId);
+      final lat = _toDouble(stop['latitude']);
+      final lng = _toDouble(stop['longitude']);
+      if (!mounted || lat == null || lng == null) return;
+      setState(() => _childStopLatLng = LatLng(lat, lng));
     } catch (_) {}
   }
 
@@ -275,13 +321,45 @@ class _ParentHomePageState extends State<ParentHomePage> {
     if (newId != null && newId != _lastTrackingId) {
       _lastTrackingId = newId;
       _arrivedDialogShown = false;
+      _childDoneDialogShown = false;
     }
 
+    final wasBusActive = _busStatusActive;
+    final wasChildAbsent = _childAbsent;
+    final wasChildDone = _childDone;
+    final endedTripType = _tracking?['tripType']?.toString();
     setState(() => _tracking = data);
+    final isBusActive = _busStatusActive;
+    final isChildDone = _childDone;
+
+    if (_journeyActive) _sawActiveJourney = true;
 
     if (_busArrived && !_arrivedDialogShown && data != null) {
       _arrivedDialogShown = true;
       _showBusArrivedDialog();
+    }
+
+    // This child's own afternoon drop-off just got confirmed — tell their
+    // parent the journey has ended for their child right away, without
+    // waiting for the whole bus's journey (still running for other
+    // children) to actually end.
+    if (!wasChildDone && isChildDone && !_childDoneDialogShown) {
+      _childDoneDialogShown = true;
+      _sawActiveJourney = false;
+      _arrivedDialogShown = false;
+      _showJourneyEndedDialog(data?['tripType']?.toString());
+    }
+
+    // A real end-of-journey transition on the bus itself — but a child
+    // marked absent was never on the bus, and a child already dropped off
+    // already got their own "journey ended" dialog above, so neither
+    // should be told again that they "arrived safely" or "are home".
+    if (_sawActiveJourney && wasBusActive && !isBusActive) {
+      _sawActiveJourney = false;
+      _arrivedDialogShown = false;
+      if (!wasChildAbsent && !wasChildDone) {
+        _showJourneyEndedDialog(endedTripType);
+      }
     }
   }
 
@@ -289,6 +367,14 @@ class _ParentHomePageState extends State<ParentHomePage> {
     final target = _busLatLng ?? _parentLatLng;
     if (target == null) return;
     _mapCtrl.move(target, 15.5);
+  }
+
+  void _showJourneyEndedDialog(String? tripType) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _JourneyEndedDialog(tripType: tripType),
+    );
   }
 
   void _showBusArrivedDialog() {
@@ -959,6 +1045,91 @@ class _BusArrivedDialog extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               l10n.busReachedStopBody,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D4896),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  l10n.gotIt,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Journey ended dialog ─────────────────────────────────────────────────────
+
+class _JourneyEndedDialog extends StatelessWidget {
+  final String? tripType;
+
+  const _JourneyEndedDialog({required this.tripType});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isMorning = tripType == 'MORNING_PICKUP';
+    final title = tripType == null
+        ? l10n.notifJourneyEndedTitle
+        : (isMorning
+            ? l10n.notifJourneyEndedMorningTitle
+            : l10n.notifJourneyEndedAfternoonTitle);
+    final body = tripType == null
+        ? l10n.notifJourneyEndedBody
+        : (isMorning
+            ? l10n.notifJourneyEndedMorningBody
+            : l10n.notifJourneyEndedAfternoonBody);
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE6F8EC),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                IconsaxPlusBold.tick_circle,
+                color: Color(0xFF21C260),
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              body,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade600,

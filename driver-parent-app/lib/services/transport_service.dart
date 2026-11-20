@@ -109,6 +109,31 @@ class TransportService {
     throw Exception(_extractErrorMessage(decoded, 'Failed to load bus stops'));
   }
 
+  /// GET /api/v1/bus-stops/{busStopId}
+  static Future<Map<String, dynamic>> getBusStopById(String busStopId) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/bus-stops/$busStopId',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+      return request;
+    });
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = decoded is Map<String, dynamic> ? decoded['data'] : decoded;
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Unexpected bus stop response');
+      }
+      return data;
+    }
+
+    throw Exception(_extractErrorMessage(decoded, 'Failed to load bus stop'));
+  }
+
   /// POST /api/v1/routes/select-bus-stop
   ///
   /// Picks an existing, already-approved bus stop for a child — no admin

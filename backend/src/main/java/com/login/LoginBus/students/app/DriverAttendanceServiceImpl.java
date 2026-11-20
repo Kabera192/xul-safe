@@ -220,9 +220,18 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
         // applies for both the morning pickup and afternoon drop-off session.
         List<ChildJpaEntity> children = childRepository.findByBusIdAndBusStopId(bus.getId(), stopId);
 
+        Map<String, AttendanceJpaEntity> records = attendanceRepository
+                .findByBusIdAndDateAndSession(bus.getId(), LocalDate.now(), sess)
+                .stream()
+                .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
+
         for (ChildJpaEntity child : children) {
             Long parentUserId = child.getParentId();
             if (parentUserId == null) continue;
+            // A child marked absent for this session was never on the bus —
+            // their parent shouldn't be told the bus reached their stop.
+            AttendanceJpaEntity rec = records.get(child.getId());
+            if (rec != null && rec.isAbsent()) continue;
             try {
                 String title = "Bus has arrived at " + stopName;
                 String message = (sess == AttendanceSession.MORNING)
