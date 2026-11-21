@@ -10,6 +10,7 @@ import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.students.app.StudentsPublicService;
 import com.login.LoginBus.students.domain.Child;
+import com.login.LoginBus.students.domain.AttendanceSession;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
 import com.login.LoginBus.students.infra.ChildJpaEntity;
@@ -121,6 +122,12 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             tracking.setBusId(Long.valueOf(journeyData.get("busId").toString()));
         }
 
+        // The afternoon drop-off can't start until every child on this bus
+        // has a resolved morning record (dropped off, or marked absent).
+        if (tracking.getTripType() == TripType.AFTERNOON_DROPOFF) {
+            assertMorningAttendanceComplete(tracking.getBusId());
+        }
+
         // Set initial location
         if (journeyData.containsKey("latitude") && journeyData.containsKey("longitude")) {
             tracking.setCurrentLatitude(Double.valueOf(journeyData.get("latitude").toString()));
@@ -168,6 +175,30 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         }
 
         return saved.toDomain();
+    }
+
+    private void assertMorningAttendanceComplete(Long busId) {
+        if (busId == null) return;
+
+        List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
+        if (busChildren.isEmpty()) return;
+
+        Map<String, AttendanceJpaEntity> morningRecords = attendanceRepository
+                .findByBusIdAndDateAndSession(busId, LocalDate.now(), AttendanceSession.MORNING)
+                .stream()
+                .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
+
+        long pending = busChildren.stream().filter(child -> {
+            AttendanceJpaEntity rec = morningRecords.get(child.getId());
+            return rec == null || !(rec.isDroppedOff() || rec.isAbsent());
+        }).count();
+
+        if (pending > 0) {
+            String childWord = pending == 1 ? "child" : "children";
+            throw new IllegalStateException(
+                    "Afternoon journey can't start yet — " + pending + " " + childWord
+                            + " still need this morning's attendance confirmed (dropped off or marked absent)");
+        }
     }
 
     @Override
