@@ -6,7 +6,8 @@ import { AuthService } from '../../services/auth.service';
 import { BusService } from '../../services/bus.service';
 import { ConductorService } from '../../services/conductor.service';
 import { StudentService } from '../../services/student.service';
-import { Bus, Child, Conductor, Notification } from '../../models';
+import { JourneyService } from '../../services/journey.service';
+import { Bus, BusAttendanceToday, Child, Conductor, Notification } from '../../models';
 import { catchError, finalize, forkJoin, of, timeout } from 'rxjs';
 
 interface NotificationViewModel {
@@ -30,9 +31,9 @@ export class Dashboard implements OnInit {
   private busService = inject(BusService);
   private studentService = inject(StudentService);
   private conductorService = inject(ConductorService);
+  private journeyService = inject(JourneyService);
   private cdr = inject(ChangeDetectorRef);
 
-  showEmergencyPanel = false;
   notificationsLoading = false;
   unreadCount = 0;
   statsLoading = false;
@@ -86,7 +87,9 @@ export class Dashboard implements OnInit {
     forkJoin({
       buses: this.busService.getAll().pipe(catchError(() => of([] as Bus[]))),
       students: this.studentService.getAllAdmin().pipe(catchError(() => of([] as Child[]))),
-      conductors: this.conductorService.getAll().pipe(catchError(() => of([] as Conductor[])))
+      conductors: this.conductorService.getAll().pipe(catchError(() => of([] as Conductor[]))),
+      todayAttendance: this.journeyService.getTodayAttendanceSummary().pipe(catchError(() => of([] as BusAttendanceToday[]))),
+      absentToday: this.studentService.getAbsentTodayCount().pipe(catchError(() => of(null)))
     }).pipe(
       timeout(5000),
       finalize(() => {
@@ -94,7 +97,7 @@ export class Dashboard implements OnInit {
         window.clearTimeout(fallbackTimer);
         this.cdr.detectChanges();
       })
-    ).subscribe(({ buses, students, conductors }) => {
+    ).subscribe(({ buses, students, conductors, todayAttendance, absentToday }) => {
       const activeBuses = buses.filter((bus) => bus.status === 'ACTIVE').length;
 
       this.stats = [
@@ -102,7 +105,7 @@ export class Dashboard implements OnInit {
         { label: 'Students', value: String(students.length), sublabel: 'students', icon: 'students' },
         { label: 'Conductors', value: String(conductors.length), sublabel: 'staff', icon: 'present' },
         { label: 'Incidents', value: String(this.unreadCount), sublabel: 'today', icon: 'incidents' },
-        { label: 'Absent today', value: 'N/A', sublabel: 'students', icon: 'absent' },
+        { label: 'Absent today', value: absentToday !== null ? String(absentToday) : 'N/A', sublabel: 'students', icon: 'absent' },
       ];
 
       this.schoolBuses = buses.slice(0, 3).map((bus) => ({
@@ -111,25 +114,31 @@ export class Dashboard implements OnInit {
         status: bus.status === 'ACTIVE' ? 'active' : 'inactive'
       }));
 
-      // Update today's trips overview
-      const activeBusCount = buses.filter(b => b.status === 'ACTIVE').length;
-      const inactiveBusCount = buses.filter(b => b.status !== 'ACTIVE').length;
+      // Today's trips overview — derived from each bus's actual tracking
+      // records for today, not just whether the bus is generally "active"
+      // in the fleet. "Students Today" is how many have actually boarded
+      // or been dropped off so far today, not the total student headcount.
       this.todayTrips = {
-        scheduled: buses.length * 2, // Assuming 2 trips per bus (pickup + dropoff)
-        inProgress: activeBusCount,
-        completed: inactiveBusCount,
-        studentsTransported: students.length
+        scheduled: todayAttendance.filter((b) => b.tripStatus === 'SCHEDULED').length,
+        inProgress: todayAttendance.filter((b) => b.tripStatus === 'IN_PROGRESS').length,
+        completed: todayAttendance.filter((b) => b.tripStatus === 'COMPLETED').length,
+        studentsTransported: todayAttendance.reduce((sum, b) => sum + (b.present ?? 0), 0)
       };
 
       const today = this.formatDate(new Date());
-      this.busAttendance = buses.slice(0, 5).map((bus) => ({
+      const statusLabel: Record<BusAttendanceToday['tripStatus'], string> = {
+        SCHEDULED: 'Scheduled',
+        IN_PROGRESS: 'In Progress',
+        COMPLETED: 'Completed'
+      };
+      this.busAttendance = todayAttendance.slice(0, 5).map((bus) => ({
         date: today,
         bus: bus.plateNumber,
-        route: 'N/A',
-        totalStudents: students.filter((s) => s.busId === bus.id).length,
-        present: null,
-        absent: null,
-        status: bus.status === 'ACTIVE' ? 'In Progress' : 'Completed'
+        route: bus.routeName ?? 'N/A',
+        totalStudents: students.filter((s) => s.busId === bus.busId).length,
+        present: bus.present,
+        absent: bus.absent,
+        status: statusLabel[bus.tripStatus]
       }));
 
       this.cdr.detectChanges();
@@ -208,14 +217,6 @@ export class Dashboard implements OnInit {
         ? { ...stat, value: String(this.unreadCount) }
         : stat
     ));
-  }
-
-  openEmergencyPanel(): void {
-    this.showEmergencyPanel = true;
-  }
-
-  closeEmergencyPanel(): void {
-    this.showEmergencyPanel = false;
   }
 
   private formatDate(date: Date): string {
