@@ -31,8 +31,10 @@ class DriverChildProfileForm extends StatelessWidget {
             ? l10n.drvNotAvailable
             : child!.guardianPhoneNumber!;
 
-    final stopName = child?.pickupStopName ?? l10n.drvNotAssigned;
-    final stopCoordinates = child?.pickupStopId == null
+    final stopName = child?.busStopId == null
+        ? l10n.drvNotAssigned
+        : l10n.drvUnknownStop;
+    final stopCoordinates = child?.busStopId == null
         ? l10n.drvNoCoordinatesAvailable
         : l10n.drvCoordinatesNotAvailableYet;
 

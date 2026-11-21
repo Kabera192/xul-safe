@@ -107,18 +107,16 @@ class _DriverChildrenAttendancePageState
           .where((s) => s.locationName.isNotEmpty)
           .toList();
 
+      final stopNameById = {for (final s in stops) s.id: s.locationName};
+
       final childStopMap = <String, Set<String>>{};
       final childStopNameMap = <String, String>{};
       for (final c in rawChildren) {
         final childId = (c['id'] ?? '').toString();
         if (childId.isEmpty || childId == '0') continue;
-        final ids = <String>{};
-        final pickup = c['pickupStopId'];
-        final dropoff = c['dropoffStopId'];
-        if (pickup != null) ids.add(pickup.toString());
-        if (dropoff != null) ids.add(dropoff.toString());
-        if (ids.isNotEmpty) childStopMap[childId] = ids;
-        final stopName = (c['pickupStopName'] ?? c['dropoffStopName'])?.toString();
+        final busStopId = c['busStopId']?.toString();
+        if (busStopId != null) childStopMap[childId] = {busStopId};
+        final stopName = stopNameById[busStopId];
         if (stopName != null && stopName.isNotEmpty) {
           childStopNameMap[childId] = stopName;
         }

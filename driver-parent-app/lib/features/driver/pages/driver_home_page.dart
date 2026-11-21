@@ -297,6 +297,48 @@ bool _incidentActionsOpen = false;
       _popupShowing = false;
     }
 
+    // Afternoon boarding attendance (present/absent at school) must be
+    // taken for every child before the afternoon journey can start.
+    if (!mounted) return;
+    List<AttendanceRecordModel> afternoonRecords = [];
+    try {
+      afternoonRecords = await AttendanceService.getSessionAttendance(
+        date: DateTime.now(),
+        session: 'AFTERNOON',
+      );
+    } catch (_) {}
+    final resolvedIds = afternoonRecords
+        .where((r) => r.boarded || r.isAbsent)
+        .map((r) => r.childId)
+        .toSet();
+    final unresolved =
+        _children.where((c) => !resolvedIds.contains(c.id)).toList();
+
+    if (unresolved.isNotEmpty) {
+      if (!mounted) return;
+      _popupShowing = true;
+      await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
+        backgroundColor: Colors.transparent,
+        builder: (_) => StopAttendanceSheet(
+          currentStop: null,
+          allStops: _stops,
+          allChildren: _children,
+          session: 'AFTERNOON',
+          forceAction: 'BOARDED',
+          requireAllMarked: true,
+          confirmLabel: AppLocalizations.of(context).confirmAndStartJourney,
+          subtitle:
+              "Mark every child present or absent before starting the "
+              "afternoon journey.",
+        ),
+      );
+      _popupShowing = false;
+    }
+
     if (!mounted) return;
     await _startJourney(tripType);
   }
@@ -333,12 +375,12 @@ bool _incidentActionsOpen = false;
     }
   }
 
-  void _showJourneyBlockedDialog(Object error) {
+  void _showJourneyBlockedDialog(Object error, {String? title}) {
     if (!mounted) return;
     final message = error.toString().replaceFirst('Exception: ', '');
     showDialog(
       context: context,
-      builder: (_) => _JourneyBlockedDialog(message: message),
+      builder: (_) => _JourneyBlockedDialog(message: message, title: title),
     );
   }
 
@@ -364,7 +406,8 @@ bool _incidentActionsOpen = false;
         _confirmedStopIds.clear();
       });
     } catch (e) {
-      _showSnack(AppLocalizations.of(context).couldNotEndJourney(e.toString()));
+      _showJourneyBlockedDialog(e,
+          title: AppLocalizations.of(context).drvCantEndJourneyTitle);
     }
   }
 
@@ -1471,8 +1514,9 @@ class _ErrorRow extends StatelessWidget {
 
 class _JourneyBlockedDialog extends StatelessWidget {
   final String message;
+  final String? title;
 
-  const _JourneyBlockedDialog({required this.message});
+  const _JourneyBlockedDialog({required this.message, this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -1505,7 +1549,7 @@ class _JourneyBlockedDialog extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              l10n.drvCantStartJourneyTitle,
+              title ?? l10n.drvCantStartJourneyTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: onSurface,

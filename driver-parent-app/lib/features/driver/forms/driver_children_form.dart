@@ -53,7 +53,7 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
           child.lastName.toLowerCase().contains(query);
 
       final matchesStop =
-          _selectedStopId == null || child.pickupStopId == _selectedStopId;
+          _selectedStopId == null || child.busStopId == _selectedStopId;
 
       return matchesSearch && matchesStop;
     }).toList();
@@ -114,7 +114,7 @@ class _DriverChildrenFormState extends State<DriverChildrenForm> {
 
       return _ChildCard(
         child: child,
-        stopLabel: _stopLabel(l10n, child.pickupStopId),
+        stopLabel: _stopLabel(l10n, child.busStopId),
       );
     },
   ),

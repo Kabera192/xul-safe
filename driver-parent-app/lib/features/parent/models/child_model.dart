@@ -6,6 +6,7 @@ class ChildModel {
   final String? birthDate;
   final String? photoUrl;
   final int? busId;
+  final String? busStopId;
   final int? createdAt;
 
   const ChildModel({
@@ -16,6 +17,7 @@ class ChildModel {
     required this.birthDate,
     required this.photoUrl,
     required this.busId,
+    required this.busStopId,
     required this.createdAt,
   });
 
@@ -30,6 +32,7 @@ class ChildModel {
       birthDate: json['birthDate']?.toString(),
       photoUrl: json['photoUrl']?.toString(),
       busId: _toNullableInt(json['busId']),
+      busStopId: json['busStopId']?.toString(),
       createdAt: _toNullableInt(json['createdAt']),
     );
   }

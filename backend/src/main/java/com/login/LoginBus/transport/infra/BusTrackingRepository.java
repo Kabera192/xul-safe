@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -54,4 +55,14 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.busId = :busId AND bt.status <> 'NOT_IN_ROUTE' ORDER BY bt.updatedAt DESC LIMIT 1")
     Optional<BusTrackingJpaEntity> findActiveBusTrackingByBusId(@Param("busId") Long busId);
+
+    /**
+     * Every currently-active tracking row for a bus, not just the most
+     * recent — a bus should only ever have one, but a journey that never
+     * got explicitly ended (app killed/crashed mid-trip) leaves its row
+     * stuck "active" forever otherwise, and a later journey's lookups can
+     * pick up that stale one instead of the real current trip.
+     */
+    @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.busId = :busId AND bt.status <> 'NOT_IN_ROUTE'")
+    List<BusTrackingJpaEntity> findAllActiveBusTrackingByBusId(@Param("busId") Long busId);
 }

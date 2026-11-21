@@ -48,8 +48,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
 
   List<ChildModel> get _eligibleChildren {
     return widget.children.where((child) {
-      final alreadyOnThisStop =
-          child.pickupStopId == widget.stopId && child.dropoffStopId == widget.stopId;
+      final alreadyOnThisStop = child.busStopId == widget.stopId;
 
       return !alreadyOnThisStop;
     }).toList();
@@ -70,7 +69,7 @@ class _DriverAssignStudentsFormState extends State<DriverAssignStudentsForm> {
   }
 
   bool _isReassign(ChildModel child) {
-    return child.pickupStopId != null || child.dropoffStopId != null;
+    return child.busStopId != null;
   }
 
   void _toggleChild(ChildModel child) {
