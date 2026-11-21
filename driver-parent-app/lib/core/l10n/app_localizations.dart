@@ -624,6 +624,10 @@ class AppLocalizations {
   String get drvBoardedLabel => _t({'en': 'Boarded', 'fr': 'Monté', 'rw': 'Yinjiye'});
   String get drvAbsentLockedLabel => _t({'en': 'Absent — locked', 'fr': 'Absent — verrouillé', 'rw': 'Ntahari — birafunze'});
   String get drvUndoBtn => _t({'en': 'Undo', 'fr': 'Annuler', 'rw': 'Garuka inyuma'});
+  String notifAbsenceCancelledTitle(String name) => _t({'en': 'Absence cancelled: $name', 'fr': 'Absence annulée : $name', 'rw': 'Ubuze bwahagaritswe: $name'});
+  String notifAbsenceCancelledMorning(String name) => _t({'en': '$name\'s absence this morning has been cancelled.', 'fr': 'L\'absence de $name ce matin a été annulée.', 'rw': 'Ubuze bwa $name mu gitondo bwahagaritswe.'});
+  String notifAbsenceCancelledEvening(String name) => _t({'en': '$name\'s absence this evening has been cancelled.', 'fr': 'L\'absence de $name ce soir a été annulée.', 'rw': 'Ubuze bwa $name nimugoroba bwahagaritswe.'});
+  String notifAbsenceCancelledRange(String name, String start, String end) => _t({'en': '$name\'s absence from $start to $end has been cancelled.', 'fr': 'L\'absence de $name du $start au $end a été annulée.', 'rw': 'Ubuze bwa $name kuva $start kugeza $end bwahagaritswe.'});
 }
 
 // ── Delegate ──────────────────────────────────────────────────────────────────
