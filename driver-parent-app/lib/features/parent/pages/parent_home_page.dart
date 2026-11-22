@@ -314,7 +314,16 @@ class _ParentHomePageState extends State<ParentHomePage> {
     final childId = _activeChildId;
     if (childId == null) return;
 
-    final data = await TrackingService.getBusTrackingForChild(childId);
+    final Map<String, dynamic>? data;
+    try {
+      data = await TrackingService.getBusTrackingForChild(childId);
+    } on TrackingPollFailedException {
+      // The poll itself failed (network/timeout/bad response) — not the
+      // server confirming the journey ended. Leave all tracking state as it
+      // was and try again next cycle, rather than treating a dropped
+      // connection as "arrived safely".
+      return;
+    }
     if (!mounted) return;
 
     final newId = data?['id']?.toString();

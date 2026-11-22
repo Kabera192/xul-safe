@@ -1,6 +1,7 @@
 package com.login.LoginBus.transport.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.login.LoginBus.shared.api.ApiResponse;
 import com.login.LoginBus.transport.app.TransportService;
 import com.login.LoginBus.transport.domain.BusTracking;
@@ -25,12 +26,14 @@ public class BusTrackingController {
     private TransportService transportService;
 
     // This app doesn't register a Spring-managed ObjectMapper bean (no
-    // auto-wireable one exists here). findAndRegisterModules() picks up
-    // jackson-datatype-jsr310 via SPI at runtime — without it, convertValue
+    // auto-wireable one exists here). Without JavaTimeModule, convertValue
     // throws on any nested LocalDate field (e.g. Conductor.licenceExpiry),
     // which the global exception handler turns into a silent 500 with no
-    // console output.
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    // console output. Registered explicitly (not via findAndRegisterModules'
+    // SPI discovery) since that depends on jackson-datatype-jsr310 actually
+    // being resolved on the runtime classpath, which is only guaranteed
+    // because it's now declared directly in pom.xml.
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     /**
      * Get active bus tracking for a specific child.

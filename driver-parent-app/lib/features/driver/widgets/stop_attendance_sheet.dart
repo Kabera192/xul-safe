@@ -64,6 +64,10 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   final _searchCtrl = TextEditingController();
   late String? _selectedStopId;
   final Map<String, _Mark> _marks = {};
+  // Snapshot of _marks right after loading — lets _canConfirm detect an
+  // "undo" (a mark cleared back to none) as a real pending change, not just
+  // "nothing is selected".
+  Map<String, _Mark> _initialMarks = {};
   Map<String, AttendanceRecordModel> _existingRecords = {};
   Set<String> _declaredAbsentIds = {};
   bool _loading = false;
@@ -133,6 +137,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
       setState(() {
         _existingRecords = map;
         _declaredAbsentIds = declaredAbsentIds;
+        _initialMarks = Map.of(_marks);
         _loadingRecords = false;
       });
     } catch (_) {
@@ -174,7 +179,11 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
       return widget.allChildren.every(
           (c) => _marks[c.id] != null && _marks[c.id] != _Mark.none);
     }
-    return _marks.values.any((m) => m != _Mark.none);
+    // Not just "something is marked" — a mark cleared back to none from a
+    // previously-loaded present/absent is itself a pending change (an undo)
+    // that still needs to be submitted.
+    return widget.allChildren.any(
+        (c) => (_marks[c.id] ?? _Mark.none) != (_initialMarks[c.id] ?? _Mark.none));
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────

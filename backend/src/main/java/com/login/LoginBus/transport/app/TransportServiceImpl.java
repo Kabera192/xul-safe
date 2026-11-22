@@ -10,7 +10,10 @@ import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.students.app.StudentsPublicService;
 import com.login.LoginBus.students.domain.Child;
+import com.login.LoginBus.students.domain.AbsenceType;
 import com.login.LoginBus.students.domain.AttendanceSession;
+import com.login.LoginBus.students.infra.AbsenceJpaEntity;
+import com.login.LoginBus.students.infra.AbsenceRepository;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
 import com.login.LoginBus.students.infra.ChildJpaEntity;
@@ -52,6 +55,9 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private AbsenceRepository absenceRepository;
 
     @Autowired
     private ChildRepository childRepository;
@@ -254,18 +260,38 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         return saved.toDomain();
     }
 
+    /**
+     * Child IDs (from the given set) with an active parent-reported absence
+     * covering today, of one of the given types. Parent-reported absences
+     * live in a separate table from attendance_records, so every gate below
+     * must check both — a child a parent correctly reported absent isn't
+     * "unresolved" just because the driver never touched them.
+     */
+    private Set<String> childIdsWithReportedAbsence(
+            List<String> childIds, LocalDate date, List<AbsenceType> types) {
+        return absenceRepository.findActiveAbsencesForChildren(childIds, date, types)
+                .stream()
+                .map(AbsenceJpaEntity::getChildId)
+                .collect(Collectors.toSet());
+    }
+
     private void assertMorningAttendanceComplete(Long busId) {
         if (busId == null) return;
 
         List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
         if (busChildren.isEmpty()) return;
 
+        LocalDate today = LocalDate.now();
         Map<String, AttendanceJpaEntity> morningRecords = attendanceRepository
-                .findByBusIdAndDateAndSession(busId, LocalDate.now(), AttendanceSession.MORNING)
+                .findByBusIdAndDateAndSession(busId, today, AttendanceSession.MORNING)
                 .stream()
                 .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
+        Set<String> reportedAbsentIds = childIdsWithReportedAbsence(
+                busChildren.stream().map(ChildJpaEntity::getId).collect(Collectors.toList()),
+                today, List.of(AbsenceType.MORNING, AbsenceType.MULTIPLE_DAYS));
 
         long pending = busChildren.stream().filter(child -> {
+            if (reportedAbsentIds.contains(child.getId())) return false;
             AttendanceJpaEntity rec = morningRecords.get(child.getId());
             return rec == null || !(rec.isDroppedOff() || rec.isAbsent());
         }).count();
@@ -284,12 +310,17 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
         if (busChildren.isEmpty()) return;
 
+        LocalDate today = LocalDate.now();
         Map<String, AttendanceJpaEntity> afternoonRecords = attendanceRepository
-                .findByBusIdAndDateAndSession(busId, LocalDate.now(), AttendanceSession.AFTERNOON)
+                .findByBusIdAndDateAndSession(busId, today, AttendanceSession.AFTERNOON)
                 .stream()
                 .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
+        Set<String> reportedAbsentIds = childIdsWithReportedAbsence(
+                busChildren.stream().map(ChildJpaEntity::getId).collect(Collectors.toList()),
+                today, List.of(AbsenceType.EVENING, AbsenceType.MULTIPLE_DAYS));
 
         long pending = busChildren.stream().filter(child -> {
+            if (reportedAbsentIds.contains(child.getId())) return false;
             AttendanceJpaEntity rec = afternoonRecords.get(child.getId());
             return rec == null || !(rec.isBoarded() || rec.isAbsent());
         }).count();
@@ -306,12 +337,17 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
         if (busChildren.isEmpty()) return;
 
+        LocalDate today = LocalDate.now();
         Map<String, AttendanceJpaEntity> morningRecords = attendanceRepository
-                .findByBusIdAndDateAndSession(busId, LocalDate.now(), AttendanceSession.MORNING)
+                .findByBusIdAndDateAndSession(busId, today, AttendanceSession.MORNING)
                 .stream()
                 .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
+        Set<String> reportedAbsentIds = childIdsWithReportedAbsence(
+                busChildren.stream().map(ChildJpaEntity::getId).collect(Collectors.toList()),
+                today, List.of(AbsenceType.MORNING, AbsenceType.MULTIPLE_DAYS));
 
         long pending = busChildren.stream().filter(child -> {
+            if (reportedAbsentIds.contains(child.getId())) return false;
             AttendanceJpaEntity rec = morningRecords.get(child.getId());
             return rec == null || !(rec.isBoarded() || rec.isAbsent());
         }).count();
