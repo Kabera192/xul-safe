@@ -10,7 +10,10 @@ import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.students.app.StudentsPublicService;
 import com.login.LoginBus.students.domain.Child;
+import com.login.LoginBus.students.domain.AbsenceType;
 import com.login.LoginBus.students.domain.AttendanceSession;
+import com.login.LoginBus.students.infra.AbsenceJpaEntity;
+import com.login.LoginBus.students.infra.AbsenceRepository;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
 import com.login.LoginBus.students.infra.ChildJpaEntity;
@@ -52,6 +55,9 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private AbsenceRepository absenceRepository;
 
     @Autowired
     private ChildRepository childRepository;
@@ -183,12 +189,25 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
         if (busChildren.isEmpty()) return;
 
+        LocalDate today = LocalDate.now();
+
         Map<String, AttendanceJpaEntity> morningRecords = attendanceRepository
-                .findByBusIdAndDateAndSession(busId, LocalDate.now(), AttendanceSession.MORNING)
+                .findByBusIdAndDateAndSession(busId, today, AttendanceSession.MORNING)
                 .stream()
                 .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
 
+        // A parent-reported absence resolves a child's morning just as well
+        // as a driver marking them absent — it lives in a separate table
+        // from attendance_records, so it has to be checked on its own.
+        List<String> busChildIds = busChildren.stream().map(ChildJpaEntity::getId).collect(Collectors.toList());
+        Set<String> childIdsWithReportedMorningAbsence = absenceRepository
+                .findActiveAbsencesForChildren(busChildIds, today, List.of(AbsenceType.MORNING, AbsenceType.MULTIPLE_DAYS))
+                .stream()
+                .map(AbsenceJpaEntity::getChildId)
+                .collect(Collectors.toSet());
+
         long pending = busChildren.stream().filter(child -> {
+            if (childIdsWithReportedMorningAbsence.contains(child.getId())) return false;
             AttendanceJpaEntity rec = morningRecords.get(child.getId());
             return rec == null || !(rec.isDroppedOff() || rec.isAbsent());
         }).count();
