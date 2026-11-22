@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
-import { Notification } from '../../models';
+import { NotificationWithStatus } from '../../models';
 import { catchError, finalize, of } from 'rxjs';
 
 interface NotificationRow {
@@ -46,10 +46,10 @@ export class NotificationsPage implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.notificationService.getForUser(userId).pipe(
+    this.notificationService.getForUserWithStatus(userId).pipe(
       catchError(() => {
         this.errorMessage = 'Failed to load notifications. Please try again.';
-        return of([] as Notification[]);
+        return of([] as NotificationWithStatus[]);
       }),
       finalize(() => {
         this.isLoading = false;
@@ -97,14 +97,14 @@ export class NotificationsPage implements OnInit {
     ).subscribe();
   }
 
-  private toRow(notification: Notification): NotificationRow {
-    const createdAtValue = notification.createdAt ? new Date(notification.createdAt).getTime() : 0;
+  private toRow(notification: NotificationWithStatus): NotificationRow {
+    const createdAtValue = notification.sentAt ?? 0;
     return {
-      id: notification.id || 0,
+      id: notification.notificationId,
       title: notification.title,
       message: notification.message,
-      time: notification.createdAt ? new Date(notification.createdAt).toLocaleString('en-GB') : 'N/A',
-      isRead: notification.isRead ?? false,
+      time: notification.sentAt ? new Date(notification.sentAt).toLocaleString('en-GB') : 'N/A',
+      isRead: notification.status === 'READ',
       createdAtValue,
     };
   }

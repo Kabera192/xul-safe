@@ -146,10 +146,20 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             if (!"SCHEDULED".equals(tripStatus)) {
                 present = 0;
                 absent = 0;
+                boolean completed = "COMPLETED".equals(tripStatus);
                 for (ChildJpaEntity child : childRepository.findByBusId(bus.getId())) {
                     List<AttendanceJpaEntity> childRecords = recordsByChild.getOrDefault(child.getId(), List.of());
                     boolean isPresent = childRecords.stream().anyMatch(r -> r.isBoarded() || r.isDroppedOff());
-                    if (isPresent) present++; else absent++;
+                    boolean isExplicitlyAbsent = childRecords.stream().anyMatch(AttendanceJpaEntity::isAbsent);
+                    if (isPresent) {
+                        present++;
+                    } else if (isExplicitlyAbsent || completed) {
+                        // While the trip is still in progress, a child with no
+                        // record yet simply hasn't been reached — only count
+                        // them absent once marked so, or once the trip itself
+                        // has ended and no resolution ever came.
+                        absent++;
+                    }
                 }
             }
 
