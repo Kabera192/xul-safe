@@ -409,32 +409,39 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
             String title = "Absence: " + childName;
             String message = childName + " will not be attending " + absenceTypeLabel(absence) + ".";
             Map<String, String> params = absenceNotificationParams(absence, childName);
-
             Long driverUserId = driverUserIdForChild(child);
-            if (driverUserId != null) {
-                notificationsPublicService.sendNotification(
-                        driverUserId,
-                        absence.getParentId(),
-                        NotificationType.INFO,
-                        NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
-                        title,
-                        message,
-                        params
-                );
-            }
 
-            List<Long> adminIds = adminUserIds();
-            if (!adminIds.isEmpty()) {
-                notificationsPublicService.sendNotificationToUsers(
-                        adminIds,
-                        absence.getParentId(),
-                        NotificationType.INFO,
-                        NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
-                        title,
-                        message,
-                        params
-                );
-            }
+            // sendNotification/sendNotificationToUsers are themselves
+            // @Transactional — called directly, a failure inside them marks
+            // the CALLER's transaction (createAbsence's) rollback-only before
+            // this catch ever runs, so the absence save gets silently undone
+            // too. REQUIRES_NEW isolates that failure to its own transaction.
+            requiresNewTransaction().executeWithoutResult(status -> {
+                if (driverUserId != null) {
+                    notificationsPublicService.sendNotification(
+                            driverUserId,
+                            absence.getParentId(),
+                            NotificationType.INFO,
+                            NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
+                            title,
+                            message,
+                            params
+                    );
+                }
+
+                List<Long> adminIds = adminUserIds();
+                if (!adminIds.isEmpty()) {
+                    notificationsPublicService.sendNotificationToUsers(
+                            adminIds,
+                            absence.getParentId(),
+                            NotificationType.INFO,
+                            NotificationCategory.ABSENCE_REPORTED_BY_PARENT,
+                            title,
+                            message,
+                            params
+                    );
+                }
+            });
         } catch (Exception e) {
             // Don't fail the absence creation if notification delivery fails
         }
@@ -449,32 +456,36 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
             String title = "Absence cancelled: " + childName;
             String message = childName + "'s absence " + absenceTypeLabel(absence) + " has been cancelled.";
             Map<String, String> params = absenceNotificationParams(absence, childName);
-
             Long driverUserId = driverUserIdForChild(child);
-            if (driverUserId != null) {
-                notificationsPublicService.sendNotification(
-                        driverUserId,
-                        absence.getParentId(),
-                        NotificationType.INFO,
-                        NotificationCategory.ABSENCE_CANCELLED,
-                        title,
-                        message,
-                        params
-                );
-            }
 
-            List<Long> adminIds = adminUserIds();
-            if (!adminIds.isEmpty()) {
-                notificationsPublicService.sendNotificationToUsers(
-                        adminIds,
-                        absence.getParentId(),
-                        NotificationType.INFO,
-                        NotificationCategory.ABSENCE_CANCELLED,
-                        title,
-                        message,
-                        params
-                );
-            }
+            // See notifyAbsenceCreated — isolates a notification failure from
+            // deleteAbsence's own transaction so the cancellation still commits.
+            requiresNewTransaction().executeWithoutResult(status -> {
+                if (driverUserId != null) {
+                    notificationsPublicService.sendNotification(
+                            driverUserId,
+                            absence.getParentId(),
+                            NotificationType.INFO,
+                            NotificationCategory.ABSENCE_CANCELLED,
+                            title,
+                            message,
+                            params
+                    );
+                }
+
+                List<Long> adminIds = adminUserIds();
+                if (!adminIds.isEmpty()) {
+                    notificationsPublicService.sendNotificationToUsers(
+                            adminIds,
+                            absence.getParentId(),
+                            NotificationType.INFO,
+                            NotificationCategory.ABSENCE_CANCELLED,
+                            title,
+                            message,
+                            params
+                    );
+                }
+            });
         } catch (Exception e) {
             // Don't fail the absence cancellation if notification delivery fails
         }
