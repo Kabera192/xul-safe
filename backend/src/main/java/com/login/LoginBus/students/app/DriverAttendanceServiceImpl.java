@@ -7,7 +7,10 @@ import com.login.LoginBus.notifications.domain.NotificationType;
 import com.login.LoginBus.notifications.domain.NotificationCategory;
 import com.login.LoginBus.students.api.AttendanceWithChildDto;
 import com.login.LoginBus.students.api.MarkAttendanceRequest;
+import com.login.LoginBus.students.domain.AbsenceType;
 import com.login.LoginBus.students.domain.AttendanceSession;
+import com.login.LoginBus.students.infra.AbsenceJpaEntity;
+import com.login.LoginBus.students.infra.AbsenceRepository;
 import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
 import com.login.LoginBus.students.infra.ChildJpaEntity;
@@ -24,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +37,7 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
     private final BusRepository busRepository;
     private final ChildRepository childRepository;
     private final AttendanceRepository attendanceRepository;
+    private final AbsenceRepository absenceRepository;
     private final NotificationsPublicService notificationsPublicService;
     private final BusStopRepository busStopRepository;
 
@@ -40,12 +45,14 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
                                         BusRepository busRepository,
                                         ChildRepository childRepository,
                                         AttendanceRepository attendanceRepository,
+                                        AbsenceRepository absenceRepository,
                                         NotificationsPublicService notificationsPublicService,
                                         BusStopRepository busStopRepository) {
         this.conductorRepository = conductorRepository;
         this.busRepository = busRepository;
         this.childRepository = childRepository;
         this.attendanceRepository = attendanceRepository;
+        this.absenceRepository = absenceRepository;
         this.notificationsPublicService = notificationsPublicService;
         this.busStopRepository = busStopRepository;
     }
@@ -225,9 +232,24 @@ public class DriverAttendanceServiceImpl implements DriverAttendanceService {
                 .stream()
                 .collect(Collectors.toMap(AttendanceJpaEntity::getChildId, r -> r));
 
+        // Parent-reported absences live in a separate table from
+        // attendance_records, so a child a parent already reported absent
+        // must be excluded here too, not just driver-marked ones below.
+        List<AbsenceType> absenceTypes = (sess == AttendanceSession.MORNING)
+                ? List.of(AbsenceType.MORNING, AbsenceType.MULTIPLE_DAYS)
+                : List.of(AbsenceType.EVENING, AbsenceType.MULTIPLE_DAYS);
+        Set<String> reportedAbsentIds = absenceRepository
+                .findActiveAbsencesForChildren(
+                        children.stream().map(ChildJpaEntity::getId).collect(Collectors.toList()),
+                        LocalDate.now(), absenceTypes)
+                .stream()
+                .map(AbsenceJpaEntity::getChildId)
+                .collect(Collectors.toSet());
+
         for (ChildJpaEntity child : children) {
             Long parentUserId = child.getParentId();
             if (parentUserId == null) continue;
+            if (reportedAbsentIds.contains(child.getId())) continue;
             // A child marked absent for this session was never on the bus —
             // their parent shouldn't be told the bus reached their stop.
             AttendanceJpaEntity rec = records.get(child.getId());
