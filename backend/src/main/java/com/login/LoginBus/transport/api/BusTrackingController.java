@@ -3,6 +3,7 @@ package com.login.LoginBus.transport.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.login.LoginBus.shared.api.ApiResponse;
+import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.app.TransportService;
 import com.login.LoginBus.transport.domain.BusTracking;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -91,6 +93,19 @@ public class BusTrackingController {
                 null
             ));
         }
+    }
+
+    /**
+     * Today's trip status (SCHEDULED / IN_PROGRESS / COMPLETED) for every
+     * bus with a route assigned.
+     * GET /api/v1/bus-tracking/today-status
+     */
+    @GetMapping("/today-status")
+    public ResponseEntity<ApiResponse<List<BusTripStatusDto>>> getTodayBusTripStatuses() {
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Today's bus trip statuses retrieved successfully",
+            transportService.getTodayBusTripStatuses()
+        ));
     }
 
     /**

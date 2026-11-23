@@ -65,4 +65,16 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
      */
     @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.busId = :busId AND bt.status <> 'NOT_IN_ROUTE'")
     List<BusTrackingJpaEntity> findAllActiveBusTrackingByBusId(@Param("busId") Long busId);
+
+    /**
+     * Find every tracking record touched since the given timestamp (used to
+     * find "today's" records), regardless of status — including ones that
+     * have since ended and gone back to NOT_IN_ROUTE, which the "active"
+     * queries above deliberately exclude.
+     *
+     * @param sinceMillis Epoch millis for the start of the window (e.g. midnight today)
+     * @return All matching tracking records, most recently updated first
+     */
+    @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.updatedAt >= :sinceMillis ORDER BY bt.updatedAt DESC")
+    List<BusTrackingJpaEntity> findAllUpdatedSince(@Param("sinceMillis") Long sinceMillis);
 }

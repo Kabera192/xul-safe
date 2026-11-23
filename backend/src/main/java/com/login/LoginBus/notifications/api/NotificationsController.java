@@ -111,6 +111,27 @@ public class NotificationsController {
     }
 
     /**
+     * Get all notifications for a user, with each recipient's own read
+     * status — unlike GET /user/{userId}, which returns the shared
+     * Notification rows with no per-recipient read/unread information.
+     * GET /api/v1/notifications/user/{userId}/with-status
+     *
+     * @param userId User ID
+     * @return List of notifications enriched with this user's read status
+     */
+    @GetMapping("/user/{userId}/with-status")
+    public ResponseEntity<ApiResponse<List<NotificationWithStatusDto>>> getNotificationsWithStatusForUser(
+            @PathVariable Long userId) {
+
+        List<NotificationWithStatusDto> notifications = notificationsService.getNotificationsWithStatusForUser(userId);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+            "Notifications retrieved successfully",
+            notifications
+        ));
+    }
+
+    /**
      * Get unread notifications for a user.
      * GET /api/v1/notifications/user/{userId}/unread
      *

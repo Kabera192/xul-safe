@@ -79,6 +79,31 @@ LocalizedNotification localizeNotification(
           return fallback;
       }
 
+    case 'ABSENCE_CANCELLED':
+      final childName = name('childName');
+      final absenceType = p['absenceType'];
+      if (childName == null || absenceType == null) return fallback;
+      final title = l10n.notifAbsenceCancelledTitle(childName);
+      switch (absenceType) {
+        case 'MORNING':
+          return LocalizedNotification(
+              title, l10n.notifAbsenceCancelledMorning(childName));
+        case 'EVENING':
+          return LocalizedNotification(
+              title, l10n.notifAbsenceCancelledEvening(childName));
+        case 'MULTIPLE_DAYS':
+          return LocalizedNotification(
+            title,
+            l10n.notifAbsenceCancelledRange(
+              childName,
+              p['startDate'] ?? '',
+              p['endDate'] ?? '',
+            ),
+          );
+        default:
+          return fallback;
+      }
+
     case 'STUDENT_BOARDED_BUS':
       final childName = name('childName');
       final session = p['session'];

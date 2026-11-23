@@ -111,7 +111,7 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
     @Transactional(readOnly = true)
     public List<Notification> getUnreadNotificationsForUser(Long userId) {
         List<NotificationRecipientJpaEntity> recipients =
-            recipientRepository.findByUserIdAndStatus(userId, NotificationStatus.SENT);
+            recipientRepository.findByUserIdAndStatusOrderBySentAtDesc(userId, NotificationStatus.SENT);
 
         return recipients.stream()
                 .map(recipient -> {
@@ -127,7 +127,7 @@ public class NotificationsServiceImpl implements NotificationsService, Notificat
     @Transactional(readOnly = true)
     public List<NotificationWithStatusDto> getUnreadNotificationsWithStatusForUser(Long userId) {
         List<NotificationRecipientJpaEntity> recipients =
-            recipientRepository.findByUserIdAndStatus(userId, NotificationStatus.SENT);
+            recipientRepository.findByUserIdAndStatusOrderBySentAtDesc(userId, NotificationStatus.SENT);
 
         return recipients.stream()
                 .map(recipient -> {

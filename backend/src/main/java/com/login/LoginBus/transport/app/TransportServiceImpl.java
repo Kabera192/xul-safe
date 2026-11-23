@@ -18,6 +18,8 @@ import com.login.LoginBus.students.infra.AttendanceJpaEntity;
 import com.login.LoginBus.students.infra.AttendanceRepository;
 import com.login.LoginBus.students.infra.ChildJpaEntity;
 import com.login.LoginBus.students.infra.ChildRepository;
+import com.login.LoginBus.transport.api.dto.BusAttendanceTodayDto;
+import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.domain.*;
 import com.login.LoginBus.transport.infra.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,6 +151,93 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
     public BusTracking getActiveBusTrackingForRoute(Long routeId) {
         Optional<BusTrackingJpaEntity> entityOpt = busTrackingRepository.findActiveBusTrackingByRouteId(routeId);
         return entityOpt.map(BusTrackingJpaEntity::toDomain).orElse(null);
+    }
+
+    @Override
+    public List<BusTripStatusDto> getTodayBusTripStatuses() {
+        long startOfDay = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault())
+                .toInstant().toEpochMilli();
+
+        // Latest record per bus among everything touched today (most-recent-first).
+        Map<Long, BusTrackingJpaEntity> latestByBus = new HashMap<>();
+        for (BusTrackingJpaEntity record : busTrackingRepository.findAllUpdatedSince(startOfDay)) {
+            latestByBus.putIfAbsent(record.getBusId(), record);
+        }
+
+        List<BusTripStatusDto> result = new ArrayList<>();
+        for (BusJpaEntity bus : busRepository.findAll()) {
+            if (bus.getRouteId() == null) continue;
+
+            BusTrackingJpaEntity latest = latestByBus.get(bus.getId());
+            String status;
+            if (latest == null) {
+                status = "SCHEDULED";
+            } else if (latest.getStatus() == BusTrackingStatus.NOT_IN_ROUTE) {
+                // Touched today, but back to idle — the trip ran and ended.
+                status = "COMPLETED";
+            } else {
+                status = "IN_PROGRESS";
+            }
+            result.add(new BusTripStatusDto(bus.getId(), status));
+        }
+        return result;
+    }
+
+    @Override
+    public List<BusAttendanceTodayDto> getTodayBusAttendanceSummary() {
+        LocalDate today = LocalDate.now();
+
+        Map<String, List<AttendanceJpaEntity>> recordsByChild = attendanceRepository
+                .findByDateBetween(today, today)
+                .stream()
+                .collect(Collectors.groupingBy(AttendanceJpaEntity::getChildId));
+
+        Map<Long, String> tripStatusByBus = getTodayBusTripStatuses().stream()
+                .collect(Collectors.toMap(BusTripStatusDto::getBusId, BusTripStatusDto::getStatus));
+
+        List<BusAttendanceTodayDto> result = new ArrayList<>();
+        for (BusJpaEntity bus : busRepository.findAll()) {
+            if (bus.getRouteId() == null) continue;
+
+            String routeName = routeRepository.findById(bus.getRouteId())
+                    .map(RouteJpaEntity::getName).orElse(null);
+            String tripStatus = tripStatusByBus.getOrDefault(bus.getId(), "SCHEDULED");
+
+            Integer present = null;
+            Integer absent = null;
+            // Before the trip starts, no child has had a chance to board yet —
+            // counting them as "absent" this early would be a false reading.
+            if (!"SCHEDULED".equals(tripStatus)) {
+                present = 0;
+                absent = 0;
+                boolean completed = "COMPLETED".equals(tripStatus);
+                for (ChildJpaEntity child : childRepository.findByBusId(bus.getId())) {
+                    List<AttendanceJpaEntity> childRecords = recordsByChild.getOrDefault(child.getId(), List.of());
+                    boolean isPresent = childRecords.stream().anyMatch(r -> r.isBoarded() || r.isDroppedOff());
+                    boolean isExplicitlyAbsent = childRecords.stream().anyMatch(AttendanceJpaEntity::isAbsent);
+                    if (isPresent) {
+                        present++;
+                    } else if (isExplicitlyAbsent || completed) {
+                        // While the trip is still in progress, a child with no
+                        // record yet simply hasn't been reached — only count
+                        // them absent once marked so, or once the trip itself
+                        // has ended and no resolution ever came.
+                        absent++;
+                    }
+                }
+            }
+
+            result.add(new BusAttendanceTodayDto(
+                    bus.getId(),
+                    bus.getPlateNumber(),
+                    routeName,
+                    today.toString(),
+                    present,
+                    absent,
+                    tripStatus
+            ));
+        }
+        return result;
     }
 
     @Override

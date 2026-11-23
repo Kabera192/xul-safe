@@ -44,6 +44,9 @@ public class SecurityConfig {
                 // One-time admin setup endpoint — self-disables once an admin exists
                 .requestMatchers(HttpMethod.POST, "/api/v1/admin/setup").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/admin/setup/reset-password").permitAll()
+                // Returns every parent's name/phone/email — only admins should
+                // be able to enumerate that.
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/parents").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

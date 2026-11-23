@@ -28,7 +28,7 @@ class AuthenticatedHttpClient {
     final token = await SessionStorage.getToken();
 
     if (token == null || token.isEmpty) {
-      await logoutAndReturnToLogin();
+      await logoutAndReturnToLogin(sessionExpired: true);
 
       throw Exception('No session token found');
     }
@@ -45,14 +45,14 @@ class AuthenticatedHttpClient {
     }
 
     if (!canRetry) {
-      await logoutAndReturnToLogin();
+      await logoutAndReturnToLogin(sessionExpired: true);
       return response;
     }
 
     final refreshed = await AuthService.refreshSession();
 
     if (!refreshed) {
-      await logoutAndReturnToLogin();
+      await logoutAndReturnToLogin(sessionExpired: true);
       return response;
     }
 
