@@ -5,11 +5,10 @@ class ChildModel {
   final String fullName;
   final String? gender;
   final String? photoUrl;
-  final String? pickupStopId;
-  final String? dropoffStopId;
+  // The backend assigns a child a single stop, used for both boarding and
+  // alighting — see DriverChildSummaryDto.busStopId.
+  final String? busStopId;
 
-  final String? pickupStopName;
-  final String? dropoffStopName;
   final String? guardianPhoneNumber;
 
   final int? createdAt; // ✅ NEW
@@ -21,10 +20,7 @@ class ChildModel {
     required this.fullName,
     required this.gender,
     required this.photoUrl,
-    required this.pickupStopId,
-    required this.dropoffStopId,
-    this.pickupStopName,
-    this.dropoffStopName,
+    required this.busStopId,
     this.guardianPhoneNumber,
     this.createdAt,
   });
@@ -37,10 +33,7 @@ class ChildModel {
       fullName: (json['fullName'] ?? '').toString(),
       gender: json['gender']?.toString(),
       photoUrl: json['photoUrl']?.toString(),
-      pickupStopId: json['pickupStopId']?.toString(),
-      dropoffStopId: json['dropoffStopId']?.toString(),
-      pickupStopName: json['pickupStopName']?.toString(),
-      dropoffStopName: json['dropoffStopName']?.toString(),
+      busStopId: json['busStopId']?.toString(),
       guardianPhoneNumber: json['guardianPhoneNumber']?.toString(),
       createdAt: _toNullableInt(json['createdAt']), // ✅ NEW
     );

@@ -110,9 +110,9 @@ final children = rawChildren
   final Map<String, int> counts = {};
 
   for (final child in _children) {
-    if (child.pickupStopId != null) {
-      counts[child.pickupStopId!] =
-          (counts[child.pickupStopId!] ?? 0) + 1;
+    if (child.busStopId != null) {
+      counts[child.busStopId!] =
+          (counts[child.busStopId!] ?? 0) + 1;
     }
   }
 

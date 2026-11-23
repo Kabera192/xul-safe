@@ -1,5 +1,7 @@
 package com.login.LoginBus.transport.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.login.LoginBus.shared.api.ApiResponse;
 import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.app.TransportService;
@@ -9,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,21 +27,41 @@ public class BusTrackingController {
     @Autowired
     private TransportService transportService;
 
+    // This app doesn't register a Spring-managed ObjectMapper bean (no
+    // auto-wireable one exists here). Without JavaTimeModule, convertValue
+    // throws on any nested LocalDate field (e.g. Conductor.licenceExpiry),
+    // which the global exception handler turns into a silent 500 with no
+    // console output. Registered explicitly (not via findAndRegisterModules'
+    // SPI discovery) since that depends on jackson-datatype-jsr310 actually
+    // being resolved on the runtime classpath, which is only guaranteed
+    // because it's now declared directly in pom.xml.
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
     /**
      * Get active bus tracking for a specific child.
      * GET /api/v1/bus-tracking/child/{childId}
      *
+     * The tracking itself reflects the bus's real status regardless of this
+     * child — a "childAbsent" flag is included alongside it so the client
+     * can hide the map/stop/journey-ended messaging for this child without
+     * mistaking "my child is absent" for "the journey actually ended".
+     *
      * @param childId The child ID
-     * @return Active bus tracking or null if no active journey
+     * @return Active bus tracking (plus childAbsent) or null if no active journey
      */
     @GetMapping("/child/{childId}")
-    public ResponseEntity<ApiResponse<BusTracking>> getActiveBusTrackingForChild(@PathVariable String childId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getActiveBusTrackingForChild(@PathVariable String childId) {
         BusTracking tracking = transportService.getActiveBusTrackingForChild(childId);
 
         if (tracking != null) {
+            Map<String, Object> payload = new HashMap<>(
+                    objectMapper.convertValue(tracking, Map.class));
+            payload.put("childAbsent", transportService.isChildAbsentForActiveTrip(childId));
+            payload.put("childDone", transportService.isChildDoneForActiveTrip(childId));
+
             return ResponseEntity.ok(new ApiResponse<>(
                 "Active bus tracking found",
-                tracking
+                payload
             ));
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(

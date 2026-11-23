@@ -24,6 +24,28 @@ public interface TransportService {
     BusTracking getActiveBusTrackingForChild(String childId);
 
     /**
+     * Whether this child is marked absent for the session matching their
+     * bus's currently active trip (morning/afternoon). The tracking row
+     * itself stays "active" either way — this only tells the caller
+     * whether this particular child was ever actually on the bus.
+     *
+     * @param childId The child ID
+     * @return true if the child has an absence record for the active trip's session
+     */
+    boolean isChildAbsentForActiveTrip(String childId);
+
+    /**
+     * Whether this child has already been dropped off at their own stop
+     * during the bus's currently active trip. Only ever true for an
+     * afternoon trip — morning has no per-stop drop-off, only a bulk one
+     * when the journey ends.
+     *
+     * @param childId The child ID
+     * @return true if this child's own drop-off is already confirmed for the active afternoon trip
+     */
+    boolean isChildDoneForActiveTrip(String childId);
+
+    /**
      * Get active bus tracking for a specific route.
      *
      * @param routeId The route ID

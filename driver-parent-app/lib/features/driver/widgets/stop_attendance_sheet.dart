@@ -30,6 +30,12 @@ class StopAttendanceSheet extends StatefulWidget {
   /// When set, overrides the session-derived action ('BOARDED' or 'DROPPED_OFF').
   final String? forceAction;
 
+  /// When true, every child in [allChildren] must be marked present or
+  /// absent before the confirm button is enabled — used for the mandatory
+  /// pre-journey "who's on the bus" checks (the per-stop popup leaves this
+  /// false, since other stops are handled separately as the bus reaches them).
+  final bool requireAllMarked;
+
   /// Optional explanatory line shown under the title — e.g. to make clear
   /// this is backfilling a *different* session than the one about to start.
   final String? subtitle;
@@ -45,6 +51,7 @@ class StopAttendanceSheet extends StatefulWidget {
     required this.session,
     this.confirmLabel = 'Confirm',
     this.forceAction,
+    this.requireAllMarked = false,
     this.subtitle,
     this.onConfirmed,
   });
@@ -57,6 +64,10 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
   final _searchCtrl = TextEditingController();
   late String? _selectedStopId;
   final Map<String, _Mark> _marks = {};
+  // Snapshot of _marks right after loading — lets _canConfirm detect an
+  // "undo" (a mark cleared back to none) as a real pending change, not just
+  // "nothing is selected".
+  Map<String, _Mark> _initialMarks = {};
   Map<String, AttendanceRecordModel> _existingRecords = {};
   Set<String> _declaredAbsentIds = {};
   bool _loading = false;
@@ -126,6 +137,7 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
       setState(() {
         _existingRecords = map;
         _declaredAbsentIds = declaredAbsentIds;
+        _initialMarks = Map.of(_marks);
         _loadingRecords = false;
       });
     } catch (_) {
@@ -143,8 +155,8 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
 
   bool get _isMorning => widget.session == 'MORNING';
 
-  String? _stopIdFor(ChildModel c) =>
-      _isMorning ? c.pickupStopId : c.dropoffStopId;
+  // A child boards and alights at the same stop — see ChildModel.busStopId.
+  String? _stopIdFor(ChildModel c) => c.busStopId;
 
   List<StopModel> get _stopsWithChildren {
     final ids = widget.allChildren.map(_stopIdFor).whereType<String>().toSet();
@@ -161,8 +173,18 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
     }).toList();
   }
 
-  bool get _canConfirm =>
-      !_loading && _marks.values.any((m) => m != _Mark.none);
+  bool get _canConfirm {
+    if (_loading) return false;
+    if (widget.requireAllMarked) {
+      return widget.allChildren.every(
+          (c) => _marks[c.id] != null && _marks[c.id] != _Mark.none);
+    }
+    // Not just "something is marked" — a mark cleared back to none from a
+    // previously-loaded present/absent is itself a pending change (an undo)
+    // that still needs to be submitted.
+    return widget.allChildren.any(
+        (c) => (_marks[c.id] ?? _Mark.none) != (_initialMarks[c.id] ?? _Mark.none));
+  }
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -217,6 +239,35 @@ class _StopAttendanceSheetState extends State<StopAttendanceSheet> {
           );
         } catch (_) {
           failures++;
+        }
+      } else {
+        // Deselected back to "none" — if this child had a previously saved
+        // mark (e.g. absent), that save must be explicitly undone too, or
+        // the backend record stays stuck in its old state even though the
+        // UI looks cleared.
+        final existing = _existingRecords[child.id];
+        if (existing != null) {
+          try {
+            if (existing.isAbsent) {
+              await AttendanceService.markAttendance(
+                childId: child.id,
+                date: date,
+                session: widget.session,
+                action: 'ABSENT',
+                confirmed: false,
+              );
+            } else if (action == 'BOARDED' ? existing.boarded : existing.droppedOff) {
+              await AttendanceService.markAttendance(
+                childId: child.id,
+                date: date,
+                session: widget.session,
+                action: action,
+                confirmed: false,
+              );
+            }
+          } catch (_) {
+            failures++;
+          }
         }
       }
     }

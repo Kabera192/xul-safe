@@ -94,7 +94,6 @@ class AppLocalizations {
   String get waitingForGps => _t({'en': 'Waiting for GPS fix — try again in a moment.', 'fr': 'En attente du signal GPS — réessayez dans un instant.', 'rw': 'Tegereza GPS — gerageza nanone vuba.'});
   String get busDataNotLoaded => _t({'en': 'Bus data not loaded. Tap refresh and try again.', 'fr': 'Données du bus non chargées. Appuyez sur actualiser.', 'rw': 'Amakuru ya bisi ntiyashyizweho. Kanda ugarure nanone.'});
   String couldNotStartJourney(String e) => _t({'en': 'Could not start journey: $e', 'fr': 'Impossible de démarrer le trajet : $e', 'rw': 'Byanze gutangira urugendo: $e'});
-  String couldNotEndJourney(String e) => _t({'en': 'Could not end journey: $e', 'fr': 'Impossible de terminer le trajet : $e', 'rw': 'Byanze kurangiza urugendo: $e'});
   String get noChildrenOnBusYet => _t({'en': 'No children assigned to this bus yet.', 'fr': 'Aucun enfant assigné à ce bus.', 'rw': 'Nta bana bashyizweho bisi iyi.'});
 
   // ── Attendance Sheet ──────────────────────────────────────────────────────
@@ -331,6 +330,10 @@ class AppLocalizations {
   String get notifJourneyStartedAfternoon => _t({'en': 'The afternoon drop-off journey has started. The bus is now on the road.', 'fr': 'Le trajet de dépose de l\'après-midi a commencé. Le bus est maintenant sur la route.', 'rw': 'Urugendo rwo gusubiza abana nimugoroba rwatangiye. Bisi iri mu nzira.'});
   String get notifJourneyEndedTitle => _t({'en': 'Bus journey has ended', 'fr': 'Le trajet du bus est terminé', 'rw': 'Urugendo rwa bisi rwarangiye'});
   String get notifJourneyEndedBody => _t({'en': 'The bus journey has come to an end. Your child should be home soon.', 'fr': 'Le trajet du bus est terminé. Votre enfant devrait être bientôt à la maison.', 'rw': 'Urugendo rwa bisi rwarangiye. Umwana wawe agiye kugera mu rugo vuba.'});
+  String get notifJourneyEndedMorningTitle => _t({'en': 'Arrived at school', 'fr': 'Arrivé à l\'école', 'rw': 'Yageze ku ishuri'});
+  String get notifJourneyEndedMorningBody => _t({'en': 'The morning journey has ended. Your child arrived at school safely.', 'fr': 'Le trajet du matin est terminé. Votre enfant est arrivé à l\'école en toute sécurité.', 'rw': 'Urugendo rwo mu gitondo rwarangiye. Umwana wawe yageze ku ishuri amutekanye.'});
+  String get notifJourneyEndedAfternoonTitle => _t({'en': 'Bus journey has ended', 'fr': 'Le trajet du bus est terminé', 'rw': 'Urugendo rwa bisi rwarangiye'});
+  String get notifJourneyEndedAfternoonBody => _t({'en': 'The afternoon journey has ended. Your child is home.', 'fr': 'Le trajet de l\'après-midi est terminé. Votre enfant est à la maison.', 'rw': 'Urugendo rwo nimugoroba rwarangiye. Umwana wawe ageze mu rugo.'});
   String get notifIncidentReportedTitle => _t({'en': 'Incident reported', 'fr': 'Incident signalé', 'rw': 'Ikibazo cyatanzwe'});
   String get notifJourneyAffectedTitle => _t({'en': 'Journey affected by incident', 'fr': 'Trajet affecté par un incident', 'rw': 'Urugendo rwagizweho ingaruka n\'ikibazo'});
   String get notifJourneyStoppedBody => _t({'en': 'The bus journey has been stopped due to an active incident.', 'fr': 'Le trajet du bus a été arrêté à cause d\'un incident en cours.', 'rw': 'Urugendo rwa bisi rwahagaritswe kubera ikibazo kiriho.'});
@@ -448,6 +451,7 @@ class AppLocalizations {
   String get drvItPronoun => _t({'en': 'it', 'fr': 'le', 'rw': 'cyo'});
   String get drvTripIncidentsTitle => _t({'en': 'Trip incidents', 'fr': 'Incidents de trajet', 'rw': 'Ibibazo by\'urugendo'});
   String get drvCantStartJourneyTitle => _t({'en': 'Can\'t Start Journey', 'fr': 'Impossible de démarrer le trajet', 'rw': 'Ntushobora gutangira urugendo'});
+  String get drvCantEndJourneyTitle => _t({'en': 'Can\'t End Journey', 'fr': 'Impossible de terminer le trajet', 'rw': 'Ntushobora kurangiza urugendo'});
   String drvStopNumberFallback(Object n) => _t({'en': 'Stop $n', 'fr': 'Arrêt $n', 'rw': 'Igihagararo $n'});
   String get drvManageIncidents => _t({'en': 'Manage incidents', 'fr': 'Gérer les incidents', 'rw': 'Gucunga ibibazo'});
   String get drvReportIncidentAction => _t({'en': 'Report incident', 'fr': 'Signaler un incident', 'rw': 'Tanga ikibazo'});

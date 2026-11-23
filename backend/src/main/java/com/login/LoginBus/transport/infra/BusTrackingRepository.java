@@ -57,6 +57,16 @@ public interface BusTrackingRepository extends JpaRepository<BusTrackingJpaEntit
     Optional<BusTrackingJpaEntity> findActiveBusTrackingByBusId(@Param("busId") Long busId);
 
     /**
+     * Every currently-active tracking row for a bus, not just the most
+     * recent — a bus should only ever have one, but a journey that never
+     * got explicitly ended (app killed/crashed mid-trip) leaves its row
+     * stuck "active" forever otherwise, and a later journey's lookups can
+     * pick up that stale one instead of the real current trip.
+     */
+    @Query("SELECT bt FROM BusTrackingJpaEntity bt WHERE bt.busId = :busId AND bt.status <> 'NOT_IN_ROUTE'")
+    List<BusTrackingJpaEntity> findAllActiveBusTrackingByBusId(@Param("busId") Long busId);
+
+    /**
      * Find every tracking record touched since the given timestamp (used to
      * find "today's" records), regardless of status — including ones that
      * have since ended and gone back to NOT_IN_ROUTE, which the "active"

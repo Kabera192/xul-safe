@@ -157,10 +157,22 @@ LocalizedNotification localizeNotification(
       );
 
     case 'JOURNEY_ENDED':
-      return LocalizedNotification(
-        l10n.notifJourneyEndedTitle,
-        l10n.notifJourneyEndedBody,
-      );
+      final tripType = p['tripType'];
+      if (tripType == null) {
+        return LocalizedNotification(
+          l10n.notifJourneyEndedTitle,
+          l10n.notifJourneyEndedBody,
+        );
+      }
+      return tripType == 'MORNING_PICKUP'
+          ? LocalizedNotification(
+              l10n.notifJourneyEndedMorningTitle,
+              l10n.notifJourneyEndedMorningBody,
+            )
+          : LocalizedNotification(
+              l10n.notifJourneyEndedAfternoonTitle,
+              l10n.notifJourneyEndedAfternoonBody,
+            );
 
     case 'INCIDENT_REPORTED':
       final kind = p['kind'];
