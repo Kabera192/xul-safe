@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { ApiResponse, Notification, CreateNotificationRequest } from '../models';
+import { ApiResponse, Notification, NotificationWithStatus, CreateNotificationRequest } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +18,13 @@ export class NotificationService {
 
   getForUser(userId: number): Observable<Notification[]> {
     return this.http.get<ApiResponse<Notification[]>>(`${this.basePath}/user/${userId}`).pipe(
+      map(response => response.data)
+    );
+  }
+
+  /** Like getForUser, but each row carries this user's own read status. */
+  getForUserWithStatus(userId: number): Observable<NotificationWithStatus[]> {
+    return this.http.get<ApiResponse<NotificationWithStatus[]>>(`${this.basePath}/user/${userId}/with-status`).pipe(
       map(response => response.data)
     );
   }

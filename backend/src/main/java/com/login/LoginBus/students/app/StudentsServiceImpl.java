@@ -20,10 +20,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +41,9 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
 
     @Autowired
     private AbsenceRepository absenceRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     @Autowired
     private BusRepository busRepository;
@@ -307,6 +313,26 @@ public class StudentsServiceImpl implements StudentsService, StudentsPublicServi
     @Override
     public boolean childExists(String childId) {
         return childRepository.existsById(childId);
+    }
+
+    @Override
+    public int getAbsentTodayCount() {
+        LocalDate today = LocalDate.now();
+
+        // A child can be "absent" two ways that don't overlap in storage:
+        // driver-confirmed (attendance_records.absent, per session) or
+        // parent-reported in advance (an active Absence covering today).
+        // Union by child ID so one child isn't double-counted.
+        Set<String> absentChildIds = new HashSet<>();
+
+        attendanceRepository.findByDateBetween(today, today).stream()
+                .filter(AttendanceJpaEntity::isAbsent)
+                .map(AttendanceJpaEntity::getChildId)
+                .forEach(absentChildIds::add);
+
+        absentChildIds.addAll(absenceRepository.findChildIdsWithActiveAbsenceOn(today));
+
+        return absentChildIds.size();
     }
 
     // ========== Absence Operations ==========

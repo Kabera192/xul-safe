@@ -32,6 +32,23 @@ export interface Notification {
   createdAt?: string;
 }
 
+/** Mirrors the backend's NotificationWithStatusDto — a notification plus
+ *  the calling user's own recipient status, since Notification itself has
+ *  no per-recipient read state. */
+export interface NotificationWithStatus {
+  notificationId: number;
+  title: string;
+  message: string;
+  type?: NotificationType;
+  category?: NotificationCategory;
+  params?: Record<string, string>;
+  createdBy?: number;
+  recipientUserId: number;
+  status: 'PENDING' | 'SENT' | 'READ';
+  sentAt?: number;
+  readAt?: number;
+}
+
 export interface CreateNotificationRequest {
   title: string;
   message: string;
