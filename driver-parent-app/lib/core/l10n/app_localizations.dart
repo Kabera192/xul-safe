@@ -277,6 +277,9 @@ class AppLocalizations {
   String get appVerifyYourEmail => _t({'en': 'Verify your email', 'fr': 'Vérifiez votre e-mail', 'rw': 'Genzura imeyili yawe'});
   String appOtpSentToEmailActivate(String email) => _t({'en': 'We sent a 6-digit code to $email. Enter it below to activate your account.', 'fr': 'Nous avons envoyé un code à 6 chiffres à $email. Entrez-le ci-dessous pour activer votre compte.', 'rw': 'Twohereje kode y\'imibare 6 kuri $email. Yinjize hepfo kugira ngo wemeze konti yawe.'});
   String get appVerifyAndContinue => _t({'en': 'Verify & continue', 'fr': 'Vérifier et continuer', 'rw': 'Genzura maze ukomeze'});
+  String get appLocationOff => _t({'en': 'Location is off', 'fr': 'La localisation est désactivée', 'rw': 'Aho uri (GPS) birafunze'});
+  String get appSessionExpiredTitle => _t({'en': 'Session expired', 'fr': 'Session expirée', 'rw': 'Igihe cyarangiye'});
+  String get appSessionExpiredBody => _t({'en': 'Your session has timed out for your security. Please log in again to continue.', 'fr': 'Votre session a expiré pour votre sécurité. Veuillez vous reconnecter pour continuer.', 'rw': 'Igihe cyawe cyarangiye kugira ngo urinde umutekano wawe. Nyamuneka ongera winjire kugira ngo ukomeze.'});
 
   String get parAddChildFirstChooseStop => _t({'en': 'Add a child first to choose a bus stop for them.', 'fr': 'Ajoutez d\'abord un enfant pour choisir un arrêt de bus pour lui.', 'rw': 'Banza wongere umwana kugira ngo uhitemo ahagarara ha bisi kuri we.'});
   String get parChooseStopTitle => _t({'en': 'Choose a bus stop', 'fr': 'Choisir un arrêt de bus', 'rw': 'Hitamo ahagarara ha bisi'});

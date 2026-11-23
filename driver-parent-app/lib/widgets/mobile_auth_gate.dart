@@ -6,6 +6,7 @@ import '../features/navigation/driver_nav.dart';
 import '../features/navigation/parent_nav.dart';
 import '../mobile_authentication.dart';
 import 'mobile_splash_gradient.dart';
+import 'session_expired_page.dart';
 
 class MobileAuthGate extends StatefulWidget {
   const MobileAuthGate({super.key});
@@ -49,14 +50,14 @@ class _MobileAuthGateState extends State<MobileAuthGate> {
             !_isExpired(refreshTokenExpiresAt);
 
         if (!canAttemptRefresh) {
-          await _clearSessionAndOpenLogin();
+          await _clearSessionAndShowExpired();
           return;
         }
 
         final refreshed = await AuthService.refreshSession();
 
         if (!refreshed) {
-          await _clearSessionAndOpenLogin();
+          await _clearSessionAndShowExpired();
           return;
         }
       }
@@ -64,7 +65,7 @@ class _MobileAuthGateState extends State<MobileAuthGate> {
       final refreshedToken = await SessionStorage.getToken();
 
       if (refreshedToken == null || refreshedToken.isEmpty) {
-        await _clearSessionAndOpenLogin();
+        await _clearSessionAndShowExpired();
         return;
       }
 
@@ -90,7 +91,7 @@ class _MobileAuthGateState extends State<MobileAuthGate> {
         ),
       );
     } catch (_) {
-      await _clearSessionAndOpenLogin();
+      await _clearSessionAndShowExpired();
     }
   }
 
@@ -118,6 +119,23 @@ class _MobileAuthGateState extends State<MobileAuthGate> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => const LoginPage(),
+      ),
+    );
+  }
+
+  /// Same as [_clearSessionAndOpenLogin], but for when a session actually
+  /// existed and has since expired/become invalid — tells the user why they
+  /// were signed out instead of silently dropping them back to login.
+  Future<void> _clearSessionAndShowExpired() async {
+    await SessionStorage.clearSession();
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const SessionExpiredPage(),
       ),
     );
   }
