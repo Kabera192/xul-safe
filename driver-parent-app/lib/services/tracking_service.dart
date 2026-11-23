@@ -50,17 +50,30 @@ class TrackingService {
         return null;
       }
 
+      dynamic decoded;
       try {
-        final decoded = jsonDecode(body);
-
-        if (decoded is Map<String, dynamic>) {
-          return decoded['data'] as Map<String, dynamic>?;
-        }
+        decoded = jsonDecode(body);
       } catch (e) {
         throw TrackingPollFailedException(e);
       }
 
-      return null;
+      // An unexpected shape (e.g. a bare list instead of the envelope
+      // object) means the poll itself is broken, not that the journey
+      // ended — treat it the same as a transport-level failure rather
+      // than silently returning null (which callers read as "no active
+      // journey" and can mistake for a confirmed safe arrival).
+      if (decoded is! Map<String, dynamic>) {
+        throw TrackingPollFailedException('Unexpected response shape: ${decoded.runtimeType}');
+      }
+
+      final data = decoded['data'];
+      if (data == null) {
+        return null;
+      }
+      if (data is! Map<String, dynamic>) {
+        throw TrackingPollFailedException('Unexpected data shape: ${data.runtimeType}');
+      }
+      return data;
     }
 
     if (res.statusCode == 404) {

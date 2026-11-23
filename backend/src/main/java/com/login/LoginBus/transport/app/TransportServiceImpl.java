@@ -108,12 +108,21 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
                 busTrackingRepository.findActiveBusTrackingByBusId(childOpt.get().getBusId());
         if (entityOpt.isEmpty()) return false;
 
-        AttendanceSession session = entityOpt.get().getTripType() == TripType.MORNING_PICKUP
-                ? AttendanceSession.MORNING : AttendanceSession.AFTERNOON;
-        return attendanceRepository
+        boolean isMorning = entityOpt.get().getTripType() == TripType.MORNING_PICKUP;
+        AttendanceSession session = isMorning ? AttendanceSession.MORNING : AttendanceSession.AFTERNOON;
+        boolean driverMarkedAbsent = attendanceRepository
                 .findByChildIdAndDateAndSession(childId, LocalDate.now(), session)
                 .map(AttendanceJpaEntity::isAbsent)
                 .orElse(false);
+        if (driverMarkedAbsent) return true;
+
+        // Driver-entered attendance isn't the only source of truth — a
+        // parent-reported absence must also hide the tracking/map UI, not
+        // just block notifications (see childIdsWithReportedAbsence below).
+        AbsenceType absenceType = isMorning ? AbsenceType.MORNING : AbsenceType.EVENING;
+        return !childIdsWithReportedAbsence(
+                List.of(childId), LocalDate.now(), List.of(absenceType, AbsenceType.MULTIPLE_DAYS))
+                .isEmpty();
     }
 
     @Override
@@ -221,14 +230,23 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             try {
                 AttendanceSession startSession = tracking.getTripType() == TripType.MORNING_PICKUP
                         ? AttendanceSession.MORNING : AttendanceSession.AFTERNOON;
+                List<ChildJpaEntity> busChildren = childRepository.findByBusId(tracking.getBusId());
                 Set<String> absentChildIds = attendanceRepository
                         .findByBusIdAndDateAndSession(tracking.getBusId(), LocalDate.now(), startSession)
                         .stream()
                         .filter(AttendanceJpaEntity::isAbsent)
                         .map(AttendanceJpaEntity::getChildId)
                         .collect(Collectors.toSet());
+                // Also exclude children with a parent-reported absence — the
+                // check above only sees driver-entered attendance, which a
+                // parent correctly reporting an absence never touches.
+                AbsenceType startAbsenceType = startSession == AttendanceSession.MORNING
+                        ? AbsenceType.MORNING : AbsenceType.EVENING;
+                absentChildIds.addAll(childIdsWithReportedAbsence(
+                        busChildren.stream().map(ChildJpaEntity::getId).collect(Collectors.toList()),
+                        LocalDate.now(), List.of(startAbsenceType, AbsenceType.MULTIPLE_DAYS)));
 
-                List<Long> parentIds = childRepository.findByBusId(tracking.getBusId())
+                List<Long> parentIds = busChildren
                         .stream()
                         .filter(c -> !absentChildIds.contains(c.getId()))
                         .map(c -> c.getParentId())
@@ -467,14 +485,23 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             try {
                 AttendanceSession endSession = tripType == TripType.MORNING_PICKUP
                         ? AttendanceSession.MORNING : AttendanceSession.AFTERNOON;
+                List<ChildJpaEntity> busChildren = childRepository.findByBusId(busId);
                 Set<String> absentChildIds = attendanceRepository
                         .findByBusIdAndDateAndSession(busId, LocalDate.now(), endSession)
                         .stream()
                         .filter(AttendanceJpaEntity::isAbsent)
                         .map(AttendanceJpaEntity::getChildId)
                         .collect(Collectors.toSet());
+                // Also exclude children with a parent-reported absence — a
+                // parent who correctly reported their child absent should
+                // never see "your child arrived at school safely".
+                AbsenceType endAbsenceType = endSession == AttendanceSession.MORNING
+                        ? AbsenceType.MORNING : AbsenceType.EVENING;
+                absentChildIds.addAll(childIdsWithReportedAbsence(
+                        busChildren.stream().map(ChildJpaEntity::getId).collect(Collectors.toList()),
+                        LocalDate.now(), List.of(endAbsenceType, AbsenceType.MULTIPLE_DAYS)));
 
-                List<Long> parentIds = childRepository.findByBusId(busId)
+                List<Long> parentIds = busChildren
                         .stream()
                         .filter(c -> !absentChildIds.contains(c.getId()))
                         .map(c -> c.getParentId())
