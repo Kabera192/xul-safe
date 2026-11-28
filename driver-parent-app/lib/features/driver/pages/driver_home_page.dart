@@ -21,6 +21,7 @@ import '../pages/driver_bus_route_page.dart';
 import '../pages/driver_incident_type_page.dart';
 import '../widgets/stop_attendance_sheet.dart';
 import '../pages/driver_manage_incidents_page.dart';
+import '../../../widgets/mobile_location_gate.dart';
 
 class DriverHomePage extends StatefulWidget {
   final bool isActive;
@@ -563,7 +564,8 @@ bool _incidentActionsOpen = false;
             ? LatLng(_stops.first.locationLat, _stops.first.locationLong)
             : _kigali);
 
-    return Scaffold(
+    return MobileLocationGate(
+      child: Scaffold(
       body: Stack(
         children: [
           // ── Map ──────────────────────────────────────────────────────────
@@ -743,6 +745,7 @@ bool _incidentActionsOpen = false;
             ),
           ),
         ],
+      ),
       ),
     );
   }
