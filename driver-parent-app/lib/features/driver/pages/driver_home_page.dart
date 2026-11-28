@@ -195,6 +195,10 @@ bool _incidentActionsOpen = false;
         _children = children;
         _loading = false;
       });
+
+      if (!_journeyActive) {
+        await _restoreActiveJourneyIfAny(_toInt(routeRaw['id']));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -436,6 +440,23 @@ bool _incidentActionsOpen = false;
     } catch (e) {
       _showJourneyBlockedDialog(e,
           title: AppLocalizations.of(context).drvCantEndJourneyTitle);
+    }
+  }
+
+  // Restores in-progress journey/tracking state after the app was closed and
+  // reopened mid-journey (the driver never pressed "End", so the backend's
+  // tracking record is still IN_PROGRESS) — without this, the driver sees no
+  // active journey while the parent's app keeps showing a frozen one.
+  Future<void> _restoreActiveJourneyIfAny(int routeId) async {
+    try {
+      final active =
+          await TransportService.getActiveBusTrackingForRoute(routeId);
+      if (active == null || !mounted || _journeyActive) return;
+      setState(() => _activeJourney = active);
+      _startLocationStream(journeyActive: true);
+      _startGpsSharing();
+    } catch (_) {
+      // Non-fatal — the driver can still press "Start" manually.
     }
   }
 

@@ -526,6 +526,39 @@ class TransportService {
     );
   }
 
+  /// GET /api/v1/bus-tracking/route/{routeId}
+  ///
+  /// Returns the already-in-progress journey for this route, if any — used
+  /// to restore journey/tracking state on app launch (e.g. after the driver
+  /// force-closed the app mid-journey instead of pressing "End"). Returns
+  /// null when there's no active journey.
+  static Future<Map<String, dynamic>?> getActiveBusTrackingForRoute(
+    int routeId,
+  ) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/bus-tracking/route/$routeId',
+    );
+
+    final res = await AuthenticatedHttpClient.send(() async {
+      final request = http.Request('GET', uri);
+      request.headers['Content-Type'] = 'application/json';
+      return request;
+    }).timeout(const Duration(seconds: 10));
+
+    if (res.statusCode == 404) return null;
+
+    final decoded = _decodeBody(res.body);
+
+    if (res.statusCode == 200) {
+      final data = decoded is Map<String, dynamic> ? decoded['data'] : decoded;
+      return data as Map<String, dynamic>?;
+    }
+
+    throw Exception(
+      _extractErrorMessage(decoded, 'Failed to load active journey'),
+    );
+  }
+
   /// PUT /api/v1/bus-tracking/{journeyId}/location
   static Future<void> updateBusLocation({
     required String journeyId,
