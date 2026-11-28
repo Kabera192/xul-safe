@@ -31,7 +31,12 @@ public class BusJpaEntity {
     @Column
     private BusStatus status;
 
-    @Column(name = "conductor_id")
+    // unique = true lets Postgres reject a second bus row for the same
+    // conductor even if two concurrent requests both pass the
+    // application-level findByConductorId check before either saves.
+    // Postgres treats NULLs as distinct, so any number of unassigned
+    // buses (conductor_id = null) stays allowed.
+    @Column(name = "conductor_id", unique = true)
     @JsonProperty("conductorId")
     private Long conductorId;
 

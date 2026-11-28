@@ -23,6 +23,7 @@ import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.domain.*;
 import com.login.LoginBus.transport.infra.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -1022,61 +1023,112 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         if (busRepository.findByPlateNumber(bus.getPlateNumber()) != null) {
             throw new IllegalArgumentException("Bus with this plate number already exists");
         }
-        if (bus.getConductorId() != null && accountsService != null) {
-            if (accountsService.getConductorById(bus.getConductorId()) == null) {
-                throw new IllegalArgumentException("Conductor not found with ID: " + bus.getConductorId());
-            }
-        }
-
-        BusJpaEntity entity = BusJpaEntity.fromDomain(bus);
-        BusJpaEntity saved = busRepository.save(entity);
-        return saved.toDomain();
-    }
-
-    @Override
-    @Transactional
-    public Bus updateBus(Long busId, Bus bus) {
-        Optional<BusJpaEntity> existingOpt = busRepository.findById(busId);
-        if (existingOpt.isEmpty()) {
-            throw new IllegalArgumentException("Bus not found with ID: " + busId);
-        }
-
-        BusJpaEntity existing = existingOpt.get();
-
-        if (bus.getPlateNumber() != null && !bus.getPlateNumber().trim().isEmpty()) {
-            BusJpaEntity byPlate = busRepository.findByPlateNumber(bus.getPlateNumber());
-            if (byPlate != null && !byPlate.getId().equals(busId)) {
-                throw new IllegalArgumentException("Bus with this plate number already exists");
-            }
-            existing.setPlateNumber(bus.getPlateNumber());
-        }
-        if (bus.getModel() != null) {
-            existing.setModel(bus.getModel());
-        }
-        if (bus.getCapacity() != null) {
-            existing.setCapacity(bus.getCapacity());
-        }
-        if (bus.getStatus() != null) {
-            existing.setStatus(bus.getStatus());
-        }
         if (bus.getConductorId() != null) {
             if (accountsService != null && accountsService.getConductorById(bus.getConductorId()) == null) {
                 throw new IllegalArgumentException("Conductor not found with ID: " + bus.getConductorId());
             }
-            existing.setConductorId(bus.getConductorId());
-        }
-        if (bus.getRouteId() != null) {
-            if (!routeRepository.existsById(bus.getRouteId())) {
-                throw new IllegalArgumentException("Route not found with ID: " + bus.getRouteId());
+            if (busRepository.findByConductorId(bus.getConductorId()).isPresent()) {
+                throw new IllegalArgumentException(
+                        "This driver/conductor is already assigned to another bus");
             }
-            existing.setRouteId(bus.getRouteId());
-        }
-        if (bus.getPhotoUrl() != null) {
-            existing.setPhotoUrl(bus.getPhotoUrl());
         }
 
-        BusJpaEntity saved = busRepository.save(existing);
+        BusJpaEntity entity = BusJpaEntity.fromDomain(bus);
+        try {
+            // saveAndFlush (not save) so the INSERT - and the unique
+            // constraint check - runs here, inside the try/catch, instead
+            // of being deferred to commit after this method has returned.
+            BusJpaEntity saved = busRepository.saveAndFlush(entity);
+            return saved.toDomain();
+        } catch (DataIntegrityViolationException e) {
+            throw translateConductorConflict(e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Bus updateBus(Long busId, Map<String, Object> updates) {
+        BusJpaEntity existing = busRepository.findById(busId)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with ID: " + busId));
+
+        if (updates.containsKey("plateNumber")) {
+            String plateNumber = (String) updates.get("plateNumber");
+            if (plateNumber != null && !plateNumber.trim().isEmpty()) {
+                BusJpaEntity byPlate = busRepository.findByPlateNumber(plateNumber);
+                if (byPlate != null && !byPlate.getId().equals(busId)) {
+                    throw new IllegalArgumentException("Bus with this plate number already exists");
+                }
+                existing.setPlateNumber(plateNumber);
+            }
+        }
+        if (updates.containsKey("model")) {
+            existing.setModel((String) updates.get("model"));
+        }
+        if (updates.containsKey("capacity")) {
+            Object capacity = updates.get("capacity");
+            existing.setCapacity(capacity == null ? null : ((Number) capacity).intValue());
+        }
+        if (updates.containsKey("status")) {
+            Object status = updates.get("status");
+            existing.setStatus(status == null ? null : BusStatus.valueOf(status.toString()));
+        }
+        if (updates.containsKey("conductorId")) {
+            Object raw = updates.get("conductorId");
+            Long conductorId = raw == null ? null : Long.valueOf(raw.toString());
+
+            if (conductorId != null) {
+                if (accountsService != null && accountsService.getConductorById(conductorId) == null) {
+                    throw new IllegalArgumentException("Conductor not found with ID: " + conductorId);
+                }
+                busRepository.findByConductorId(conductorId).ifPresent(other -> {
+                    if (!other.getId().equals(busId)) {
+                        throw new IllegalArgumentException(
+                                "This driver/conductor is already assigned to another bus");
+                    }
+                });
+            }
+
+            // null here means the admin explicitly chose "Unassigned" — clear it
+            // rather than silently keeping whatever was there before.
+            existing.setConductorId(conductorId);
+        }
+        if (updates.containsKey("routeId")) {
+            Object raw = updates.get("routeId");
+            Long routeId = raw == null ? null : Long.valueOf(raw.toString());
+            if (routeId != null && !routeRepository.existsById(routeId)) {
+                throw new IllegalArgumentException("Route not found with ID: " + routeId);
+            }
+            existing.setRouteId(routeId);
+        }
+        if (updates.containsKey("photoUrl")) {
+            existing.setPhotoUrl((String) updates.get("photoUrl"));
+        }
+
+        BusJpaEntity saved;
+        try {
+            // saveAndFlush, not save - see createBus for why.
+            saved = busRepository.saveAndFlush(existing);
+        } catch (DataIntegrityViolationException e) {
+            throw translateConductorConflict(e);
+        }
         return saved.toDomain();
+    }
+
+    /**
+     * Turns the DB-level unique constraint violation on buses.conductor_id
+     * into the same friendly message the app-level check above already
+     * throws - that check only rejects an assignment saved before this
+     * request started, so two concurrent requests can both pass it and
+     * both reach save(); the constraint is what actually stops the second
+     * one, and this keeps its error looking the same to the caller.
+     */
+    private IllegalArgumentException translateConductorConflict(DataIntegrityViolationException e) {
+        String message = String.valueOf(e.getMostSpecificCause());
+        if (message.toLowerCase().contains("conductor_id")) {
+            return new IllegalArgumentException(
+                    "This driver/conductor is already assigned to another bus");
+        }
+        return new IllegalArgumentException("Could not save bus: " + e.getMostSpecificCause().getMessage());
     }
 
     @Override
