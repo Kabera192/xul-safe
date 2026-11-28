@@ -197,7 +197,7 @@ bool _incidentActionsOpen = false;
       });
 
       if (!_journeyActive) {
-        await _restoreActiveJourneyIfAny(_toInt(routeRaw['id']));
+        await _restoreActiveJourneyIfAny(_toInt(busRaw['id']));
       }
     } catch (e) {
       if (!mounted) return;
@@ -447,19 +447,17 @@ bool _incidentActionsOpen = false;
   // reopened mid-journey (the driver never pressed "End", so the backend's
   // tracking record is still IN_PROGRESS) — without this, the driver sees no
   // active journey while the parent's app keeps showing a frozen one.
-  Future<void> _restoreActiveJourneyIfAny(int routeId) async {
+  Future<void> _restoreActiveJourneyIfAny(int busId) async {
     try {
-      final active =
-          await TransportService.getActiveBusTrackingForRoute(routeId);
+      // Scoped by bus, not route: multiple buses can share a route, and a
+      // route-scoped lookup could return a different bus's journey.
+      final active = await TransportService.getActiveBusTrackingForBus(busId);
       if (active == null || !mounted || _journeyActive) return;
 
-      // Multiple buses can share a route, so a tracking record found by
-      // route alone may belong to a different bus/driver — resuming it
-      // would hijack that bus's journey and upload our coordinates into
-      // its record. Only resume if it's actually ours.
-      final myBusId = _toInt(_bus?['id']);
+      // Defensive: only resume if the tracking record's conductor is still
+      // this driver, in case the bus's assigned conductor changed since
+      // this journey was started.
       final myConductorId = _profile?.driverId;
-      if (myBusId == 0 || _toInt(active['busId']) != myBusId) return;
       if (myConductorId == null ||
           _toInt(active['conductorId']) != myConductorId) {
         return;

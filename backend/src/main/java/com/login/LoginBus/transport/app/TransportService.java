@@ -54,6 +54,18 @@ public interface TransportService {
     BusTracking getActiveBusTrackingForRoute(Long routeId);
 
     /**
+     * Get active bus tracking for a specific bus.
+     *
+     * Unlike {@link #getActiveBusTrackingForRoute}, this can't return another
+     * bus's journey - multiple buses can share a route, but each tracking
+     * record belongs to exactly one bus.
+     *
+     * @param busId The bus ID
+     * @return The active tracking, or null if no active tracking
+     */
+    BusTracking getActiveBusTrackingForBus(Long busId);
+
+    /**
      * Today's trip status (SCHEDULED / IN_PROGRESS / COMPLETED) for every
      * bus, derived from whether each bus has a tracking record touched
      * today and, if so, whether it's still active.

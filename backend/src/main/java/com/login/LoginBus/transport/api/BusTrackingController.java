@@ -96,6 +96,33 @@ public class BusTrackingController {
     }
 
     /**
+     * Get active bus tracking for a specific bus.
+     * GET /api/v1/bus-tracking/bus/{busId}
+     *
+     * Unlike the route lookup above, this can't return another bus's
+     * journey when multiple buses share a route.
+     *
+     * @param busId The bus ID
+     * @return Active bus tracking or null if no active journey
+     */
+    @GetMapping("/bus/{busId}")
+    public ResponseEntity<ApiResponse<BusTracking>> getActiveBusTrackingForBus(@PathVariable Long busId) {
+        BusTracking tracking = transportService.getActiveBusTrackingForBus(busId);
+
+        if (tracking != null) {
+            return ResponseEntity.ok(new ApiResponse<>(
+                "Active bus tracking found for bus",
+                tracking
+            ));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(
+                "No active journey for this bus",
+                null
+            ));
+        }
+    }
+
+    /**
      * Today's trip status (SCHEDULED / IN_PROGRESS / COMPLETED) for every
      * bus with a route assigned.
      * GET /api/v1/bus-tracking/today-status
