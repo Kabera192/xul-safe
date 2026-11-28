@@ -35,16 +35,21 @@ export class Login {
 
     this.isLoading = true;
     this.errorMessage = '';
+    // Last-resort safeguard in case the observable below never calls next()
+    // or error() at all. Kept well past the 8s request timeout so it never
+    // races it — it used to fire at the same 2s mark as that timeout, which
+    // could show "Invalid email or password" for a login that was simply
+    // slow (e.g. over the Cloudflare tunnel), not actually wrong.
     const fallbackTimer = window.setTimeout(() => {
       if (this.isLoading) {
         this.isLoading = false;
         this.errorMessage = 'Invalid email or password.';
         this.cdr.detectChanges();
       }
-    }, 2000);
+    }, 10000);
 
     this.authService.login({ email: this.email, password: this.password }).pipe(
-      timeout(2000),
+      timeout(8000),
       finalize(() => {
         this.isLoading = false;
         window.clearTimeout(fallbackTimer);
