@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -116,12 +117,37 @@ bool _incidentActionsOpen = false;
     } catch (_) {}
   }
 
-  void _startLocationStream() {
+  // While a journey is active, Android needs a foreground service (with a
+  // visible notification) to keep delivering location updates once the
+  // screen locks or the driver switches to another app — otherwise the OS
+  // suspends the plain position stream and the parent's view freezes on the
+  // last location received before that happened.
+  void _startLocationStream({bool journeyActive = false}) {
+    _posSub?.cancel();
+
+    final LocationSettings locationSettings =
+        defaultTargetPlatform == TargetPlatform.android
+            ? AndroidSettings(
+                accuracy: LocationAccuracy.high,
+                distanceFilter: 5,
+                intervalDuration: const Duration(seconds: 5),
+                foregroundNotificationConfig: journeyActive
+                    ? const ForegroundNotificationConfig(
+                        notificationTitle: 'Bus tracking active',
+                        notificationText:
+                            "Sharing this bus's live location with parents "
+                            'during the journey.',
+                        enableWakeLock: true,
+                      )
+                    : null,
+              )
+            : const LocationSettings(
+                accuracy: LocationAccuracy.high,
+                distanceFilter: 5,
+              );
+
     _posSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
+      locationSettings: locationSettings,
     ).listen((pos) {
       final ll = LatLng(pos.latitude, pos.longitude);
       if (!mounted) return;
@@ -369,6 +395,7 @@ bool _incidentActionsOpen = false;
       );
       if (!mounted) return;
       setState(() => _activeJourney = result);
+      _startLocationStream(journeyActive: true);
       _startGpsSharing();
     } catch (e) {
       _showJourneyBlockedDialog(e);
@@ -405,6 +432,7 @@ bool _incidentActionsOpen = false;
         _activeJourney = null;
         _confirmedStopIds.clear();
       });
+      _startLocationStream(journeyActive: false);
     } catch (e) {
       _showJourneyBlockedDialog(e,
           title: AppLocalizations.of(context).drvCantEndJourneyTitle);
