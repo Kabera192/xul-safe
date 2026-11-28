@@ -23,6 +23,7 @@ import com.login.LoginBus.transport.api.dto.BusTripStatusDto;
 import com.login.LoginBus.transport.domain.*;
 import com.login.LoginBus.transport.infra.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -1033,8 +1034,12 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         }
 
         BusJpaEntity entity = BusJpaEntity.fromDomain(bus);
-        BusJpaEntity saved = busRepository.save(entity);
-        return saved.toDomain();
+        try {
+            BusJpaEntity saved = busRepository.save(entity);
+            return saved.toDomain();
+        } catch (DataIntegrityViolationException e) {
+            throw translateConductorConflict(e);
+        }
     }
 
     @Override
@@ -1096,8 +1101,30 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
             existing.setPhotoUrl((String) updates.get("photoUrl"));
         }
 
-        BusJpaEntity saved = busRepository.save(existing);
+        BusJpaEntity saved;
+        try {
+            saved = busRepository.save(existing);
+        } catch (DataIntegrityViolationException e) {
+            throw translateConductorConflict(e);
+        }
         return saved.toDomain();
+    }
+
+    /**
+     * Turns the DB-level unique constraint violation on buses.conductor_id
+     * into the same friendly message the app-level check above already
+     * throws - that check only rejects an assignment saved before this
+     * request started, so two concurrent requests can both pass it and
+     * both reach save(); the constraint is what actually stops the second
+     * one, and this keeps its error looking the same to the caller.
+     */
+    private IllegalArgumentException translateConductorConflict(DataIntegrityViolationException e) {
+        String message = String.valueOf(e.getMostSpecificCause());
+        if (message.toLowerCase().contains("conductor_id")) {
+            return new IllegalArgumentException(
+                    "This driver/conductor is already assigned to another bus");
+        }
+        return new IllegalArgumentException("Could not save bus: " + e.getMostSpecificCause().getMessage());
     }
 
     @Override
