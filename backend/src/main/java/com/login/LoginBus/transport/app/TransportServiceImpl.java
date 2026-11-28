@@ -1022,9 +1022,13 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
         if (busRepository.findByPlateNumber(bus.getPlateNumber()) != null) {
             throw new IllegalArgumentException("Bus with this plate number already exists");
         }
-        if (bus.getConductorId() != null && accountsService != null) {
-            if (accountsService.getConductorById(bus.getConductorId()) == null) {
+        if (bus.getConductorId() != null) {
+            if (accountsService != null && accountsService.getConductorById(bus.getConductorId()) == null) {
                 throw new IllegalArgumentException("Conductor not found with ID: " + bus.getConductorId());
+            }
+            if (busRepository.findByConductorId(bus.getConductorId()).isPresent()) {
+                throw new IllegalArgumentException(
+                        "This driver/conductor is already assigned to another bus");
             }
         }
 
@@ -1035,44 +1039,61 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
     @Override
     @Transactional
-    public Bus updateBus(Long busId, Bus bus) {
-        Optional<BusJpaEntity> existingOpt = busRepository.findById(busId);
-        if (existingOpt.isEmpty()) {
-            throw new IllegalArgumentException("Bus not found with ID: " + busId);
-        }
+    public Bus updateBus(Long busId, Map<String, Object> updates) {
+        BusJpaEntity existing = busRepository.findById(busId)
+                .orElseThrow(() -> new IllegalArgumentException("Bus not found with ID: " + busId));
 
-        BusJpaEntity existing = existingOpt.get();
+        if (updates.containsKey("plateNumber")) {
+            String plateNumber = (String) updates.get("plateNumber");
+            if (plateNumber != null && !plateNumber.trim().isEmpty()) {
+                BusJpaEntity byPlate = busRepository.findByPlateNumber(plateNumber);
+                if (byPlate != null && !byPlate.getId().equals(busId)) {
+                    throw new IllegalArgumentException("Bus with this plate number already exists");
+                }
+                existing.setPlateNumber(plateNumber);
+            }
+        }
+        if (updates.containsKey("model")) {
+            existing.setModel((String) updates.get("model"));
+        }
+        if (updates.containsKey("capacity")) {
+            Object capacity = updates.get("capacity");
+            existing.setCapacity(capacity == null ? null : ((Number) capacity).intValue());
+        }
+        if (updates.containsKey("status")) {
+            Object status = updates.get("status");
+            existing.setStatus(status == null ? null : BusStatus.valueOf(status.toString()));
+        }
+        if (updates.containsKey("conductorId")) {
+            Object raw = updates.get("conductorId");
+            Long conductorId = raw == null ? null : Long.valueOf(raw.toString());
 
-        if (bus.getPlateNumber() != null && !bus.getPlateNumber().trim().isEmpty()) {
-            BusJpaEntity byPlate = busRepository.findByPlateNumber(bus.getPlateNumber());
-            if (byPlate != null && !byPlate.getId().equals(busId)) {
-                throw new IllegalArgumentException("Bus with this plate number already exists");
+            if (conductorId != null) {
+                if (accountsService != null && accountsService.getConductorById(conductorId) == null) {
+                    throw new IllegalArgumentException("Conductor not found with ID: " + conductorId);
+                }
+                busRepository.findByConductorId(conductorId).ifPresent(other -> {
+                    if (!other.getId().equals(busId)) {
+                        throw new IllegalArgumentException(
+                                "This driver/conductor is already assigned to another bus");
+                    }
+                });
             }
-            existing.setPlateNumber(bus.getPlateNumber());
+
+            // null here means the admin explicitly chose "Unassigned" — clear it
+            // rather than silently keeping whatever was there before.
+            existing.setConductorId(conductorId);
         }
-        if (bus.getModel() != null) {
-            existing.setModel(bus.getModel());
-        }
-        if (bus.getCapacity() != null) {
-            existing.setCapacity(bus.getCapacity());
-        }
-        if (bus.getStatus() != null) {
-            existing.setStatus(bus.getStatus());
-        }
-        if (bus.getConductorId() != null) {
-            if (accountsService != null && accountsService.getConductorById(bus.getConductorId()) == null) {
-                throw new IllegalArgumentException("Conductor not found with ID: " + bus.getConductorId());
+        if (updates.containsKey("routeId")) {
+            Object raw = updates.get("routeId");
+            Long routeId = raw == null ? null : Long.valueOf(raw.toString());
+            if (routeId != null && !routeRepository.existsById(routeId)) {
+                throw new IllegalArgumentException("Route not found with ID: " + routeId);
             }
-            existing.setConductorId(bus.getConductorId());
+            existing.setRouteId(routeId);
         }
-        if (bus.getRouteId() != null) {
-            if (!routeRepository.existsById(bus.getRouteId())) {
-                throw new IllegalArgumentException("Route not found with ID: " + bus.getRouteId());
-            }
-            existing.setRouteId(bus.getRouteId());
-        }
-        if (bus.getPhotoUrl() != null) {
-            existing.setPhotoUrl(bus.getPhotoUrl());
+        if (updates.containsKey("photoUrl")) {
+            existing.setPhotoUrl((String) updates.get("photoUrl"));
         }
 
         BusJpaEntity saved = busRepository.save(existing);

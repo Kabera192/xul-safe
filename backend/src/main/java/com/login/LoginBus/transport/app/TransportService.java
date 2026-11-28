@@ -302,11 +302,18 @@ public interface TransportService {
     /**
      * Update an existing bus.
      *
+     * Only the fields present as keys in {@code updates} are changed — a key
+     * mapped to {@code null} explicitly clears that field (e.g. unassigning
+     * the conductor/driver), while a key that's absent entirely leaves the
+     * existing value untouched. A plain {@code Bus} object can't make that
+     * distinction (both cases deserialize to a null getter), which is why
+     * this takes the raw request map instead.
+     *
      * @param busId The bus ID
-     * @param bus The updated bus data
+     * @param updates Field name -> new value, as decoded from the request JSON
      * @return The updated bus
      */
-    Bus updateBus(Long busId, Bus bus);
+    Bus updateBus(Long busId, java.util.Map<String, Object> updates);
 
     /**
      * Delete a bus.

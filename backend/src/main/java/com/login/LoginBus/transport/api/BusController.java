@@ -66,8 +66,9 @@ public class BusController {
     }
 
     @PutMapping("/{busId}")
-    public ResponseEntity<ApiResponse<Bus>> updateBus(@PathVariable Long busId, @RequestBody Bus bus) {
-        Bus updated = transportService.updateBus(busId, bus);
+    public ResponseEntity<ApiResponse<Bus>> updateBus(
+            @PathVariable Long busId, @RequestBody Map<String, Object> updates) {
+        Bus updated = transportService.updateBus(busId, updates);
         return ResponseEntity.ok(new ApiResponse<>(
             "Bus updated successfully",
             updated
