@@ -1035,7 +1035,10 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
         BusJpaEntity entity = BusJpaEntity.fromDomain(bus);
         try {
-            BusJpaEntity saved = busRepository.save(entity);
+            // saveAndFlush (not save) so the INSERT - and the unique
+            // constraint check - runs here, inside the try/catch, instead
+            // of being deferred to commit after this method has returned.
+            BusJpaEntity saved = busRepository.saveAndFlush(entity);
             return saved.toDomain();
         } catch (DataIntegrityViolationException e) {
             throw translateConductorConflict(e);
@@ -1103,7 +1106,8 @@ public class TransportServiceImpl implements TransportService, TransportPublicSe
 
         BusJpaEntity saved;
         try {
-            saved = busRepository.save(existing);
+            // saveAndFlush, not save - see createBus for why.
+            saved = busRepository.saveAndFlush(existing);
         } catch (DataIntegrityViolationException e) {
             throw translateConductorConflict(e);
         }
