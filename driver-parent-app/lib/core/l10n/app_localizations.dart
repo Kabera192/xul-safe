@@ -304,6 +304,13 @@ class AppLocalizations {
   String get parStopRequestPending => _t({'en': 'Bus stop request pending admin approval', 'fr': 'Demande d\'arrêt de bus en attente d\'approbation', 'rw': 'Icyifuzo cy\'ahagarara gitegereje kwemezwa n\'ubuyobozi'});
   String get appNotificationFallbackTitle => _t({'en': 'Notification', 'fr': 'Notification', 'rw': 'Menyesha'});
 
+  // ── Notification timestamps ──────────────────────────────────────────────
+  String get notifTimeJustNow => _t({'en': 'Just now', 'fr': 'À l\'instant', 'rw': 'Nonaha'});
+  String notifTimeMinutesAgo(int minutes) => _t({'en': '${minutes}m ago', 'fr': 'il y a $minutes min', 'rw': 'iminota $minutes ishize'});
+  String notifTimeHoursAgo(int hours) => _t({'en': '${hours}h ago', 'fr': 'il y a $hours h', 'rw': 'amasaha $hours ashize'});
+  String get notifTimeYesterday => _t({'en': 'Yesterday', 'fr': 'Hier', 'rw': 'Ejo hashize'});
+  String notifTimeDaysAgo(int days) => _t({'en': '${days}d ago', 'fr': 'il y a $days j', 'rw': 'iminsi $days ishize'});
+
   // ── Notification templates (server sends category + params, client
   // ── localizes using these — see lib/core/notifications/notification_localizer.dart) ──
 

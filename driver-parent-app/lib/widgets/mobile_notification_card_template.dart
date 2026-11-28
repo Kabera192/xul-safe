@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/l10n/app_localizations.dart';
 import '../core/notifications/notification_localizer.dart';
+import '../core/notifications/notification_time_formatter.dart';
 import '../features/driver/models/notification_model.dart';
 import 'mobile_notification_visual_template.dart';
 
@@ -79,6 +80,15 @@ class MobileNotificationCardTemplate extends StatelessWidget {
                       color: onSurface.withValues(alpha: 0.55),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatNotificationTimestamp(notification.sentAt, l10n),
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
