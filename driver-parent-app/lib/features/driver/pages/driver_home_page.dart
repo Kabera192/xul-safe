@@ -196,6 +196,10 @@ bool _incidentActionsOpen = false;
         _children = children;
         _loading = false;
       });
+
+      if (!_journeyActive) {
+        await _restoreActiveJourneyIfAny(_toInt(busRaw['id']));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -437,6 +441,34 @@ bool _incidentActionsOpen = false;
     } catch (e) {
       _showJourneyBlockedDialog(e,
           title: AppLocalizations.of(context).drvCantEndJourneyTitle);
+    }
+  }
+
+  // Restores in-progress journey/tracking state after the app was closed and
+  // reopened mid-journey (the driver never pressed "End", so the backend's
+  // tracking record is still IN_PROGRESS) — without this, the driver sees no
+  // active journey while the parent's app keeps showing a frozen one.
+  Future<void> _restoreActiveJourneyIfAny(int busId) async {
+    try {
+      // Scoped by bus, not route: multiple buses can share a route, and a
+      // route-scoped lookup could return a different bus's journey.
+      final active = await TransportService.getActiveBusTrackingForBus(busId);
+      if (active == null || !mounted || _journeyActive) return;
+
+      // Defensive: only resume if the tracking record's conductor is still
+      // this driver, in case the bus's assigned conductor changed since
+      // this journey was started.
+      final myConductorId = _profile?.driverId;
+      if (myConductorId == null ||
+          _toInt(active['conductorId']) != myConductorId) {
+        return;
+      }
+
+      setState(() => _activeJourney = active);
+      _startLocationStream(journeyActive: true);
+      _startGpsSharing();
+    } catch (_) {
+      // Non-fatal — the driver can still press "Start" manually.
     }
   }
 
