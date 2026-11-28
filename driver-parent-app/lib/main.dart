@@ -7,7 +7,6 @@ import 'core/l10n/locale_service.dart';
 import 'core/session/session_storage.dart';
 import 'mobile_authentication.dart';
 import 'widgets/mobile_auth_gate.dart';
-import 'widgets/mobile_location_gate.dart';
 import 'widgets/mobile_network_gate.dart';
 import 'widgets/session_expired_page.dart';
 
@@ -115,12 +114,8 @@ class _MyAppState extends State<MyApp> {
               builder: (context, child) {
                 if (child == null) return const SizedBox.shrink();
 
-                final gatedChild = _online
-                    ? MobileLocationGate(child: child)
-                    : child;
-
                 return MobileNetworkGate(
-                  child: gatedChild,
+                  child: child,
                   onStatusChanged: (isOnline) {
                     if (isOnline != _online) {
                       setState(() => _online = isOnline);
