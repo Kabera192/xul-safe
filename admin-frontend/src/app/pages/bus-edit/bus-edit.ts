@@ -209,8 +209,8 @@ export class BusEditPage implements OnInit, OnDestroy {
       model: this.model || undefined,
       capacity: this.capacity ? Number(this.capacity) : undefined,
       status: this.status as Bus['status'],
-      conductorId: this.selectedConductorId ? Number(this.selectedConductorId) : undefined,
-      routeId: this.selectedRouteId ? Number(this.selectedRouteId) : undefined,
+      conductorId: this.selectedConductorId ? Number(this.selectedConductorId) : null,
+      routeId: this.selectedRouteId ? Number(this.selectedRouteId) : null,
       photoUrl: this.photoPreview || undefined
     }).pipe(
       timeout(5000),
