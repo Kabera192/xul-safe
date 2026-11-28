@@ -42,6 +42,8 @@ export class BusEditPage implements OnInit, OnDestroy {
   noticeMessage = '';
   private conductorsLoaded = false;
   private routesLoaded = false;
+  private conductorsLoadFailed = false;
+  private routesLoadFailed = false;
   private busApplied = false;
 
   ngOnInit(): void {
@@ -72,6 +74,7 @@ export class BusEditPage implements OnInit, OnDestroy {
       timeout(5000),
       catchError((error) => {
         console.error('Failed to load conductors:', error);
+        this.conductorsLoadFailed = true;
         return of([] as Conductor[]);
       })
     ).subscribe((conductors) => {
@@ -87,6 +90,7 @@ export class BusEditPage implements OnInit, OnDestroy {
       timeout(5000),
       catchError((error) => {
         console.error('Failed to load routes:', error);
+        this.routesLoadFailed = true;
         return of([] as Route[]);
       })
     ).subscribe((routes) => {
@@ -108,15 +112,21 @@ export class BusEditPage implements OnInit, OnDestroy {
    * calls with no guaranteed order — wait until all three have actually
    * landed before checking, otherwise a list that just hasn't arrived yet
    * looks identical to "this ID doesn't exist" and gets wrongly cleared.
+   *
+   * A failed load also resolves to an empty list (see catchError above),
+   * which looks identical to "this ID doesn't exist" — but it isn't a
+   * confirmed absence, just a temporary failure. Never clear on a failed
+   * load: that would silently unassign a real conductor/route on save even
+   * though the admin never touched that field.
    */
   private pruneStaleReferences(): void {
     if (!this.conductorsLoaded || !this.routesLoaded || !this.busApplied) {
       return;
     }
 
-    const staleConductor = this.selectedConductorId &&
+    const staleConductor = !this.conductorsLoadFailed && !!this.selectedConductorId &&
       !this.conductors.some((c) => String(c.id) === this.selectedConductorId);
-    const staleRoute = this.selectedRouteId &&
+    const staleRoute = !this.routesLoadFailed && !!this.selectedRouteId &&
       !this.routes.some((r) => String(r.id) === this.selectedRouteId);
 
     if (staleConductor) {
@@ -130,6 +140,11 @@ export class BusEditPage implements OnInit, OnDestroy {
         .filter(Boolean)
         .join(' and ');
       this.noticeMessage = `The previously assigned ${fields} is no longer available. Please select one if needed.`;
+    } else if (this.conductorsLoadFailed || this.routesLoadFailed) {
+      const fields = [this.conductorsLoadFailed ? 'conductors' : null, this.routesLoadFailed ? 'routes' : null]
+        .filter(Boolean)
+        .join(' and ');
+      this.noticeMessage = `Could not load the ${fields} list. The current assignment is kept — reload the page to change it.`;
     }
   }
 
@@ -144,6 +159,8 @@ export class BusEditPage implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.noticeMessage = '';
     this.busApplied = false;
+    this.conductorsLoadFailed = false;
+    this.routesLoadFailed = false;
   }
 
   private loadBusById(busId: number): void {
