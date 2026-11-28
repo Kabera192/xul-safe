@@ -452,6 +452,19 @@ bool _incidentActionsOpen = false;
       final active =
           await TransportService.getActiveBusTrackingForRoute(routeId);
       if (active == null || !mounted || _journeyActive) return;
+
+      // Multiple buses can share a route, so a tracking record found by
+      // route alone may belong to a different bus/driver — resuming it
+      // would hijack that bus's journey and upload our coordinates into
+      // its record. Only resume if it's actually ours.
+      final myBusId = _toInt(_bus?['id']);
+      final myConductorId = _profile?.driverId;
+      if (myBusId == 0 || _toInt(active['busId']) != myBusId) return;
+      if (myConductorId == null ||
+          _toInt(active['conductorId']) != myConductorId) {
+        return;
+      }
+
       setState(() => _activeJourney = active);
       _startLocationStream(journeyActive: true);
       _startGpsSharing();
